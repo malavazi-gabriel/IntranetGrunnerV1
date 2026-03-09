@@ -1,0 +1,139 @@
+/* =======================================
+   VARIÁVEIS DE CORES DA MARCA
+======================================= */
+$grunner-green: #A6CE39;
+$grunner-dark: #1C2510;
+$bg-light: #F3F4F6;
+$text-gray: #6B7280;
+
+.container {
+  width: 100%;
+  min-height: 80vh;
+  background-color: transparent;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* CABEÇALHO */
+.pageHeader {
+  width: 100%;
+  max-width: 1200px;
+  background: linear-gradient(135deg, $grunner-dark 0%, #2A3618 100%);
+  border-radius: 16px;
+  padding: 40px;
+  margin: 20px 0 30px 0;
+  color: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  text-align: center;
+
+  h1 { margin: 0 0 10px 0; font-size: 32px; font-weight: 800; color: white;}
+  p { margin: 0; font-size: 16px; color: rgba(255, 255, 255, 0.85); }
+
+  @media (max-width: 768px) {
+    padding: 30px 20px; border-radius: 12px; margin-top: 10px;
+    h1 { font-size: 24px; } p { font-size: 14px; }
+  }
+}
+
+/* BARRA DE PESQUISA GLOBAL */
+.searchContainer {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 20px auto;
+  padding: 0 20px;
+
+  .searchInput {
+    width: 100%;
+    padding: 16px 25px;
+    border-radius: 30px;
+    border: 1px solid #D1D5DB;
+    font-size: 16px;
+    font-family: inherit;
+    color: $grunner-dark;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+
+    &:focus {
+      outline: none;
+      border-color: $grunner-green;
+      box-shadow: 0 0 0 4px rgba(166, 206, 57, 0.2);
+    }
+    &::placeholder { color: #9CA3AF; }
+  }
+}
+
+/* ABAS DE NAVEGAÇÃO */
+.tabsContainer {
+  display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; width: 100%; max-width: 1200px; padding-bottom: 10px; border-bottom: 2px solid #E5E7EB; transition: opacity 0.3s ease;
+
+  /* Se estiver buscando globalmente, as abas ficam levemente apagadas para indicar que a busca sobrescreveu elas */
+  &.tabsDisabled {
+    opacity: 0.4;
+    pointer-events: none; /* Impede clique enquanto busca */
+  }
+
+  @media (max-width: 768px) {
+    justify-content: flex-start; overflow-x: auto; padding: 0 10px 15px 10px;
+    &::-webkit-scrollbar { display: none; } 
+  }
+
+  .tab, .tabActive {
+    padding: 12px 24px; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;
+  }
+
+  .tab { background-color: transparent; color: $text-gray; &:hover { background-color: #E5E7EB; color: $grunner-dark; } }
+  .tabActive { background-color: $grunner-green; color: $grunner-dark; box-shadow: 0 4px 10px rgba(166, 206, 57, 0.3); transform: translateY(-2px); }
+}
+
+/* CARDS DOS DOCUMENTOS */
+.documentsArea { width: 100%; max-width: 1200px; padding: 0 20px; }
+
+.documentGrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 50px;
+}
+
+.documentCard {
+  background-color: white; border: 1px solid #E5E7EB; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 15px; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+
+  &:hover {
+    transform: translateY(-5px); border-color: $grunner-green; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    .docInfo .clickText { color: $grunner-green; font-weight: 600; }
+  }
+
+  .iconPdf, .iconDoc { min-width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 12px; color: white; }
+  .iconPdf { background-color: #EF4444; } 
+  .iconDoc { background-color: #3B82F6; } 
+
+  .docInfo {
+    display: flex; flex-direction: column; overflow: hidden; width: 100%;
+    
+    h3 { margin: 0 0 8px 0; color: $grunner-dark; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .docMeta {
+      display: flex; justify-content: space-between; align-items: center;
+      
+      .areaBadge {
+        background-color: #F3F4F6;
+        color: $text-gray;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        border: 1px solid #E5E7EB;
+      }
+
+      .clickText { font-size: 13px; color: $text-gray; transition: color 0.3s; }
+    }
+  }
+}
+
+/* ESTADOS VAZIOS E LOADING */
+.loadingState, .emptyState { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: $text-gray; text-align: center; p { font-size: 16px; margin-top: 15px; } }
+.spinner { width: 40px; height: 40px; border: 4px solid #E5E7EB; border-top-color: $grunner-green; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* HACK TELA CHEIA */
+:global { .SPCanvas-canvas, .CanvasZone, .CanvasSection, .ControlZone { max-width: 100% !important; padding: 0 !important; } }

@@ -1,0 +1,384 @@
+import * as React from 'react';
+import styles from './HomeGrunner.module.scss';
+import type { IHomeGrunnerProps } from './IHomeGrunnerProps';
+import { SPHttpClient, IISPHttpClientOptions } from '@microsoft/sp-http';
+
+const logoGrunner = require('../assets/logo-grunner.png');
+const logoCompleta = require('../assets/logo.png');
+
+interface IHomeGrunnerState {
+  noticiasReais: any[];
+  aniversariantesReais: any[];
+  eventosReais: any[];
+  loading: boolean;
+  isModalOpen: boolean;
+  currentNoticiaId: number | null;
+  novoComentario: string;
+  comentariosDaNoticia: any[];
+  loadingComentarios: boolean;
+  todasCurtidas: any[];
+  todosComentarios: any[];
+  isMobileMenuOpen: boolean;
+}
+
+export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
+  
+  constructor(props: IHomeGrunnerProps) {
+    super(props);
+    this.state = { 
+      noticiasReais: [], 
+      aniversariantesReais: [], 
+      eventosReais: [],
+      loading: true,
+      isModalOpen: false,
+      currentNoticiaId: null,
+      novoComentario: "",
+      comentariosDaNoticia: [],
+      loadingComentarios: false,
+      todasCurtidas: [],
+      todosComentarios: [],
+      isMobileMenuOpen: false
+    };
+  }
+
+  public componentDidMount() {
+    this.carregarDadosIniciais();
+  }
+
+  private carregarDadosIniciais = async () => {
+    await Promise.all([
+      this.buscarNoticias(),
+      this.buscarAniversariantes(),
+      this.buscarEventos(),
+      this.buscarEngajamento()
+    ]);
+    this.setState({ loading: false });
+  }
+
+  // --- BUSCA DE DADOS ---
+
+  private buscarNoticias = async () => {
+    try {
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia&$top=5&$orderby=Created desc`;
+      const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
+      const data = await response.json();
+      if (data?.value) this.setState({ noticiasReais: data.value });
+    } catch (e) { console.error("Erro ao buscar notícias:", e); }
+  }
+
+  private buscarEngajamento = async () => {
+    try {
+      // CORREÇÃO: Removemos o $select para garantir que o SharePoint retorne os dados sem bloquear por causa de colunas
+      const urlCurtidas = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
+      const urlComentarios = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items`;
+
+      const [respCurtidas, respComentarios] = await Promise.all([
+        this.props.context.spHttpClient.get(urlCurtidas, SPHttpClient.configurations.v1),
+        this.props.context.spHttpClient.get(urlComentarios, SPHttpClient.configurations.v1)
+      ]);
+
+      const dataCurtidas = await respCurtidas.json();
+      const dataComentarios = await respComentarios.json();
+
+      this.setState({
+        todasCurtidas: dataCurtidas?.value || [],
+        todosComentarios: dataComentarios?.value || []
+      });
+    } catch (e) { console.error("Erro ao buscar engajamento:", e); }
+  }
+
+  private buscarAniversariantes = async () => {
+    try {
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('AniversariantesGrunner')/items?$select=Title,Dia,Setor,Email&$top=4`;
+      const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
+      const data = await response.json();
+      if (data?.value) this.setState({ aniversariantesReais: data.value });
+    } catch (e) { console.error("Erro ao buscar aniversariantes:", e); }
+  }
+
+  private buscarEventos = async () => {
+    try {
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local&$top=3&$orderby=Created desc`;
+      const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
+      const data = await response.json();
+      if (data?.value) this.setState({ eventosReais: data.value });
+    } catch (e) { console.error("Erro ao buscar eventos:", e); }
+  }
+
+  // --- LÓGICA DE INTERAÇÃO (LIKES E COMENTÁRIOS) ---
+
+  private handleLike = async (noticiaId: number) => {
+    const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
+    
+    // Transformamos o ID em texto, por isso a coluna NoticiaID no SP precisa ser Texto
+    const body = JSON.stringify({
+      Title: `Like-${noticiaId}`,
+      NoticiaID: noticiaId.toString(),
+      UsuarioEmail: this.props.context.pageContext.user.email
+    });
+
+    // CORREÇÃO: Removemos os headers de 'odata=verbose' que causavam o Erro 400
+    const options: IISPHttpClientOptions = { body: body };
+
+    try {
+      await this.props.context.spHttpClient.post(url, SPHttpClient.configurations.v1, options);
+      this.buscarEngajamento();
+    } catch (e) { console.error("Erro ao curtir:", e); }
+  }
+
+  private openCommentModal = (id: number) => {
+    this.setState({ isModalOpen: true, currentNoticiaId: id, novoComentario: "" });
+    this.buscarComentarios(id);
+  }
+
+  private buscarComentarios = async (noticiaId: number) => {
+    this.setState({ loadingComentarios: true, comentariosDaNoticia: [] });
+    try {
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items?$filter=NoticiaID eq '${noticiaId}'&$orderby=Created desc`;
+      const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
+      const data = await response.json();
+      
+      if (data?.value) {
+        this.setState({ comentariosDaNoticia: data.value, loadingComentarios: false });
+      } else {
+        this.setState({ loadingComentarios: false });
+      }
+    } catch (e) { 
+      console.error("Erro ao buscar comentários:", e);
+      this.setState({ loadingComentarios: false });
+    }
+  }
+
+  private enviarComentario = async () => {
+    if (!this.state.novoComentario || !this.state.currentNoticiaId) return;
+
+    const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items`;
+    const body = JSON.stringify({
+      Title: `Comentário-${this.state.currentNoticiaId}`,
+      NoticiaID: this.state.currentNoticiaId.toString(),
+      Comentario: this.state.novoComentario,
+      Autor: this.props.userDisplayName
+    });
+
+    // CORREÇÃO: Removemos os headers problemáticos
+    const options: IISPHttpClientOptions = { body: body };
+
+    try {
+      await this.props.context.spHttpClient.post(url, SPHttpClient.configurations.v1, options);
+      this.setState({ novoComentario: "" }); 
+      this.buscarComentarios(this.state.currentNoticiaId); 
+      this.buscarEngajamento();
+    } catch (e) { console.error("Erro ao enviar comentário:", e); }
+  }
+
+  private getLikesCount = (noticiaId: number) => {
+    return this.state.todasCurtidas.filter(c => c.NoticiaID === noticiaId.toString()).length;
+  }
+
+  private getCommentsCount = (noticiaId: number) => {
+    return this.state.todosComentarios.filter(c => c.NoticiaID === noticiaId.toString()).length;
+  }
+
+  private userAlreadyLiked = (noticiaId: number) => {
+    const userEmail = this.props.context.pageContext.user.email;
+    return this.state.todasCurtidas.some(c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail === userEmail);
+  }
+
+  public render(): React.ReactElement<IHomeGrunnerProps> {
+    const nomeUsuario = this.props.userDisplayName?.split(' ')[0] || 'Colaborador';
+    const noticiaDestaque = this.state.noticiasReais[0];
+    const outrasNoticias = this.state.noticiasReais.slice(1);
+    
+    const userEmail = this.props.context.pageContext.user.email;
+    const dataAtual = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    return (
+      <div className={styles.container}>
+        
+        <div className={styles.mobileHeaderBar}>
+          <button className={styles.hamburgerBtn} onClick={() => this.setState({ isMobileMenuOpen: true })}>
+            ☰ Menu Grunner
+          </button>
+        </div>
+
+        {this.state.isMobileMenuOpen && (
+          <div className={styles.mobileOverlayBackdrop} onClick={() => this.setState({ isMobileMenuOpen: false })} />
+        )}
+
+        <aside className={`${styles.sidebar} ${this.state.isMobileMenuOpen ? styles.open : ''}`}>
+          <button className={styles.closeMenuBtn} onClick={() => this.setState({ isMobileMenuOpen: false })}>✕</button>
+
+          <div className={styles.logoArea}>
+            <img src={logoGrunner} alt="Logo Semente" className={styles.logoSemente} />
+            <h2>Intranet Grunner</h2>
+          </div>
+          
+          <div className={styles.navGroup}>
+            <h3>Navegação</h3>
+            <a href="#" className={styles.active}>🏠 Painel Inicial</a>
+          </div>
+          
+          <div className={styles.navGroup}>
+            <h3>Serviços e Chamados</h3>
+            <a href="#">🖥️ Chamado para TI</a>
+            <a href="#">📢 Chamado para Marketing</a>
+            <a href="#">🚗 Solicitação de Veículo</a>
+          </div>
+          
+          <div className={styles.navGroup}>
+            <h3>Institucional</h3>
+            <a href="#" target="_blank" rel="noopener noreferrer">📖 Políticas da Empresa</a>
+          </div>
+        </aside>
+
+        <div className={styles.contentArea}>
+          
+          <header className={styles.header}>
+            <div className={styles.headerLeft}>
+              <img 
+                src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=L&accountname=${userEmail}`} 
+                alt="Perfil" 
+                className={styles.userAvatar} 
+                onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+              />
+              <div className={styles.headerText}>
+                <h1>Olá, {nomeUsuario}! 👋</h1>
+                <p>Bem-vindo à Intranet Grunner • O seu ecossistema agro e tecnológico</p>
+                <span className={styles.dateBadge}>📅 {dataAtual.charAt(0).toUpperCase() + dataAtual.slice(1)}</span>
+              </div>
+            </div>
+            <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
+          </header>
+          
+          <main className={styles.grid}>
+            <section className={styles.newsSection}>
+              
+              {/* HERO BANNER */}
+              {noticiaDestaque && (
+                <div className={styles.heroBanner}>
+                  <div className={styles.heroImage} style={{ backgroundImage: `url(${noticiaDestaque.ImagemURL})` }} />
+                  <div className={styles.heroOverlay}>
+                    <span className={styles.badge}>Destaque Operacional</span>
+                    <h2 className={styles.heroTitle}>{noticiaDestaque.Title}</h2>
+                    <p className={styles.heroResumo}>{noticiaDestaque.Resumo}</p>
+                    
+                    <div className={styles.interactions}>
+                      <button className={styles.actionBtn} onClick={(e) => { e.stopPropagation(); this.handleLike(noticiaDestaque.ID); }}>
+                        {this.userAlreadyLiked(noticiaDestaque.ID) ? '❤️' : '🤍'} {this.getLikesCount(noticiaDestaque.ID)} Curtidas
+                      </button>
+                      <button className={styles.actionBtn} onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticiaDestaque.ID); }}>
+                        💬 {this.getCommentsCount(noticiaDestaque.ID)} Comentários
+                      </button>
+                      <button className={styles.readMoreBtn} onClick={() => window.open(noticiaDestaque.LinkNoticia, '_blank')}>Ler Matéria</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* OUTRAS NOTÍCIAS */}
+              <div className={styles.subNewsGrid}>
+                {outrasNoticias.map((noticia, i) => (
+                  <div key={i} className={styles.cardNewsSmall}>
+                    <div className={styles.smallNewsImg} style={{ backgroundImage: `url(${noticia.ImagemURL})` }} onClick={() => window.open(noticia.LinkNoticia, '_blank')} />
+                    <div className={styles.smallNewsContent}>
+                      <h3 onClick={() => window.open(noticia.LinkNoticia, '_blank')}>{noticia.Title}</h3>
+                      <div className={styles.smallInteractions}>
+                        <span onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}>
+                          {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} <small>{this.getLikesCount(noticia.ID)}</small>
+                        </span>
+                        <span onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}>
+                          💬 <small>{this.getCommentsCount(noticia.ID)}</small>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* WIDGETS LATERAIS */}
+            <aside className={styles.widgetsSection}>
+              <div className={styles.card}>
+                <h2>Datas importantes</h2>
+                <div className={styles.eventList}>
+                  {this.state.eventosReais.length > 0 ? this.state.eventosReais.map((evento, i) => (
+                    <div key={i} className={styles.eventItem}>
+                      <div className={styles.eventDate}>
+                        <span className={styles.eventDay}>{evento.Dia}</span>
+                        <span className={styles.eventMonth}>{evento.Mes}</span>
+                      </div>
+                      <div className={styles.eventInfo}>
+                        <div className={styles.eventTitle}>{evento.Title}</div>
+                        <div className={styles.eventLocal}>📍 {evento.Local}</div>
+                      </div>
+                    </div>
+                  )) : <p>Nenhum evento agendado.</p>}
+                </div>
+              </div>
+
+              <div className={styles.card}>
+                <h2>Aniversariantes do mês</h2>
+                <div className={styles.teamList}>
+                  {this.state.aniversariantesReais.length > 0 ? this.state.aniversariantesReais.map((niver, i) => (
+                    <div key={i} className={styles.teamItem}>
+                      {niver.Email ? (
+                        <img 
+                          src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${niver.Email}`} 
+                          alt={niver.Title} 
+                          className={styles.teamAvatar} 
+                        />
+                      ) : ( <div className={styles.teamAvatarPlaceholder}>🎉</div> )}
+                      <div className={styles.teamInfo}>
+                        <div className={styles.teamName}>{niver.Title}</div>
+                        <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
+                      </div>
+                    </div>
+                  )) : <p>Nenhum aniversariante hoje.</p>}
+                </div>
+              </div>
+            </aside>
+          </main>
+        </div>
+
+        {/* --- MODAL DE COMENTÁRIOS --- */}
+        {this.state.isModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              
+              <header className={styles.modalHeader}>
+                <h3>Comentários da Publicação</h3>
+                <button className={styles.closeBtn} onClick={() => this.setState({ isModalOpen: false })}>✕</button>
+              </header>
+              
+              <div className={styles.commentsList}>
+                {this.state.loadingComentarios ? (
+                  <p className={styles.loadingText}>Carregando conversas...</p>
+                ) : this.state.comentariosDaNoticia.length > 0 ? (
+                  this.state.comentariosDaNoticia.map((item, idx) => (
+                    <div key={idx} className={styles.commentBubble}>
+                      <strong>{item.Autor}</strong>
+                      <p>{item.Comentario}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className={styles.noComments}>Ninguém comentou ainda. Seja o primeiro a puxar assunto!</p>
+                )}
+              </div>
+              
+              <div className={styles.newCommentArea}>
+                <textarea 
+                  placeholder="Escreva algo para a equipe..." 
+                  value={this.state.novoComentario}
+                  onChange={(e) => this.setState({ novoComentario: e.target.value })}
+                />
+                <button className={styles.sendBtn} onClick={this.enviarComentario}>Enviar Comentário</button>
+              </div>
+              
+            </div>
+          </div>
+        )}
+
+      </div>
+    );
+  }
+}

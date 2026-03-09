@@ -1,0 +1,27 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "home-grunner-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/homeGrunner/HomeGrunnerWebPart.js",
+          "manifest": "./src/webparts/homeGrunner/HomeGrunnerWebPart.manifest.json"
+        }
+      ]
+    },
+    "politicas-grunner-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/politicasGrunner/PoliticasGrunnerWebPart.js",
+          "manifest": "./src/webparts/politicasGrunner/PoliticasGrunnerWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "HomeGrunnerWebPartStrings": "lib/webparts/homeGrunner/loc/{locale}.js",
+    "PoliticasGrunnerWebPartStrings": "lib/webparts/politicasGrunner/loc/{locale}.js"
+  }
+}

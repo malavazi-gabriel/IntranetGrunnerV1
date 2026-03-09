@@ -1,0 +1,19 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "useGulp": false,
+    "plusBeta": false,
+    "isCreatingSolution": false,
+    "nodeVersion": "22.16.0",
+    "sdksVersions": {},
+    "version": "1.22.2",
+    "libraryName": "intranet-grunnerv-1",
+    "libraryId": "46cfb39b-a6aa-4103-9a23-9aaf88165a6a",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "intranet-grunnerv-1",
+    "solutionShortDescription": "intranet-grunnerv-1 description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}
