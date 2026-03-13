@@ -1,7 +1,7 @@
 import * as React from 'react';
 import styles from './HomeGrunner.module.scss';
 import type { IHomeGrunnerProps } from './IHomeGrunnerProps';
-import { SPHttpClient, IISPHttpClientOptions } from '@microsoft/sp-http';
+import { SPHttpClient, ISPHttpClientOptions } from '@microsoft/sp-http';
 
 const logoGrunner = require('../assets/logo-grunner.png');
 const logoCompleta = require('../assets/logo.png');
@@ -118,7 +118,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     });
 
     // CORREÇÃO: Removemos os headers de 'odata=verbose' que causavam o Erro 400
-    const options: IISPHttpClientOptions = { body: body };
+    const options: ISPHttpClientOptions = { body: body };
 
     try {
       await this.props.context.spHttpClient.post(url, SPHttpClient.configurations.v1, options);
@@ -161,7 +161,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     });
 
     // CORREÇÃO: Removemos os headers problemáticos
-    const options: IISPHttpClientOptions = { body: body };
+    const options: ISPHttpClientOptions = { body: body };
 
     try {
       await this.props.context.spHttpClient.post(url, SPHttpClient.configurations.v1, options);

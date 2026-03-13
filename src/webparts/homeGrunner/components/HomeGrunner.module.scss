@@ -639,13 +639,16 @@ $text-gray: #6B7280;
   background: white;
   width: 550px;
   max-width: 100%;
-  padding: 30px;
+  max-height: 90vh; /* Altura máxima de 90% da tela */
+  display: flex; /* Transforma o modal em flexbox */
+  flex-direction: column; /* Organiza em coluna */
   border-radius: 16px;
   border-top: 6px solid $grunner-green;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden; /* Evita que os cantos arredondados vazem */
 
   @media (max-width: 768px) {
-    padding: 20px;
+    width: 95%; 
   }
 
   .modalHeader {
@@ -653,7 +656,8 @@ $text-gray: #6B7280;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #eee;
-    padding-bottom: 15px;
+    padding: 25px 30px 15px 30px; /* Padding movido para cá */
+    flex-shrink: 0; /* Impede que o cabeçalho seja esmagado */
 
     h3 {
       margin: 0;
@@ -674,10 +678,10 @@ $text-gray: #6B7280;
   }
 
   .commentsList {
-    max-height: 350px;
-    overflow-y: auto;
-    margin: 20px 0;
-    padding-right: 10px;
+    flex: 1; /* Ocupa todo o espaço que sobrar no meio */
+    overflow-y: auto; /* Rola apenas o meio do modal */
+    padding: 15px 30px;
+    margin: 0;
 
     &::-webkit-scrollbar { width: 6px; }
     &::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
@@ -715,10 +719,12 @@ $text-gray: #6B7280;
 
   .newCommentArea {
     border-top: 1px solid #eee;
-    padding-top: 20px;
+    padding: 20px 30px 25px 30px; /* Padding movido para cá */
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    background: white;
+    flex-shrink: 0; /* Impede que o rodapé seja esmagado */
 
     textarea {
       width: 100%;
@@ -757,6 +763,31 @@ $text-gray: #6B7280;
       }
     }
   }
+}
+
+.newsSection {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.widgetsSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.eventList, .teamList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.eventInfo, .teamInfo {
+  display: flex;
+  flex-direction: column;
 }
 
 /* =======================================
