@@ -68,7 +68,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
   private buscarEngajamento = async () => {
     try {
-      // CORREÇÃO: Removemos o $select para garantir que o SharePoint retorne os dados sem bloquear por causa de colunas
       const urlCurtidas = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
       const urlComentarios = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items`;
 
@@ -98,7 +97,8 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
   private buscarEventos = async () => {
     try {
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local&$top=3&$orderby=Created desc`;
+      // Modificação: Adicionado o campo ImagemTema no $select
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local,ImagemTema&$top=3&$orderby=Created desc`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
       if (data?.value) this.setState({ eventosReais: data.value });
@@ -110,14 +110,12 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   private handleLike = async (noticiaId: number) => {
     const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
     
-    // Transformamos o ID em texto, por isso a coluna NoticiaID no SP precisa ser Texto
     const body = JSON.stringify({
       Title: `Like-${noticiaId}`,
       NoticiaID: noticiaId.toString(),
       UsuarioEmail: this.props.context.pageContext.user.email
     });
 
-    // CORREÇÃO: Removemos os headers de 'odata=verbose' que causavam o Erro 400
     const options: ISPHttpClientOptions = { body: body };
 
     try {
@@ -160,7 +158,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       Autor: this.props.userDisplayName
     });
 
-    // CORREÇÃO: Removemos os headers problemáticos
     const options: ISPHttpClientOptions = { body: body };
 
     try {
@@ -220,9 +217,11 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
-            <a href="#">🖥️ Chamado para TI</a>
-            <a href="#">📢 Chamado para Marketing</a>
-            <a href="#">🚗 Solicitação de Veículo</a>
+            {/* Adicione target="_blank" e rel="noopener noreferrer" nos links */}
+            <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">🖥️ TI</a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer">📢 Marketing</a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer">🚗 Frotas</a>
+            <a href="https://forms.monday.com/forms/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
           </div>
           
           <div className={styles.navGroup}>
@@ -242,7 +241,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 onError={(e) => { e.currentTarget.style.display = 'none'; }} 
               />
               <div className={styles.headerText}>
-                <h1>Olá, {nomeUsuario}! 👋</h1>
+                <h1>Olá, {nomeUsuario}! </h1>
                 <p>Bem-vindo à Intranet Grunner • O seu ecossistema agro e tecnológico</p>
                 <span className={styles.dateBadge}>📅 {dataAtual.charAt(0).toUpperCase() + dataAtual.slice(1)}</span>
               </div>
@@ -301,18 +300,31 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
               <div className={styles.card}>
                 <h2>Datas importantes</h2>
                 <div className={styles.eventList}>
-                  {this.state.eventosReais.length > 0 ? this.state.eventosReais.map((evento, i) => (
-                    <div key={i} className={styles.eventItem}>
-                      <div className={styles.eventDate}>
-                        <span className={styles.eventDay}>{evento.Dia}</span>
-                        <span className={styles.eventMonth}>{evento.Mes}</span>
+                  {this.state.eventosReais.length > 0 ? this.state.eventosReais.map((evento, i) => {
+                    
+                    // Modificação: Lógica do Estilo da Imagem Opcional
+                    const urlImagem = evento.ImagemTema ? (evento.ImagemTema.Url || evento.ImagemTema) : null;
+                    const estiloDoQuadrado = urlImagem 
+                      ? {
+                          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.40)), url('${urlImagem}')`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }
+                      : {}; // Deixa vazio para herdar o cinza do seu SCSS original
+
+                    return (
+                      <div key={i} className={styles.eventItem}>
+                        <div className={styles.eventDate} style={estiloDoQuadrado}>
+                          <span className={styles.eventDay}>{evento.Dia}</span>
+                          <span className={styles.eventMonth}>{evento.Mes}</span>
+                        </div>
+                        <div className={styles.eventInfo}>
+                          <div className={styles.eventTitle}>{evento.Title}</div>
+                          <div className={styles.eventLocal}>📍 {evento.Local}</div>
+                        </div>
                       </div>
-                      <div className={styles.eventInfo}>
-                        <div className={styles.eventTitle}>{evento.Title}</div>
-                        <div className={styles.eventLocal}>📍 {evento.Local}</div>
-                      </div>
-                    </div>
-                  )) : <p>Nenhum evento agendado.</p>}
+                    );
+                  }) : <p>Nenhum evento agendado.</p>}
                 </div>
               </div>
 

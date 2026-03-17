@@ -235,15 +235,24 @@ $text-gray: #6B7280;
   }
 
   .dateBadge {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-    backdrop-filter: blur(5px);
-  }
+  display: inline-flex;
+  align-items: center;
+  
+  /* O Segredo da Elegância: Remover fundos e bordas */
+  background: transparent; 
+  border: none; 
+  padding: 4px 0; 
+  
+  /* Tipografia Refinada */
+  color: #f3f4f6; /* Um branco bem suave */
+  font-size: 14px;
+  font-weight: 500;
+  
+  /* Toques de "Perfumaria" */
+  opacity: 0.85; /* Deixa a data levemente mais apagada que o título, dando hierarquia */
+  letter-spacing: 0.5px; /* Afasta um pouquinho as letras para um ar mais premium */
+  gap: 6px; /* Dá um espacinho milimétrico entre o ícone do calendário e o texto */
+}
 
   .logoCentral {
     height: 55px;
