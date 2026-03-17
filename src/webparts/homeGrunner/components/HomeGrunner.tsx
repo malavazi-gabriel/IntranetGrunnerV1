@@ -97,7 +97,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
   private buscarEventos = async () => {
     try {
-      // Modificação: Adicionado o campo ImagemTema no $select
       const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local,ImagemTema&$top=3&$orderby=Created desc`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
@@ -108,20 +107,45 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   // --- LÓGICA DE INTERAÇÃO (LIKES E COMENTÁRIOS) ---
 
   private handleLike = async (noticiaId: number) => {
-    const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
-    
-    const body = JSON.stringify({
-      Title: `Like-${noticiaId}`,
-      NoticiaID: noticiaId.toString(),
-      UsuarioEmail: this.props.context.pageContext.user.email
-    });
+    const userEmail = this.props.context.pageContext.user.email;
+    const userName = this.props.userDisplayName;
 
-    const options: ISPHttpClientOptions = { body: body };
+    const likeExistente = this.state.todasCurtidas.find(
+      c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail === userEmail
+    );
 
     try {
-      await this.props.context.spHttpClient.post(url, SPHttpClient.configurations.v1, options);
+      if (likeExistente) {
+        // DELETE: Se já curtiu, descurte
+        const urlDelete = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items(${likeExistente.ID})`;
+        await this.props.context.spHttpClient.post(urlDelete, SPHttpClient.configurations.v1, {
+          headers: {
+            'X-HTTP-Method': 'DELETE',
+            'IF-MATCH': '*'
+          }
+        });
+      } else {
+        // POST: Se não curtiu, adiciona a curtida com o NOME
+        const urlPost = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
+        const body = JSON.stringify({
+          Title: `Like-${noticiaId}`,
+          NoticiaID: noticiaId.toString(),
+          UsuarioEmail: userEmail,
+          UsuarioNome: userName 
+        });
+        await this.props.context.spHttpClient.post(urlPost, SPHttpClient.configurations.v1, { body: body });
+      }
       this.buscarEngajamento();
-    } catch (e) { console.error("Erro ao curtir:", e); }
+    } catch (e) { console.error("Erro ao processar curtida:", e); }
+  }
+
+  // Função para mostrar os nomes de quem curtiu
+  private getTextQuemCurtiu = (noticiaId: number) => {
+    const curtidas = this.state.todasCurtidas.filter(c => c.NoticiaID === noticiaId.toString());
+    if (curtidas.length === 0) return "Seja o primeiro a curtir!";
+    
+    const nomes = curtidas.map(c => c.UsuarioNome || c.UsuarioEmail.split('@')[0]);
+    return `Curtido por:\n${nomes.join('\n')}`;
   }
 
   private openCommentModal = (id: number) => {
@@ -217,7 +241,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
-            {/* Adicione target="_blank" e rel="noopener noreferrer" nos links */}
             <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">🖥️ TI</a>
             <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer">📢 Marketing</a>
             <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer">🚗 Frotas</a>
@@ -262,7 +285,12 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                     <p className={styles.heroResumo}>{noticiaDestaque.Resumo}</p>
                     
                     <div className={styles.interactions}>
-                      <button className={styles.actionBtn} onClick={(e) => { e.stopPropagation(); this.handleLike(noticiaDestaque.ID); }}>
+                      {/* Adicionado o title={} para ver quem curtiu no hover */}
+                      <button 
+                        className={styles.actionBtn} 
+                        onClick={(e) => { e.stopPropagation(); this.handleLike(noticiaDestaque.ID); }}
+                        title={this.getTextQuemCurtiu(noticiaDestaque.ID)}
+                      >
                         {this.userAlreadyLiked(noticiaDestaque.ID) ? '❤️' : '🤍'} {this.getLikesCount(noticiaDestaque.ID)} Curtidas
                       </button>
                       <button className={styles.actionBtn} onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticiaDestaque.ID); }}>
@@ -282,7 +310,11 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                     <div className={styles.smallNewsContent}>
                       <h3 onClick={() => window.open(noticia.LinkNoticia, '_blank')}>{noticia.Title}</h3>
                       <div className={styles.smallInteractions}>
-                        <span onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}>
+                        {/* Adicionado o title={} para ver quem curtiu no hover */}
+                        <span 
+                          onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}
+                          title={this.getTextQuemCurtiu(noticia.ID)}
+                        >
                           {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} <small>{this.getLikesCount(noticia.ID)}</small>
                         </span>
                         <span onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}>
@@ -301,8 +333,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 <h2>Datas importantes</h2>
                 <div className={styles.eventList}>
                   {this.state.eventosReais.length > 0 ? this.state.eventosReais.map((evento, i) => {
-                    
-                    // Modificação: Lógica do Estilo da Imagem Opcional
                     const urlImagem = evento.ImagemTema ? (evento.ImagemTema.Url || evento.ImagemTema) : null;
                     const estiloDoQuadrado = urlImagem 
                       ? {
@@ -310,7 +340,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
                         }
-                      : {}; // Deixa vazio para herdar o cinza do seu SCSS original
+                      : {};
 
                     return (
                       <div key={i} className={styles.eventItem}>
@@ -382,7 +412,25 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                   placeholder="Escreva algo para a equipe..." 
                   value={this.state.novoComentario}
                   onChange={(e) => this.setState({ novoComentario: e.target.value })}
+                  style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 />
+                
+                {/* BARRA DE EMOJIS RÁPIDOS */}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '8px', marginBottom: '12px' }}>
+                  {['👍', '❤️', '👏', '🚀', '🎉', '💡', '😂', '👀'].map(emoji => (
+                    <span 
+                      key={emoji} 
+                      style={{ cursor: 'pointer', fontSize: '20px', transition: 'transform 0.2s' }}
+                      onClick={() => this.setState({ novoComentario: this.state.novoComentario + emoji })}
+                      onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+                      onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      title={`Adicionar ${emoji}`}
+                    >
+                      {emoji}
+                    </span>
+                  ))}
+                </div>
+
                 <button className={styles.sendBtn} onClick={this.enviarComentario}>Enviar Comentário</button>
               </div>
               
