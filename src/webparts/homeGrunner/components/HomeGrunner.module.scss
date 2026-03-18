@@ -799,17 +799,57 @@ $text-gray: #6B7280;
   flex-direction: column;
 }
 
-/* =======================================
-   HACK DE TELA CHEIA SHAREPOINT
-======================================= */
+// ==============================================================================
+// --- HACK DEFINITIVO E AGRESSIVO PARA TELA CHEIA (SEM BARRAS DO SHAREPOINT) ---
+// ==============================================================================
 :global {
+  /* 1. ESCONDE O TOPO (BARRA AZUL E ESPAÇO BRANCO DE NAVEGAÇÃO) */
+  #SuiteNavWrapper,
+  #spSiteHeader, 
+  #spCommandBar,
+  div[data-automation-id="pageHeader"],
+  div[class^="commandBarWrapper_"] {
+    display: none !important;
+    height: 0 !important;
+  }
+  
+  /* 2. ESCONDE A 'APP BAR' LATERAL NATIVA (Se houver) */
+  div[class^="appBar_"] {
+    display: none !important;
+  }
+
+  /* 3. ESCONDE O RODAPÉ BRANCO E ESPAÇOS SOBRANDO */
+  footer,
+  #sp-footer,
+  div[class^="footer_"],
+  div[data-automation-id="page-bottom-actions"] {
+    display: none !important;
+    height: 0 !important;
+  }
+
+  /* 4. FORÇA O SEU CONTEÚDO A SUBIR E PREENCHER A TELA INTEIRA */
   #workbenchPageContent,
+  #spPageCanvasContent,
   .SPCanvas-canvas,
   .CanvasZone,
   .CanvasSection,
   .ControlZone,
   div[data-automation-id="CanvasZone"] > div {
-    max-width: 100% !important;
     padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* 5. ESCONDE A BARRA SOCIAL DE CURTIDAS E EXIBIÇÕES */
+  div[data-automation-id="page-bottom-bar"],
+  div[data-automation-id="page-bottom-actions"],
+  [data-automation-id="socialBar"],
+  div[class*="socialBar_"],
+  div[class*="pageBottomBar_"] {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    visibility: hidden !important;
   }
 }

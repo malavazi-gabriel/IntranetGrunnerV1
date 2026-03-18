@@ -22,7 +22,8 @@ interface IHomeGrunnerState {
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
-  
+
+  private hideFooterInterval: any;
   constructor(props: IHomeGrunnerProps) {
     super(props);
     this.state = { 
@@ -41,8 +42,30 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     };
   }
 
-  public componentDidMount() {
+public componentDidMount() {
+    // 1. Carrega as notícias e aniversariantes (o seu código original)
     this.carregarDadosIniciais();
+
+    // 2. Fica rodando a cada meio segundo caçando o rodapé
+    this.hideFooterInterval = setInterval(() => {
+      const elementosParaEsconder = document.querySelectorAll(`
+        div[data-automation-id="page-bottom-actions"],
+        div[data-automation-id="page-bottom-bar"],
+        #sp-page-footer,
+        .CommentsWrapper,
+        [data-automation-id="socialBar"],
+        div[class*="socialBar_"],
+        div[class*="SocialBar_"],
+        div[class*="footer_"],
+        div[class*="Footer_"],
+        div[class*="pageBottomBar_"],
+        div[class*="PageBottomBar_"]
+      `);
+      
+      elementosParaEsconder.forEach((elemento) => {
+        (elemento as HTMLElement).style.setProperty('display', 'none', 'important');
+      });
+    }, 500);
   }
 
   private carregarDadosIniciais = async () => {
@@ -205,6 +228,12 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     return this.state.todasCurtidas.some(c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail === userEmail);
   }
 
+  public componentWillUnmount(): void {
+    if (this.hideFooterInterval) {
+      clearInterval(this.hideFooterInterval);
+    }
+  }
+
   public render(): React.ReactElement<IHomeGrunnerProps> {
     const nomeUsuario = this.props.userDisplayName?.split(' ')[0] || 'Colaborador';
     const noticiaDestaque = this.state.noticiasReais[0];
@@ -215,6 +244,22 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
     return (
       <div className={styles.container}>
+
+        {/* === BOMBA NUCLEAR CONTRA O RODAPÉ DO SHAREPOINT === */}
+        <style>{`
+          div[data-automation-id="page-bottom-actions"],
+          #sp-page-footer,
+          .CommentsWrapper,
+          [data-automation-id="socialBar"],
+          div[class*="socialBar_"],
+          div[class*="footer_"] {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+        `}</style>
         
         <div className={styles.mobileHeaderBar}>
           <button className={styles.hamburgerBtn} onClick={() => this.setState({ isMobileMenuOpen: true })}>
