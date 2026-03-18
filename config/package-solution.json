@@ -3,7 +3,7 @@
   "solution": {
     "name": "intranet-grunnerv-1-client-side-solution",
     "id": "46cfb39b-a6aa-4103-9a23-9aaf88165a6a",
-    "version": "1.0.0.8",
+    "version": "1.0.0.9",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
@@ -30,7 +30,7 @@
         "title": "intranet-grunnerv-1 Feature",
         "description": "The feature that activates elements of the intranet-grunnerv-1 solution.",
         "id": "1837c82e-f12e-407b-ad12-08be7f921362",
-        "version": "1.0.0.8"
+        "version": "1.0.0.9"
       }
     ]
   },
