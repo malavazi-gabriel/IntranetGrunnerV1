@@ -3,8 +3,8 @@ import styles from './HomeGrunner.module.scss';
 import type { IHomeGrunnerProps } from './IHomeGrunnerProps';
 import { SPHttpClient, ISPHttpClientOptions } from '@microsoft/sp-http';
 
-const logoGrunner = require('../assets/logo-grunner.png');
-const logoCompleta = require('../assets/logo.png');
+const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo-grunner.png";
+const logoCompleta = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo.png";
 
 interface IHomeGrunnerState {
   noticiasReais: any[];
@@ -249,7 +249,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
-            <a href="#" target="_blank" rel="noopener noreferrer">📖 Políticas da Empresa</a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx" target="_blank" rel="noopener noreferrer">📖 Políticas da Empresa</a>
           </div>
         </aside>
 

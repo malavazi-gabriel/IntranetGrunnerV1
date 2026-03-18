@@ -3,7 +3,7 @@
   "solution": {
     "name": "intranet-grunnerv-1-client-side-solution",
     "id": "46cfb39b-a6aa-4103-9a23-9aaf88165a6a",
-    "version": "1.0.0.0",
+    "version": "1.0.0.2",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
