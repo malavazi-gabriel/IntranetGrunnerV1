@@ -1,0 +1,272 @@
+/* =======================================
+   VARIÁVEIS DE CORES GRUNNER
+======================================= */
+$grunner-green: #A6CE39;
+$grunner-dark: #1C2510;
+$bg-light: #F3F4F6;
+$text-gray: #4B5563;
+
+.container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: $bg-light;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  padding-bottom: 80px;
+}
+
+/* =======================================
+   HERO BANNER
+======================================= */
+.heroSection {
+  position: relative;
+  background: linear-gradient(135deg, $grunner-dark 0%, #2A3618 100%);
+  padding: 100px 5% 150px 5%;
+  text-align: center;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+  .backBtn {
+    position: absolute;
+    top: 30px;
+    left: 5%;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    transition: 0.3s;
+    backdrop-filter: blur(4px);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateX(-3px);
+    }
+  }
+
+  .heroContent {
+    max-width: 800px;
+    margin: 0 auto;
+
+    h1 {
+      font-size: 48px;
+      color: $grunner-green;
+      margin: 0 0 15px 0;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    p {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.6;
+      margin: 0;
+    }
+  }
+}
+
+/* =======================================
+   MISSÃO, VISÃO E VALORES (GRID SOBREPOSTO)
+======================================= */
+.mvvContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  max-width: 1200px;
+  margin: -80px auto 60px auto;
+  padding: 0 5%;
+  position: relative;
+  z-index: 10;
+}
+
+.mvvCard {
+  background: white;
+  padding: 40px 30px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+  border-top: 6px solid $grunner-green;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: translateY(-10px);
+  }
+
+  .icon {
+    font-size: 40px;
+    margin-bottom: 15px;
+  }
+
+  h3 {
+    color: $grunner-dark;
+    font-size: 24px;
+    margin: 0 0 15px 0;
+    font-weight: 700;
+  }
+
+  p {
+    color: $text-gray;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+  }
+}
+
+/* =======================================
+   BLOCO DE TEXTO (NOSSA HISTÓRIA)
+======================================= */
+.storyBlock {
+  max-width: 900px;
+  margin: 0 auto 80px auto;
+  padding: 0 5%;
+  
+  h2 {
+    text-align: center;
+    color: $grunner-dark;
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 30px;
+  }
+  
+  p {
+    color: $text-gray;
+    font-size: 17px;
+    line-height: 1.8;
+    margin-bottom: 20px;
+    text-align: justify;
+    
+    strong {
+      color: $grunner-green;
+      font-weight: 700;
+    }
+  }
+}
+
+/* =======================================
+   LINHA DO TEMPO (TIMELINE)
+======================================= */
+.historySection {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 5%;
+
+  .sectionTitle {
+    text-align: center;
+    color: $grunner-dark;
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 60px;
+  }
+}
+
+.timeline {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 4px;
+    background: rgba(166, 206, 57, 0.3);
+    transform: translateX(-50%);
+    border-radius: 2px;
+  }
+}
+
+.timelineItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 50px;
+  position: relative;
+  width: 100%;
+
+  &:nth-child(even) {
+    flex-direction: row-reverse;
+
+    .timelineContent {
+      text-align: right;
+    }
+  }
+}
+
+.timelineDot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  background: $grunner-dark;
+  border: 4px solid $grunner-green;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 0 0 6px rgba(166, 206, 57, 0.2);
+}
+
+.timelineContent {
+  width: 45%;
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  position: relative;
+  transition: 0.3s;
+
+  &:hover {
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    transform: scale(1.02);
+  }
+
+  .year {
+    display: inline-block;
+    background: $grunner-green;
+    color: $grunner-dark;
+    font-weight: 800;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+
+  h3 {
+    color: $grunner-dark;
+    font-size: 22px;
+    margin: 0 0 10px 0;
+    font-weight: 700;
+  }
+
+  p {
+    color: $text-gray;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .mvvContainer {
+    margin-top: -40px;
+  }
+
+  .timeline::before {
+    left: 30px;
+  }
+
+  .timelineItem {
+    flex-direction: column !important;
+    align-items: flex-end;
+  }
+
+  .timelineDot {
+    left: 30px;
+    top: 30px;
+  }
+
+  .timelineContent {
+    width: calc(100% - 80px);
+    text-align: left !important;
+  }
+}

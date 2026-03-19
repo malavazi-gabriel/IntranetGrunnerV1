@@ -15,7 +15,8 @@ $text-gray: #6B7280;
   background-color: $bg-light;
   font-family: 'Segoe UI', system-ui, sans-serif;
   display: flex;
-  position: relative; 
+  position: relative;
+  overflow-x: hidden;
 
   @media (max-width: 850px) {
     flex-direction: column;
@@ -26,7 +27,7 @@ $text-gray: #6B7280;
    MENU HAMBÚRGUER (MOBILE)
 ======================================= */
 .mobileHeaderBar {
-  display: none; 
+  display: none;
   background-color: $grunner-dark;
   padding: 15px 20px;
   width: 100%;
@@ -51,7 +52,7 @@ $text-gray: #6B7280;
 }
 
 .mobileOverlayBackdrop {
-  display: none; 
+  display: none;
 
   @media (max-width: 850px) {
     display: block;
@@ -61,7 +62,7 @@ $text-gray: #6B7280;
     width: 100vw;
     height: 100vh;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 90; 
+    z-index: 90;
   }
 }
 
@@ -77,12 +78,12 @@ $text-gray: #6B7280;
   flex-shrink: 0;
   min-height: 100vh;
   padding: 30px 20px;
-  box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
   z-index: 100;
   transition: left 0.3s ease-in-out;
 
   .closeMenuBtn {
-    display: none; 
+    display: none;
   }
 
   .logoArea {
@@ -177,6 +178,7 @@ $text-gray: #6B7280;
   flex-direction: column;
   overflow-x: hidden;
   width: calc(100% - 260px);
+  min-width: 0;
 
   @media (max-width: 850px) {
     width: 100%;
@@ -190,9 +192,9 @@ $text-gray: #6B7280;
   background: linear-gradient(135deg, $grunner-dark 0%, #2A3618 100%);
   border-radius: 16px;
   padding: 30px 40px;
-  margin: 30px 5% 10px 5%; 
+  margin: 30px 5% 10px 5%;
   display: flex;
-  flex-direction: row; 
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
@@ -235,24 +237,18 @@ $text-gray: #6B7280;
   }
 
   .dateBadge {
-  display: inline-flex;
-  align-items: center;
-  
-  /* O Segredo da Elegância: Remover fundos e bordas */
-  background: transparent; 
-  border: none; 
-  padding: 4px 0; 
-  
-  /* Tipografia Refinada */
-  color: #f3f4f6; /* Um branco bem suave */
-  font-size: 14px;
-  font-weight: 500;
-  
-  /* Toques de "Perfumaria" */
-  opacity: 0.85; /* Deixa a data levemente mais apagada que o título, dando hierarquia */
-  letter-spacing: 0.5px; /* Afasta um pouquinho as letras para um ar mais premium */
-  gap: 6px; /* Dá um espacinho milimétrico entre o ícone do calendário e o texto */
-}
+    display: inline-flex;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+    color: #f3f4f6;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.85;
+    letter-spacing: 0.5px;
+    gap: 6px;
+  }
 
   .logoCentral {
     height: 55px;
@@ -274,8 +270,10 @@ $text-gray: #6B7280;
     .headerText {
       align-items: center;
 
-      h1 { font-size: 28px; }
-      
+      h1 {
+        font-size: 28px;
+      }
+
       p {
         font-size: 14px;
         text-align: center;
@@ -294,20 +292,20 @@ $text-gray: #6B7280;
    GRID PRINCIPAL
 ======================================= */
 .grid {
-  padding: 30px 5%; 
-  max-width: 1600px; 
-  margin: 0 auto; 
-  width: 100%; 
+  padding: 30px 5%;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 30px; 
+  gap: 30px;
   box-sizing: border-box;
   align-items: start;
 
-  @media (max-width: 850px) { 
-    grid-template-columns: 1fr; 
-    padding: 20px; 
-    gap: 20px; 
+  @media (max-width: 850px) {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 20px;
   }
 }
 
@@ -315,22 +313,22 @@ $text-gray: #6B7280;
    HERO BANNER
 ======================================= */
 .heroBanner {
-  position: relative; 
-  height: 450px; 
-  border-radius: 16px; 
+  position: relative;
+  height: 450px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); 
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
 
-  .heroImage { 
+  .heroImage {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%; 
+    height: 100%;
     background-size: cover;
     background-position: center;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
   }
 
@@ -368,10 +366,14 @@ $text-gray: #6B7280;
   @media (max-width: 850px) {
     height: 480px;
 
-    .heroOverlay { padding: 20px; }
-    
-    .heroTitle { font-size: 24px; }
-    
+    .heroOverlay {
+      padding: 20px;
+    }
+
+    .heroTitle {
+      font-size: 24px;
+    }
+
     .heroResumo {
       font-size: 14px;
       max-width: 100%;
@@ -431,7 +433,9 @@ $text-gray: #6B7280;
     cursor: pointer;
     transition: 0.2s;
 
-    &:hover { filter: brightness(1.1); }
+    &:hover {
+      filter: brightness(1.1);
+    }
   }
 
   @media (max-width: 850px) {
@@ -648,16 +652,16 @@ $text-gray: #6B7280;
   background: white;
   width: 550px;
   max-width: 100%;
-  max-height: 90vh; /* Altura máxima de 90% da tela */
-  display: flex; /* Transforma o modal em flexbox */
-  flex-direction: column; /* Organiza em coluna */
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   border-radius: 16px;
   border-top: 6px solid $grunner-green;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  overflow: hidden; /* Evita que os cantos arredondados vazem */
+  overflow: hidden;
 
   @media (max-width: 768px) {
-    width: 95%; 
+    width: 95%;
   }
 
   .modalHeader {
@@ -665,8 +669,8 @@ $text-gray: #6B7280;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #eee;
-    padding: 25px 30px 15px 30px; /* Padding movido para cá */
-    flex-shrink: 0; /* Impede que o cabeçalho seja esmagado */
+    padding: 25px 30px 15px 30px;
+    flex-shrink: 0;
 
     h3 {
       margin: 0;
@@ -682,18 +686,26 @@ $text-gray: #6B7280;
       color: #999;
       transition: 0.2s;
 
-      &:hover { color: red; }
+      &:hover {
+        color: red;
+      }
     }
   }
 
   .commentsList {
-    flex: 1; /* Ocupa todo o espaço que sobrar no meio */
-    overflow-y: auto; /* Rola apenas o meio do modal */
+    flex: 1;
+    overflow-y: auto;
     padding: 15px 30px;
     margin: 0;
 
-    &::-webkit-scrollbar { width: 6px; }
-    &::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
 
     .commentBubble {
       background: #f8f9fa;
@@ -728,12 +740,12 @@ $text-gray: #6B7280;
 
   .newCommentArea {
     border-top: 1px solid #eee;
-    padding: 20px 30px 25px 30px; /* Padding movido para cá */
+    padding: 20px 30px 25px 30px;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     background: white;
-    flex-shrink: 0; /* Impede que o rodapé seja esmagado */
+    flex-shrink: 0;
 
     textarea {
       width: 100%;
@@ -788,68 +800,112 @@ $text-gray: #6B7280;
   gap: 20px;
 }
 
-.eventList, .teamList {
+.eventList,
+.teamList {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.eventInfo, .teamInfo {
+.eventInfo,
+.teamInfo {
   display: flex;
   flex-direction: column;
 }
 
-// ==============================================================================
-// --- HACK DEFINITIVO E AGRESSIVO PARA TELA CHEIA (SEM BARRAS DO SHAREPOINT) ---
-// ==============================================================================
+/* ==============================================================================
+   HACK DEFINITIVO E AGRESSIVO PARA TELA CHEIA (SEM BARRAS DO SHAREPOINT)
+============================================================================== */
 :global {
-  /* 1. ESCONDE O TOPO (BARRA AZUL E ESPAÇO BRANCO DE NAVEGAÇÃO) */
+  /* TOPO DO SHAREPOINT */
   #SuiteNavWrapper,
-  #spSiteHeader, 
+  #spSiteHeader,
   #spCommandBar,
   div[data-automation-id="pageHeader"],
   div[class^="commandBarWrapper_"] {
     display: none !important;
+    visibility: hidden !important;
     height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
-  
-  /* 2. ESCONDE A 'APP BAR' LATERAL NATIVA (Se houver) */
+
+  /* APP BAR LATERAL ESQUERDA */
+  #sp-appBar,
+  div[data-automation-id="sp-appBar"],
+  div[class*="sp-appBar"],
   div[class^="appBar_"] {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
-  /* 3. ESCONDE O RODAPÉ BRANCO E ESPAÇOS SOBRANDO */
+  /* RODAPÉ, SOCIAL BAR E COMENTÁRIOS NATIVOS */
   footer,
   #sp-footer,
+  #sp-page-footer,
   div[class^="footer_"],
-  div[data-automation-id="page-bottom-actions"] {
+  div[data-automation-id="page-bottom-actions"],
+  div[data-automation-id="page-bottom-bar"],
+  [data-automation-id="socialBar"],
+  div[class*="socialBar_"],
+  div[class*="pageBottomBar_"],
+  .CommentsWrapper,
+  [id*="Page_CommentsWrapper"],
+  [id^="Page_CommentsWrapper"],
+  [data-sp-feature-tag="Comments"] {
     display: none !important;
+    visibility: hidden !important;
     height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
-  /* 4. FORÇA O SEU CONTEÚDO A SUBIR E PREENCHER A TELA INTEIRA */
+  /* FAZ O CANVAS PREENCHER A TELA */
+  body {
+    overflow-x: hidden !important;
+  }
+
   #workbenchPageContent,
   #spPageCanvasContent,
   .SPCanvas-canvas,
   .CanvasZone,
   .CanvasSection,
   .ControlZone,
-  div[data-automation-id="CanvasZone"] > div {
-    padding: 0 !important;
+  div[data-automation-id="CanvasZone"] > div,
+  div[data-automation-id="contentScrollRegion"] {
+    left: 0 !important;
     margin: 0 !important;
+    margin-left: 0 !important;
+    padding: 0 !important;
+    padding-left: 0 !important;
     max-width: 100% !important;
-  }
-
-  /* 5. ESCONDE A BARRA SOCIAL DE CURTIDAS E EXIBIÇÕES */
-  div[data-automation-id="page-bottom-bar"],
-  div[data-automation-id="page-bottom-actions"],
-  [data-automation-id="socialBar"],
-  div[class*="socialBar_"],
-  div[class*="pageBottomBar_"] {
-    display: none !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    visibility: hidden !important;
+    width: 100% !important;
   }
 }

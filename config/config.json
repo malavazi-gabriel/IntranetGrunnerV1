@@ -17,11 +17,29 @@
           "manifest": "./src/webparts/politicasGrunner/PoliticasGrunnerWebPart.manifest.json"
         }
       ]
+    },
+    "historia-grunner-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/historiaGrunner/HistoriaGrunnerWebPart.js",
+          "manifest": "./src/webparts/historiaGrunner/HistoriaGrunnerWebPart.manifest.json"
+        }
+      ]
+    },
+    "central-atalhos-grunner-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/centralAtalhosGrunner/CentralAtalhosGrunnerWebPart.js",
+          "manifest": "./src/webparts/centralAtalhosGrunner/CentralAtalhosGrunnerWebPart.manifest.json"
+        }
+      ]
     }
   },
   "externals": {},
   "localizedResources": {
     "HomeGrunnerWebPartStrings": "lib/webparts/homeGrunner/loc/{locale}.js",
-    "PoliticasGrunnerWebPartStrings": "lib/webparts/politicasGrunner/loc/{locale}.js"
+    "PoliticasGrunnerWebPartStrings": "lib/webparts/politicasGrunner/loc/{locale}.js",
+    "HistoriaGrunnerWebPartStrings": "lib/webparts/historiaGrunner/loc/{locale}.js",
+    "CentralAtalhosGrunnerWebPartStrings": "lib/webparts/centralAtalhosGrunner/loc/{locale}.js"
   }
 }

@@ -22,7 +22,6 @@ interface IHomeGrunnerState {
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
-
   private footerObserver?: MutationObserver;
 
   constructor(props: IHomeGrunnerProps) {
@@ -41,6 +40,16 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       todosComentarios: [],
       isMobileMenuOpen: false
     };
+  }
+
+  private shouldHideSharePointChrome = (): boolean => {
+    const search = window.location.search.toLowerCase();
+
+    const isEditMode = search.includes('mode=edit');
+    const isEmbedded = search.includes('env=embedded') || search.includes('mode=embed');
+    const forceAdmin = search.includes('admin=1');
+
+    return isEmbedded && !isEditMode && !forceAdmin;
   }
 
   private collapseElement = (element: HTMLElement | null): void => {
@@ -82,23 +91,70 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     });
   }
 
+  private hideSharePointAppBar = (): void => {
+    const selectors = [
+      '#sp-appBar',
+      '[data-automation-id="sp-appBar"]',
+      'div[class^="appBar_"]',
+      'div[class*="sp-appBar"]'
+    ];
+
+    const elements = document.querySelectorAll(selectors.join(','));
+    elements.forEach((node) => {
+      const el = node as HTMLElement;
+      this.collapseElement(el);
+    });
+  }
+
+  private fixSharePointCanvasSpacing = (): void => {
+    const selectors = [
+      '#workbenchPageContent',
+      '#spPageCanvasContent',
+      '.SPCanvas-canvas',
+      '.CanvasZone',
+      '.CanvasSection',
+      '.ControlZone',
+      'div[data-automation-id="CanvasZone"] > div'
+    ];
+
+    const elements = document.querySelectorAll(selectors.join(','));
+
+    elements.forEach((node) => {
+      const el = node as HTMLElement;
+      el.style.setProperty('margin-left', '0', 'important');
+      el.style.setProperty('padding-left', '0', 'important');
+      el.style.setProperty('max-width', '100%', 'important');
+      el.style.setProperty('width', '100%', 'important');
+    });
+
+    document.body?.style.setProperty('overflow-x', 'hidden', 'important');
+  }
+
   public componentDidMount(): void {
     this.carregarDadosIniciais();
 
-    this.hideSharePointFooter();
+    if (this.shouldHideSharePointChrome()) {
+      const applyFixes = (): void => {
+        this.hideSharePointFooter();
+        this.hideSharePointAppBar();
+        this.fixSharePointCanvasSpacing();
+      };
 
-    window.setTimeout(() => this.hideSharePointFooter(), 500);
-    window.setTimeout(() => this.hideSharePointFooter(), 1500);
+      applyFixes();
 
-    this.footerObserver = new MutationObserver(() => {
-      this.hideSharePointFooter();
-    });
+      window.setTimeout(applyFixes, 500);
+      window.setTimeout(applyFixes, 1500);
 
-    if (document.body) {
-      this.footerObserver.observe(document.body, {
-        childList: true,
-        subtree: true
+      this.footerObserver = new MutationObserver(() => {
+        applyFixes();
       });
+
+      if (document.body) {
+        this.footerObserver.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      }
     }
   }
 
@@ -117,8 +173,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     ]);
     this.setState({ loading: false });
   }
-
-  // --- BUSCA DE DADOS ---
 
   private buscarNoticias = async () => {
     try {
@@ -174,8 +228,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       console.error("Erro ao buscar eventos:", e);
     }
   }
-
-  // --- LÓGICA DE INTERAÇÃO (LIKES E COMENTÁRIOS) ---
 
   private handleLike = async (noticiaId: number) => {
     const userEmail = this.props.context.pageContext.user.email;
@@ -287,28 +339,50 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
     return (
       <div className={styles.container}>
+        {this.shouldHideSharePointChrome() && (
+          <style>{`
+            [data-automation-id="page-bottom-actions"],
+            [data-automation-id="page-bottom-bar"],
+            #sp-page-footer,
+            [data-automation-id="socialBar"],
+            .CommentsWrapper,
+            [id*="Page_CommentsWrapper"],
+            [id^="Page_CommentsWrapper"],
+            [data-sp-feature-tag="Comments"],
+            #sp-appBar,
+            [data-automation-id="sp-appBar"],
+            div[class^="appBar_"],
+            div[class*="sp-appBar"] {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              min-height: 0 !important;
+              max-height: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+              opacity: 0 !important;
+              pointer-events: none !important;
+            }
 
-        <style>{`
-          [data-automation-id="page-bottom-actions"],
-          [data-automation-id="page-bottom-bar"],
-          #sp-page-footer,
-          [data-automation-id="socialBar"],
-          .CommentsWrapper,
-          [id*="Page_CommentsWrapper"],
-          [id^="Page_CommentsWrapper"],
-          [data-sp-feature-tag="Comments"] {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            min-height: 0 !important;
-            max-height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-          }
-        `}</style>
+            #workbenchPageContent,
+            #spPageCanvasContent,
+            .SPCanvas-canvas,
+            .CanvasZone,
+            .CanvasSection,
+            .ControlZone,
+            div[data-automation-id="CanvasZone"] > div {
+              margin-left: 0 !important;
+              padding-left: 0 !important;
+              max-width: 100% !important;
+              width: 100% !important;
+            }
+
+            body {
+              overflow-x: hidden !important;
+            }
+          `}</style>
+        )}
 
         <div className={styles.mobileHeaderBar}>
           <button className={styles.hamburgerBtn} onClick={() => this.setState({ isMobileMenuOpen: true })}>
@@ -343,12 +417,12 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx" target="_blank" rel="noopener noreferrer">📖 Políticas da Empresa</a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Historia.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">📖 Políticas da Empresa</a>
           </div>
         </aside>
 
         <div className={styles.contentArea}>
-
           <header className={styles.header}>
             <div className={styles.headerLeft}>
               <img
@@ -368,7 +442,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
           <main className={styles.grid}>
             <section className={styles.newsSection}>
-
               {noticiaDestaque && (
                 <div className={styles.heroBanner}>
                   <div className={styles.heroImage} style={{ backgroundImage: `url(${noticiaDestaque.ImagemURL})` }} />
@@ -385,10 +458,20 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                       >
                         {this.userAlreadyLiked(noticiaDestaque.ID) ? '❤️' : '🤍'} {this.getLikesCount(noticiaDestaque.ID)} Curtidas
                       </button>
-                      <button className={styles.actionBtn} onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticiaDestaque.ID); }}>
+
+                      <button
+                        className={styles.actionBtn}
+                        onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticiaDestaque.ID); }}
+                      >
                         💬 {this.getCommentsCount(noticiaDestaque.ID)} Comentários
                       </button>
-                      <button className={styles.readMoreBtn} onClick={() => window.open(noticiaDestaque.LinkNoticia, '_blank')}>Ler Matéria</button>
+
+                      <button
+                        className={styles.readMoreBtn}
+                        onClick={() => window.open(noticiaDestaque.LinkNoticia, '_blank')}
+                      >
+                        Ler Matéria
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -397,9 +480,15 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
               <div className={styles.subNewsGrid}>
                 {outrasNoticias.map((noticia, i) => (
                   <div key={i} className={styles.cardNewsSmall}>
-                    <div className={styles.smallNewsImg} style={{ backgroundImage: `url(${noticia.ImagemURL})` }} onClick={() => window.open(noticia.LinkNoticia, '_blank')} />
+                    <div
+                      className={styles.smallNewsImg}
+                      style={{ backgroundImage: `url(${noticia.ImagemURL})` }}
+                      onClick={() => window.open(noticia.LinkNoticia, '_blank')}
+                    />
+
                     <div className={styles.smallNewsContent}>
                       <h3 onClick={() => window.open(noticia.LinkNoticia, '_blank')}>{noticia.Title}</h3>
+
                       <div className={styles.smallInteractions}>
                         <span
                           onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}
@@ -407,6 +496,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                         >
                           {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} <small>{this.getLikesCount(noticia.ID)}</small>
                         </span>
+
                         <span onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}>
                           💬 <small>{this.getCommentsCount(noticia.ID)}</small>
                         </span>
@@ -420,6 +510,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
             <aside className={styles.widgetsSection}>
               <div className={styles.card}>
                 <h2>Datas importantes</h2>
+
                 <div className={styles.eventList}>
                   {this.state.eventosReais.length > 0 ? this.state.eventosReais.map((evento, i) => {
                     const urlImagem = evento.ImagemTema ? (evento.ImagemTema.Url || evento.ImagemTema) : null;
@@ -437,6 +528,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                           <span className={styles.eventDay}>{evento.Dia}</span>
                           <span className={styles.eventMonth}>{evento.Mes}</span>
                         </div>
+
                         <div className={styles.eventInfo}>
                           <div className={styles.eventTitle}>{evento.Title}</div>
                           <div className={styles.eventLocal}>📍 {evento.Local}</div>
@@ -449,6 +541,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
               <div className={styles.card}>
                 <h2>Aniversariantes do mês</h2>
+
                 <div className={styles.teamList}>
                   {this.state.aniversariantesReais.length > 0 ? this.state.aniversariantesReais.map((niver, i) => (
                     <div key={i} className={styles.teamItem}>
@@ -461,6 +554,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                       ) : (
                         <div className={styles.teamAvatarPlaceholder}>🎉</div>
                       )}
+
                       <div className={styles.teamInfo}>
                         <div className={styles.teamName}>{niver.Title}</div>
                         <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
@@ -476,7 +570,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
         {this.state.isModalOpen && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
-
               <header className={styles.modalHeader}>
                 <h3>Comentários da Publicação</h3>
                 <button className={styles.closeBtn} onClick={() => this.setState({ isModalOpen: false })}>✕</button>
@@ -522,11 +615,9 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
                 <button className={styles.sendBtn} onClick={this.enviarComentario}>Enviar Comentário</button>
               </div>
-
             </div>
           </div>
         )}
-
       </div>
     );
   }
