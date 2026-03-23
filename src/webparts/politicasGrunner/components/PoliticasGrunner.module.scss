@@ -8,17 +8,178 @@ $text-gray: #6B7280;
 
 .container {
   width: 100%;
-  min-height: 80vh;
-  background-color: transparent;
+  min-height: 100vh;
+  background-color: $bg-light;
   font-family: 'Segoe UI', system-ui, sans-serif;
   display: flex;
-  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+
+  @media (max-width: 850px) {
+    flex-direction: column;
+  }
+}
+
+/* =======================================
+   MENU LATERAL E MOBILE
+======================================= */
+.mobileHeaderBar {
+  display: none;
+  background-color: $grunner-dark;
+  padding: 15px 20px;
+  width: 100%;
+  border-bottom: 2px solid $grunner-green;
+
+  @media (max-width: 850px) {
+    display: block;
+  }
+}
+
+.hamburgerBtn {
+  background: transparent;
+  color: $grunner-green;
+  border: 1px solid $grunner-green;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
   align-items: center;
 }
 
-/* CABEÇALHO */
+.mobileOverlayBackdrop {
+  display: none;
+
+  @media (max-width: 850px) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 90;
+  }
+}
+
+.sidebar {
+  width: 260px;
+  background-color: $grunner-dark;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-height: 100vh;
+  padding: 30px 20px;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  transition: left 0.3s ease-in-out;
+
+  .closeMenuBtn {
+    display: none;
+  }
+
+  .logoArea {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    .logoSemente {
+      width: 50px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      color: white;
+      font-weight: 700;
+    }
+  }
+
+  .navGroup {
+    margin-bottom: 30px;
+
+    h3 {
+      font-size: 11px;
+      color: #9CA3AF;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 15px;
+      padding-left: 10px;
+    }
+
+    a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #D1D5DB;
+      text-decoration: none;
+      padding: 12px 10px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-size: 15px;
+      margin-bottom: 5px;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+
+      &.active {
+        background-color: $grunner-green;
+        color: $grunner-dark;
+        font-weight: 700;
+      }
+    }
+  }
+
+  @media (max-width: 850px) {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    height: 100vh;
+    width: 280px;
+
+    &.open {
+      left: 0;
+    }
+
+    .closeMenuBtn {
+      display: block;
+      align-self: flex-end;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+  }
+}
+
+.contentArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  width: calc(100% - 260px);
+  min-width: 0;
+  padding: 10px 0;
+
+  @media (max-width: 850px) {
+    width: 100%;
+  }
+}
+
+/* =======================================
+   CONTEÚDO DA PÁGINA DE POLÍTICAS
+======================================= */
 .pageHeader {
-  width: 100%;
+  width: 95%;
   max-width: 1200px;
   background: linear-gradient(135deg, $grunner-dark 0%, #2A3618 100%);
   border-radius: 16px;
@@ -34,7 +195,7 @@ $text-gray: #6B7280;
   }
 
   @media (max-width: 768px) {
-    padding: 30px 20px; border-radius: 12px; margin-top: 10px;
+    padding: 30px 20px; border-radius: 12px; margin-top: 10px; width: 90%;
     .headerText {
       h1 { font-size: 24px; } 
       p { font-size: 14px; }
@@ -51,6 +212,8 @@ $text-gray: #6B7280;
 
   .searchInput {
     width: 100%;
+    box-sizing: border-box;
+    display: block;
     padding: 16px 25px;
     border-radius: 30px;
     border: 1px solid #D1D5DB;
@@ -73,10 +236,9 @@ $text-gray: #6B7280;
 .tabsContainer {
   display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; width: 100%; max-width: 1200px; padding-bottom: 10px; border-bottom: 2px solid #E5E7EB; transition: opacity 0.3s ease;
 
-  /* Se estiver buscando globalmente, as abas ficam levemente apagadas para indicar que a busca sobrescreveu elas */
   &.tabsDisabled {
     opacity: 0.4;
-    pointer-events: none; /* Impede clique enquanto busca */
+    pointer-events: none;
   }
 
   @media (max-width: 768px) {
@@ -140,5 +302,29 @@ $text-gray: #6B7280;
 .spinner { width: 40px; height: 40px; border: 4px solid #E5E7EB; border-top-color: $grunner-green; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* HACK TELA CHEIA */
-:global { .SPCanvas-canvas, .CanvasZone, .CanvasSection, .ControlZone { max-width: 100% !important; padding: 0 !important; } }
+/* OCULTANDO BARRAS DO SHAREPOINT E AJEITANDO A TELA */
+:global {
+  #sp-appBar,
+  [data-automation-id="sp-appBar"],
+  div[class^="appBar_"],
+  div[class*="sp-appBar"] {
+    display: none !important;
+  }
+
+  body {
+    overflow-x: hidden !important;
+  }
+
+  #workbenchPageContent,
+  #spPageCanvasContent,
+  .SPCanvas-canvas,
+  .CanvasZone,
+  .CanvasSection,
+  .ControlZone,
+  div[data-automation-id="CanvasZone"] > div {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
