@@ -19,7 +19,6 @@ interface ILinkUtil {
   LinkURL?: any;
   Ordem?: number;
   Ativo?: boolean | number | string;
-  Destaque?: boolean | number | string;
 }
 
 interface ICentralAtalhosGrunnerState {
@@ -83,7 +82,6 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
 
     const elements = document.querySelectorAll(selectors.join(','));
 
-    // AQUI ESTAVA O BUG: Removida a linha que apagava os "avós" da página e bloqueava o clique!
     elements.forEach((node) => {
       this.collapseElement(node as HTMLElement);
     });
@@ -163,7 +161,7 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
 
   private buscarLinks = async (): Promise<void> => {
     try {
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('LinksUteisGrunner')/items?$select=ID,Title,Descricao,Categoria,Icone,LinkURL,Ordem,Ativo,Destaque&$top=5000&$orderby=Ordem asc`;
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('LinksUteisGrunner')/items?$select=ID,Title,Descricao,Categoria,Icone,LinkURL,Ordem,Ativo&$top=5000&$orderby=Ordem asc`;
 
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
@@ -184,19 +182,6 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
 
   private isEnabled = (value: unknown): boolean => {
     if (value === undefined || value === null || value === '') return true;
-    if (typeof value === 'boolean') return value;
-    if (typeof value === 'number') return value === 1;
-
-    if (typeof value === 'string') {
-      const normalized = value.trim().toLowerCase();
-      return normalized === 'true' || normalized === '1' || normalized === 'sim' || normalized === 'yes';
-    }
-
-    return Boolean(value);
-  }
-
-  private isTruthy = (value: unknown): boolean => {
-    if (value === undefined || value === null || value === '') return false;
     if (typeof value === 'boolean') return value;
     if (typeof value === 'number') return value === 1;
 
@@ -282,10 +267,6 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
       ...Array.from(new Set(linksAtivos.map((link) => this.normalizeCategory(link.Categoria))))
     ];
 
-    const linksDestaque = linksAtivos
-      .filter((link) => this.isTruthy(link.Destaque))
-      .slice(0, 4);
-
     const termoLimpo = this.removerAcentos(termoBusca).trim();
 
     const linksFiltrados = linksAtivos.filter((link) => {
@@ -308,7 +289,6 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
 
     return (
       <div className={styles.container}>
-        {/* AQUI ESTÁ A BLINDAGEM COMPLETA DAS BARRAS SUPERIORES E INFERIORES */}
         {this.shouldHideSharePointChrome() && (
           <style>{`
             [data-automation-id="page-bottom-actions"],
@@ -410,8 +390,9 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
         </aside>
 
         <div className={styles.contentArea}>
-          <header className={styles.header}>
-            <div className={styles.headerLeft}>
+          {/* SUPER CABEÇALHO COMPACTO HORIZONTAL */}
+          <header className={styles.unifiedHeader}>
+            <div className={styles.headerProfile}>
               <img
                 src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=L&accountname=${userEmail}`}
                 alt="Perfil"
@@ -420,26 +401,20 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
               />
               <div className={styles.headerText}>
                 <h1>Olá, {nomeUsuario}!</h1>
-                <p>Bem-vindo à Central de Atalhos Grunner • seu desktop corporativo para acessos rápidos</p>
-                <span className={styles.dateBadge}>🖥️ Links úteis, sistemas e páginas importantes em um só lugar</span>
+                <p>
+                  Bem-vindo à <strong>Central de Atalhos Grunner</strong>.<br />
+                  Seu desktop corporativo com os sistemas mais usados.
+                </p>
               </div>
             </div>
-            <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
+
+            <div className={styles.headerActions}>
+              <a href={homeUrl} className={styles.backBtn}>← Voltar</a>
+              <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
+            </div>
           </header>
 
           <main className={styles.mainContent}>
-            <section className={styles.heroSection}>
-              <a href={homeUrl} className={styles.backBtn}>← Voltar para a Intranet</a>
-
-              <div className={styles.heroContent}>
-                <h1>Central de Atalhos Grunner</h1>
-                <p>
-                  Um desktop corporativo com os links mais usados pelos times.
-                  Ideal para acelerar o dia a dia e facilitar a vida de novos colaboradores.
-                </p>
-              </div>
-            </section>
-
             <section className={styles.toolbarSection}>
               <div className={styles.searchContainer}>
                 <input
@@ -463,33 +438,6 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
                 ))}
               </nav>
             </section>
-
-            {linksDestaque.length > 0 && !termoBusca.trim() && categoriaAtiva === 'Todos' && (
-              <section className={styles.featuredSection}>
-                <div className={styles.sectionHeader}>
-                  <h2>⭐ Mais acessados</h2>
-                  <p>Os atalhos que normalmente ajudam mais no início da jornada.</p>
-                </div>
-
-                <div className={styles.featuredGrid}>
-                  {linksDestaque.map((link) => (
-                    <a
-                      key={link.ID}
-                      href={this.resolveLinkUrl(link.LinkURL)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.featuredCard}
-                    >
-                      <div className={styles.featuredIcon}>{this.resolveIcon(link)}</div>
-                      <div className={styles.featuredInfo}>
-                        <h3>{link.Title}</h3>
-                        <span>{this.normalizeCategory(link.Categoria)}</span>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </section>
-            )}
 
             <section className={styles.desktopSection}>
               <div className={styles.sectionHeader}>
