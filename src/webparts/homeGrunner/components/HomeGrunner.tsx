@@ -405,6 +405,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           <div className={styles.navGroup}>
             <h3>Navegação</h3>
             <a href="#" className={styles.active}>🏠 Painel Inicial</a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/centraldeatalhos.aspx" className={styles.active}>🖥️ Central de Atalhos</a>
           </div>
 
           <div className={styles.navGroup}>
