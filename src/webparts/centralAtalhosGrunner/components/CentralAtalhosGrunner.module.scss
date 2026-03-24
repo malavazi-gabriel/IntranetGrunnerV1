@@ -126,9 +126,12 @@ $card-white: #FFFFFF;
       }
 
       &.active {
-        background-color: $grunner-green;
-        color: $grunner-dark;
+        /* ESTILO NOVO APLICADO AQUI */
+        background-color: rgba(166, 206, 57, 0.15); 
+        color: $grunner-green; 
         font-weight: 700;
+        border-left: 3px solid $grunner-green; 
+        border-radius: 4px 8px 8px 4px; 
       }
     }
   }
@@ -302,8 +305,10 @@ $card-white: #FFFFFF;
 }
 
 .toolbarSection {
-  position: relative;
-  z-index: 10;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   background: rgba(255,255,255,0.75);
   border: 1px solid rgba(255,255,255,0.6);
   backdrop-filter: blur(10px);
@@ -313,25 +318,30 @@ $card-white: #FFFFFF;
 }
 
 .searchContainer {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   margin-bottom: 18px;
 }
 
 .searchInput {
+  display: block;
   width: 100%;
-  max-width: 100%; /* Garante que nunca vai ser maior que o espaço disponível */
-  box-sizing: border-box !important; /* O !important sobrepõe o CSS nativo do SharePoint */
-  display: block; /* Remove margens fantasmas que o navegador coloca em inputs */
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border: 1px solid #d6dce1;
   border-radius: 14px;
   padding: 16px 18px;
   font-size: 15px;
   background: white;
-  color: $grunner-dark;
+  color: #1C2510;
   transition: 0.2s;
 
   &:focus {
     outline: none;
-    border-color: $grunner-green;
+    border-color: #A6CE39;
     box-shadow: 0 0 0 4px rgba(166, 206, 57, 0.15);
   }
 }

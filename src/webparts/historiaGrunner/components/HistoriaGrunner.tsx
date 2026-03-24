@@ -2,51 +2,219 @@ import * as React from 'react';
 import styles from './HistoriaGrunner.module.scss';
 import { IHistoriaGrunnerProps } from './IHistoriaGrunnerProps';
 
+const homeUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Inicio.aspx?env=Embedded";
+
 export default class HistoriaGrunner extends React.Component<IHistoriaGrunnerProps, {}> {
+  private footerObserver?: MutationObserver;
+
+  private shouldHideSharePointChrome = (): boolean => {
+    const search = window.location.search.toLowerCase();
+    const isEditMode = search.includes('mode=edit');
+    const isEmbedded = search.includes('env=embedded') || search.includes('mode=embed');
+    const forceAdmin = search.includes('admin=1');
+
+    return isEmbedded && !isEditMode && !forceAdmin;
+  }
+
+  private collapseElement = (element: HTMLElement | null): void => {
+    if (!element) return;
+
+    element.style.setProperty('display', 'none', 'important');
+    element.style.setProperty('visibility', 'hidden', 'important');
+    element.style.setProperty('height', '0', 'important');
+    element.style.setProperty('min-height', '0', 'important');
+    element.style.setProperty('max-height', '0', 'important');
+    element.style.setProperty('margin', '0', 'important');
+    element.style.setProperty('padding', '0', 'important');
+    element.style.setProperty('overflow', 'hidden', 'important');
+    element.style.setProperty('opacity', '0', 'important');
+    element.style.setProperty('pointer-events', 'none', 'important');
+  }
+
+  private hideSharePointFooter = (): void => {
+    const selectors = [
+      '[data-automation-id="page-bottom-actions"]',
+      '[data-automation-id="page-bottom-bar"]',
+      '#sp-page-footer',
+      '[data-automation-id="socialBar"]',
+      '.CommentsWrapper',
+      '[id*="Page_CommentsWrapper"]',
+      '[id^="Page_CommentsWrapper"]',
+      '[data-sp-feature-tag="Comments"]'
+    ];
+
+    const elements = document.querySelectorAll(selectors.join(','));
+
+    elements.forEach((node) => {
+      const el = node as HTMLElement;
+      const parent = el.parentElement as HTMLElement | null;
+      const grandParent = parent?.parentElement as HTMLElement | null;
+
+      this.collapseElement(el);
+      this.collapseElement(parent);
+      this.collapseElement(grandParent);
+    });
+  }
+
+  private hideSharePointAppBar = (): void => {
+    const selectors = [
+      '#sp-appBar',
+      '[data-automation-id="sp-appBar"]',
+      'div[class^="appBar_"]',
+      'div[class*="sp-appBar"]'
+    ];
+
+    const elements = document.querySelectorAll(selectors.join(','));
+
+    elements.forEach((node) => {
+      this.collapseElement(node as HTMLElement);
+    });
+  }
+
+  private fixSharePointCanvasSpacing = (): void => {
+    const applyFullBleed = (element: HTMLElement | null): void => {
+      if (!element) return;
+
+      element.style.setProperty('margin', '0', 'important');
+      element.style.setProperty('padding', '0', 'important');
+      element.style.setProperty('left', '0', 'important');
+      element.style.setProperty('right', '0', 'important');
+      element.style.setProperty('max-width', '100%', 'important');
+      element.style.setProperty('width', '100%', 'important');
+      element.style.setProperty('box-sizing', 'border-box', 'important');
+      element.style.setProperty('background', 'transparent', 'important');
+    };
+
+    applyFullBleed(document.documentElement as unknown as HTMLElement);
+    applyFullBleed(document.body);
+
+    document.documentElement.style.setProperty('overflow-x', 'hidden', 'important');
+    document.body?.style.setProperty('overflow-x', 'hidden', 'important');
+    document.documentElement.style.setProperty('background', '#f3f4f6', 'important');
+    document.body?.style.setProperty('background', '#f3f4f6', 'important');
+
+    const selectors = [
+      '#spPageChromeAppDiv',
+      '[data-automation-id="contentScrollRegion"]',
+      '#workbenchPageContent',
+      '#spPageCanvasContent',
+      '.SPCanvas-canvas',
+      'div[data-automation-id="Canvas"]',
+      'div[data-automation-id="CanvasZone"]',
+      'div[data-automation-id="CanvasZone"] > div',
+      '.CanvasZone',
+      '.CanvasSection',
+      '.ControlZone',
+      'div[class*="CanvasComponent"]'
+    ];
+
+    const elements = document.querySelectorAll(selectors.join(','));
+
+    elements.forEach((node) => {
+      applyFullBleed(node as HTMLElement);
+    });
+  }
+
+  public componentDidMount(): void {
+    if (this.shouldHideSharePointChrome()) {
+      const applyFixes = (): void => {
+        this.hideSharePointFooter();
+        this.hideSharePointAppBar();
+        this.fixSharePointCanvasSpacing();
+      };
+
+      applyFixes();
+      window.setTimeout(applyFixes, 500);
+      window.setTimeout(applyFixes, 1500);
+      window.setTimeout(applyFixes, 3000);
+
+      this.footerObserver = new MutationObserver(() => {
+        applyFixes();
+      });
+
+      if (document.body) {
+        this.footerObserver.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      }
+    }
+  }
+
+  public componentWillUnmount(): void {
+    if (this.footerObserver) {
+      this.footerObserver.disconnect();
+    }
+  }
+
   public render(): React.ReactElement<IHistoriaGrunnerProps> {
     return (
       <div className={styles.container}>
+        {this.shouldHideSharePointChrome() && (
+          <style>{`
+            [data-automation-id="page-bottom-actions"],
+            [data-automation-id="page-bottom-bar"],
+            #sp-page-footer,
+            .CommentsWrapper,
+            [data-automation-id="socialBar"],
+            div[class*="socialBar_"],
+            div[class*="footer_"],
+            div[class*="pageBottomBar_"],
+            #sp-appBar,
+            [data-automation-id="sp-appBar"],
+            div[class^="appBar_"],
+            div[class*="sp-appBar"],
+            #SuiteNavWrapper,
+            #spSiteHeader,
+            #spCommandBar,
+            div[data-automation-id="pageHeader"],
+            div[class^="commandBarWrapper_"] {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              min-height: 0 !important;
+              max-height: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+              opacity: 0 !important;
+              pointer-events: none !important;
+            }
 
-        {/* === HACK DE TELA CHEIA E REMOÇÃO DO RODAPÉ === */}
-        <style>{`
-              div[data-automation-id="page-bottom-actions"],
-              div[data-automation-id="page-bottom-bar"],
-              #sp-page-footer,
-              .CommentsWrapper,
-              [data-automation-id="socialBar"],
-              div[class*="socialBar_"],
-              div[class*="footer_"],
-              div[class*="pageBottomBar_"] {
-                display: none !important;
-                visibility: hidden !important;
-                height: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-              }
+            html,
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow-x: hidden !important;
+              background: #f3f4f6 !important;
+            }
 
-              /* 
-              #SuiteNavWrapper,
-              #spSiteHeader,
-              #spCommandBar,
-              div[data-automation-id="pageHeader"],
-              div[class^="commandBarWrapper_"],
-              div[class^="appBar_"] {
-                display: none !important;
-                visibility: hidden !important;
-                height: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-              }
-              */
-        `}</style>
+            #spPageChromeAppDiv,
+            [data-automation-id="contentScrollRegion"],
+            #workbenchPageContent,
+            #spPageCanvasContent,
+            .SPCanvas-canvas,
+            div[data-automation-id="Canvas"],
+            div[data-automation-id="CanvasZone"],
+            div[data-automation-id="CanvasZone"] > div,
+            .CanvasZone,
+            .CanvasSection,
+            .ControlZone,
+            div[class*="CanvasComponent"] {
+              margin: 0 !important;
+              padding: 0 !important;
+              left: 0 !important;
+              right: 0 !important;
+              max-width: 100% !important;
+              width: 100% !important;
+              box-sizing: border-box !important;
+              background: transparent !important;
+            }
+          `}</style>
+        )}
 
-        {/* CABEÇALHO HERO */}
         <div className={styles.heroSection}>
-          <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Inicio.aspx?env=Embedded" className={styles.backBtn}>
+          <a href={homeUrl} className={styles.backBtn}>
             ← Voltar para a Intranet
           </a>
           <div className={styles.heroContent}>
@@ -55,7 +223,6 @@ export default class HistoriaGrunner extends React.Component<IHistoriaGrunnerPro
           </div>
         </div>
 
-        {/* MISSÃO, VISÃO E VALORES (Para manter a cultura corporativa) */}
         <div className={styles.mvvContainer}>
           <div className={styles.mvvCard}>
             <div className={styles.icon}>🎯</div>
@@ -74,7 +241,6 @@ export default class HistoriaGrunner extends React.Component<IHistoriaGrunnerPro
           </div>
         </div>
 
-        {/* O TEXTO COMPLETO QUE VOCÊ MANDOU */}
         <div className={styles.storyBlock}>
           <h2>A Origem da Inovação</h2>
           <p>
@@ -88,12 +254,10 @@ export default class HistoriaGrunner extends React.Component<IHistoriaGrunnerPro
           </p>
         </div>
 
-        {/* LINHA DO TEMPO (TIMELINE) COM OS MARCOS HISTÓRICOS */}
         <div className={styles.historySection}>
           <h2 className={styles.sectionTitle}>Nossa Linha do Tempo</h2>
-          
+
           <div className={styles.timeline}>
-            
             <div className={styles.timelineItem}>
               <div className={styles.timelineDot}></div>
               <div className={styles.timelineContent}>
@@ -129,10 +293,8 @@ export default class HistoriaGrunner extends React.Component<IHistoriaGrunnerPro
                 <p>A Grunner conquista produtores de diversas regiões brasileiras, focada no controle de tráfego, menor compactação do solo e sustentabilidade.</p>
               </div>
             </div>
-
           </div>
         </div>
-
       </div>
     );
   }

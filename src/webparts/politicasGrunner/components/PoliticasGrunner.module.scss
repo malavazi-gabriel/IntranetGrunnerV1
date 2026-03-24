@@ -129,9 +129,11 @@ $text-gray: #6B7280;
       }
 
       &.active {
-        background-color: $grunner-green;
-        color: $grunner-dark;
+        background-color: rgba(166, 206, 57, 0.15); 
+        color: $grunner-green; 
         font-weight: 700;
+        border-left: 3px solid $grunner-green; 
+        border-radius: 4px 8px 8px 4px; 
       }
     }
   }

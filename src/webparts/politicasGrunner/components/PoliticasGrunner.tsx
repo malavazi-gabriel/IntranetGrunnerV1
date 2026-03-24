@@ -8,7 +8,7 @@ const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunne
 const homeUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Inicio.aspx?env=Embedded";
 const historiaUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Historia.aspx?env=Embedded";
 const politicasUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded";
-const atalhosUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/CentralAtalhos.aspx?env=Embedded";
+const atalhosUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/centraldeatalhos.aspx?env=Embedded";
 
 interface IPoliticasGrunnerState {
   areaAtiva: string;
@@ -19,14 +19,13 @@ interface IPoliticasGrunnerState {
 }
 
 export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerProps, IPoliticasGrunnerState> {
-  
   private areas = ['Institucional', 'TI', 'Marketing', 'RH', 'Operacional'];
   private footerObserver?: MutationObserver;
 
   constructor(props: IPoliticasGrunnerProps) {
     super(props);
     this.state = {
-      areaAtiva: 'Institucional', 
+      areaAtiva: 'Institucional',
       todosDocumentos: [],
       loading: true,
       termoBusca: '',
@@ -34,7 +33,6 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
     };
   }
 
-  // Lógica para esconder o visual padrão do SharePoint
   private shouldHideSharePointChrome = (): boolean => {
     const search = window.location.search.toLowerCase();
     const isEditMode = search.includes('mode=edit');
@@ -45,6 +43,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
 
   private collapseElement = (element: HTMLElement | null): void => {
     if (!element) return;
+
     element.style.setProperty('display', 'none', 'important');
     element.style.setProperty('visibility', 'hidden', 'important');
     element.style.setProperty('height', '0', 'important');
@@ -68,9 +67,17 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       '[id^="Page_CommentsWrapper"]',
       '[data-sp-feature-tag="Comments"]'
     ];
+
     const elements = document.querySelectorAll(selectors.join(','));
+
     elements.forEach((node) => {
-      this.collapseElement(node as HTMLElement);
+      const el = node as HTMLElement;
+      const parent = el.parentElement as HTMLElement | null;
+      const grandParent = parent?.parentElement as HTMLElement | null;
+
+      this.collapseElement(el);
+      this.collapseElement(parent);
+      this.collapseElement(grandParent);
     });
   }
 
@@ -81,31 +88,56 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       'div[class^="appBar_"]',
       'div[class*="sp-appBar"]'
     ];
+
     const elements = document.querySelectorAll(selectors.join(','));
+
     elements.forEach((node) => {
       this.collapseElement(node as HTMLElement);
     });
   }
 
   private fixSharePointCanvasSpacing = (): void => {
+    const applyFullBleed = (element: HTMLElement | null): void => {
+      if (!element) return;
+
+      element.style.setProperty('margin', '0', 'important');
+      element.style.setProperty('padding', '0', 'important');
+      element.style.setProperty('left', '0', 'important');
+      element.style.setProperty('right', '0', 'important');
+      element.style.setProperty('max-width', '100%', 'important');
+      element.style.setProperty('width', '100%', 'important');
+      element.style.setProperty('box-sizing', 'border-box', 'important');
+      element.style.setProperty('background', 'transparent', 'important');
+    };
+
+    applyFullBleed(document.documentElement as unknown as HTMLElement);
+    applyFullBleed(document.body);
+
+    document.documentElement.style.setProperty('overflow-x', 'hidden', 'important');
+    document.body?.style.setProperty('overflow-x', 'hidden', 'important');
+    document.documentElement.style.setProperty('background', '#f3f4f6', 'important');
+    document.body?.style.setProperty('background', '#f3f4f6', 'important');
+
     const selectors = [
+      '#spPageChromeAppDiv',
+      '[data-automation-id="contentScrollRegion"]',
       '#workbenchPageContent',
       '#spPageCanvasContent',
       '.SPCanvas-canvas',
+      'div[data-automation-id="Canvas"]',
+      'div[data-automation-id="CanvasZone"]',
+      'div[data-automation-id="CanvasZone"] > div',
       '.CanvasZone',
       '.CanvasSection',
       '.ControlZone',
-      'div[data-automation-id="CanvasZone"] > div'
+      'div[class*="CanvasComponent"]'
     ];
+
     const elements = document.querySelectorAll(selectors.join(','));
+
     elements.forEach((node) => {
-      const el = node as HTMLElement;
-      el.style.setProperty('margin-left', '0', 'important');
-      el.style.setProperty('padding-left', '0', 'important');
-      el.style.setProperty('max-width', '100%', 'important');
-      el.style.setProperty('width', '100%', 'important');
+      applyFullBleed(node as HTMLElement);
     });
-    document.body?.style.setProperty('overflow-x', 'hidden', 'important');
   }
 
   public componentDidMount(): void {
@@ -117,13 +149,21 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
         this.hideSharePointAppBar();
         this.fixSharePointCanvasSpacing();
       };
+
       applyFixes();
       window.setTimeout(applyFixes, 500);
       window.setTimeout(applyFixes, 1500);
+      window.setTimeout(applyFixes, 3000);
 
-      this.footerObserver = new MutationObserver(() => { applyFixes(); });
+      this.footerObserver = new MutationObserver(() => {
+        applyFixes();
+      });
+
       if (document.body) {
-        this.footerObserver.observe(document.body, { childList: true, subtree: true });
+        this.footerObserver.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
       }
     }
   }
@@ -137,7 +177,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
   private buscarTodosDocumentos = async (): Promise<void> => {
     try {
       const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('PoliticasGrunner')/items?$select=FileLeafRef,FileRef,Area&$top=5000`;
-      
+
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
 
@@ -159,11 +199,11 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
     const isBuscando = termoBusca.trim().length > 0;
 
     if (isBuscando) {
-      documentosExibidos = todosDocumentos.filter(doc => 
+      documentosExibidos = todosDocumentos.filter(doc =>
         doc.FileLeafRef && doc.FileLeafRef.toLowerCase().includes(termoBusca.toLowerCase())
       );
     } else {
-      documentosExibidos = todosDocumentos.filter(doc => 
+      documentosExibidos = todosDocumentos.filter(doc =>
         doc.Area === areaAtiva
       );
     }
@@ -200,23 +240,39 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
               opacity: 0 !important;
               pointer-events: none !important;
             }
+
+            html,
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow-x: hidden !important;
+              background: #f3f4f6 !important;
+            }
+
+            #spPageChromeAppDiv,
+            [data-automation-id="contentScrollRegion"],
             #workbenchPageContent,
             #spPageCanvasContent,
             .SPCanvas-canvas,
+            div[data-automation-id="Canvas"],
+            div[data-automation-id="CanvasZone"],
+            div[data-automation-id="CanvasZone"] > div,
             .CanvasZone,
             .CanvasSection,
             .ControlZone,
-            div[data-automation-id="CanvasZone"] > div {
-              margin-left: 0 !important;
-              padding-left: 0 !important;
+            div[class*="CanvasComponent"] {
+              margin: 0 !important;
+              padding: 0 !important;
+              left: 0 !important;
+              right: 0 !important;
               max-width: 100% !important;
               width: 100% !important;
+              box-sizing: border-box !important;
+              background: transparent !important;
             }
-            body { overflow-x: hidden !important; }
           `}</style>
         )}
 
-        {/* BARRA MOBILE E OVERLAY */}
         <div className={styles.mobileHeaderBar}>
           <button
             className={styles.hamburgerBtn}
@@ -233,7 +289,6 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           />
         )}
 
-        {/* SIDEBAR */}
         <aside className={`${styles.sidebar} ${this.state.isMobileMenuOpen ? styles.open : ''}`}>
           <button
             className={styles.closeMenuBtn}
@@ -268,7 +323,6 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           </div>
         </aside>
 
-        {/* CONTEÚDO PRINCIPAL (Ex-Container) */}
         <div className={styles.contentArea}>
           <header className={styles.pageHeader}>
             <div className={styles.headerText}>
@@ -278,8 +332,8 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           </header>
 
           <div className={styles.searchContainer}>
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="🔍 Buscar qualquer política, manual ou termo..."
               value={termoBusca}
               onChange={(e) => this.setState({ termoBusca: e.target.value })}
@@ -311,9 +365,9 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                   const extensao = doc.FileLeafRef ? doc.FileLeafRef.split('.').pop()?.toLowerCase() : '';
                   const isPdf = extensao === 'pdf';
                   const areaDoc = doc.Area ? doc.Area : 'Geral';
-                  
+
                   return (
-                    <a key={index} href={doc.FileRef} target="_blank" rel="noopener noreferrer" className={styles.documentCard}>
+                    <a key={index} href={`${doc.FileRef}?web=1`} target="_blank" rel="noopener noreferrer" className={styles.documentCard}>
                       <div className={isPdf ? styles.iconPdf : styles.iconDoc}>
                         {isPdf ? 'PDF' : 'DOC'}
                       </div>
@@ -339,7 +393,6 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
             )}
           </main>
         </div>
-
       </div>
     );
   }

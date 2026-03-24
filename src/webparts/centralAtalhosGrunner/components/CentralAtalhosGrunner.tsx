@@ -8,7 +8,7 @@ const logoCompleta = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunn
 const homeUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Inicio.aspx?env=Embedded";
 const historiaUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Historia.aspx?env=Embedded";
 const politicasUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded";
-const atalhosUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/CentralAtalhos.aspx?env=Embedded";
+const atalhosUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/centraldeatalhos.aspx?env=Embedded";
 
 interface ILinkUtil {
   ID: number;
@@ -83,7 +83,13 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
     const elements = document.querySelectorAll(selectors.join(','));
 
     elements.forEach((node) => {
-      this.collapseElement(node as HTMLElement);
+      const el = node as HTMLElement;
+      const parent = el.parentElement as HTMLElement | null;
+      const grandParent = parent?.parentElement as HTMLElement | null;
+
+      this.collapseElement(el);
+      this.collapseElement(parent);
+      this.collapseElement(grandParent);
     });
   }
 
@@ -103,27 +109,47 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
   }
 
   private fixSharePointCanvasSpacing = (): void => {
+    const applyFullBleed = (element: HTMLElement | null): void => {
+      if (!element) return;
+
+      element.style.setProperty('margin', '0', 'important');
+      element.style.setProperty('padding', '0', 'important');
+      element.style.setProperty('left', '0', 'important');
+      element.style.setProperty('right', '0', 'important');
+      element.style.setProperty('max-width', '100%', 'important');
+      element.style.setProperty('width', '100%', 'important');
+      element.style.setProperty('box-sizing', 'border-box', 'important');
+      element.style.setProperty('background', 'transparent', 'important');
+    };
+
+    applyFullBleed(document.documentElement as unknown as HTMLElement);
+    applyFullBleed(document.body);
+
+    document.documentElement.style.setProperty('overflow-x', 'hidden', 'important');
+    document.body?.style.setProperty('overflow-x', 'hidden', 'important');
+    document.documentElement.style.setProperty('background', '#f3f4f6', 'important');
+    document.body?.style.setProperty('background', '#f3f4f6', 'important');
+
     const selectors = [
+      '#spPageChromeAppDiv',
+      '[data-automation-id="contentScrollRegion"]',
       '#workbenchPageContent',
       '#spPageCanvasContent',
       '.SPCanvas-canvas',
+      'div[data-automation-id="Canvas"]',
+      'div[data-automation-id="CanvasZone"]',
+      'div[data-automation-id="CanvasZone"] > div',
       '.CanvasZone',
       '.CanvasSection',
       '.ControlZone',
-      'div[data-automation-id="CanvasZone"] > div'
+      'div[class*="CanvasComponent"]'
     ];
 
     const elements = document.querySelectorAll(selectors.join(','));
 
     elements.forEach((node) => {
-      const el = node as HTMLElement;
-      el.style.setProperty('margin-left', '0', 'important');
-      el.style.setProperty('padding-left', '0', 'important');
-      el.style.setProperty('max-width', '100%', 'important');
-      el.style.setProperty('width', '100%', 'important');
+      applyFullBleed(node as HTMLElement);
     });
-
-    document.body?.style.setProperty('overflow-x', 'hidden', 'important');
   }
 
   public componentDidMount(): void {
@@ -139,6 +165,7 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
       applyFixes();
       window.setTimeout(applyFixes, 500);
       window.setTimeout(applyFixes, 1500);
+      window.setTimeout(applyFixes, 3000);
 
       this.footerObserver = new MutationObserver(() => {
         applyFixes();
@@ -320,21 +347,34 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
               pointer-events: none !important;
             }
 
+            html,
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow-x: hidden !important;
+              background: #f3f4f6 !important;
+            }
+
+            #spPageChromeAppDiv,
+            [data-automation-id="contentScrollRegion"],
             #workbenchPageContent,
             #spPageCanvasContent,
             .SPCanvas-canvas,
+            div[data-automation-id="Canvas"],
+            div[data-automation-id="CanvasZone"],
+            div[data-automation-id="CanvasZone"] > div,
             .CanvasZone,
             .CanvasSection,
             .ControlZone,
-            div[data-automation-id="CanvasZone"] > div {
-              margin-left: 0 !important;
-              padding-left: 0 !important;
+            div[class*="CanvasComponent"] {
+              margin: 0 !important;
+              padding: 0 !important;
+              left: 0 !important;
+              right: 0 !important;
               max-width: 100% !important;
               width: 100% !important;
-            }
-
-            body {
-              overflow-x: hidden !important;
+              box-sizing: border-box !important;
+              background: transparent !important;
             }
           `}</style>
         )}
@@ -390,7 +430,6 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
         </aside>
 
         <div className={styles.contentArea}>
-          {/* SUPER CABEÇALHO COMPACTO HORIZONTAL */}
           <header className={styles.unifiedHeader}>
             <div className={styles.headerProfile}>
               <img
