@@ -1,70 +1,8 @@
-require("./HomeGrunner.module.css");
-const styles = {
-  container: 'container_84496286',
-  mobileHeaderBar: 'mobileHeaderBar_84496286',
-  hamburgerBtn: 'hamburgerBtn_84496286',
-  mobileOverlayBackdrop: 'mobileOverlayBackdrop_84496286',
-  sidebar: 'sidebar_84496286',
-  closeMenuBtn: 'closeMenuBtn_84496286',
-  logoArea: 'logoArea_84496286',
-  logoSemente: 'logoSemente_84496286',
-  navGroup: 'navGroup_84496286',
-  active: 'active_84496286',
-  open: 'open_84496286',
-  contentArea: 'contentArea_84496286',
-  header: 'header_84496286',
-  headerLeft: 'headerLeft_84496286',
-  userAvatar: 'userAvatar_84496286',
-  headerText: 'headerText_84496286',
-  dateBadge: 'dateBadge_84496286',
-  logoCentral: 'logoCentral_84496286',
-  grid: 'grid_84496286',
-  heroBanner: 'heroBanner_84496286',
-  heroImage: 'heroImage_84496286',
-  heroOverlay: 'heroOverlay_84496286',
-  heroTitle: 'heroTitle_84496286',
-  heroResumo: 'heroResumo_84496286',
-  badge: 'badge_84496286',
-  interactions: 'interactions_84496286',
-  actionBtn: 'actionBtn_84496286',
-  readMoreBtn: 'readMoreBtn_84496286',
-  subNewsGrid: 'subNewsGrid_84496286',
-  cardNewsSmall: 'cardNewsSmall_84496286',
-  smallNewsImg: 'smallNewsImg_84496286',
-  smallNewsContent: 'smallNewsContent_84496286',
-  smallInteractions: 'smallInteractions_84496286',
-  cardButtonWrapper: 'cardButtonWrapper_84496286', /* NOVA CLASSE AQUI */
-  card: 'card_84496286',
-  eventItem: 'eventItem_84496286',
-  eventDate: 'eventDate_84496286',
-  eventDay: 'eventDay_84496286',
-  eventMonth: 'eventMonth_84496286',
-  eventTitle: 'eventTitle_84496286',
-  eventLocal: 'eventLocal_84496286',
-  teamItem: 'teamItem_84496286',
-  teamAvatar: 'teamAvatar_84496286',
-  teamAvatarPlaceholder: 'teamAvatarPlaceholder_84496286',
-  teamName: 'teamName_84496286',
-  teamDetail: 'teamDetail_84496286',
-  modalOverlay: 'modalOverlay_84496286',
-  modalContent: 'modalContent_84496286',
-  modalHeader: 'modalHeader_84496286',
-  closeBtn: 'closeBtn_84496286',
-  commentsList: 'commentsList_84496286',
-  commentBubble: 'commentBubble_84496286',
-  loadingText: 'loadingText_84496286',
-  noComments: 'noComments_84496286',
-  newCommentArea: 'newCommentArea_84496286',
-  sendBtn: 'sendBtn_84496286',
-  newsSection: 'newsSection_84496286',
-  widgetsSection: 'widgetsSection_84496286',
-  eventList: 'eventList_84496286',
-  teamList: 'teamList_84496286',
-  eventInfo: 'eventInfo_84496286',
-  teamInfo: 'teamInfo_84496286',
-  btnPrimary: 'btnPrimary_84496286',
-  btnSecondaryOutline: 'btnSecondaryOutline_84496286',
-  expandedArticleWrapper: 'expandedArticleWrapper_84496286'
-};
-
-export default styles;
+export interface IHomeGrunnerProps {
+  description: string;
+  isDarkTheme: boolean;
+  environmentMessage: string;
+  hasTeamsContext: boolean;
+  userDisplayName: string;
+  context: any;
+}

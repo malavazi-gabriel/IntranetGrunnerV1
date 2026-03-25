@@ -1,6 +1,6 @@
 import * as React from 'react';
 import styles from './HomeGrunner.module.scss';
-import type { IHomeGrunnerProps } from './IHomeGrunnerProps';
+import { IHomeGrunnerProps } from './IHomeGrunnerProps';
 import { SPHttpClient, ISPHttpClientOptions } from '@microsoft/sp-http';
 
 const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo-grunner.png";
@@ -19,7 +19,7 @@ interface IHomeGrunnerState {
   todasCurtidas: any[];
   todosComentarios: any[];
   isMobileMenuOpen: boolean;
-  expandedNoticiaId: number | null; // ESTADO PARA CONTROLAR A EXPANSÃO
+  expandedNoticiaId: number | null;
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -40,7 +40,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       todasCurtidas: [],
       todosComentarios: [],
       isMobileMenuOpen: false,
-      expandedNoticiaId: null // INICIALIZANDO O ESTADO
+      expandedNoticiaId: null
     };
   }
 
@@ -164,7 +164,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
   private buscarNoticias = async () => {
     try {
-      // ADICIONADO O ConteudoNoticia AQUI NA QUERY!
       const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia,ConteudoNoticia&$top=5&$orderby=Created desc`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
@@ -312,9 +311,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     return this.state.todasCurtidas.some(c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail === userEmail);
   }
 
-  /* ==============================================
-     NOVA LÓGICA DE EXPANSÃO DE MATÉRIAS
-  ============================================== */
   private noticiaTemConteudo = (noticia: any): boolean => {
     const conteudo = (noticia?.ConteudoNoticia || '').toString().trim();
     return conteudo.length > 0;
@@ -323,7 +319,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   private handleReadMore = (noticia: any): void => {
     if (!noticia) return;
 
-    // Se tem conteúdo na coluna, expande o texto na própria tela
     if (this.noticiaTemConteudo(noticia)) {
       this.setState((prevState) => ({
         expandedNoticiaId: prevState.expandedNoticiaId === noticia.ID ? null : noticia.ID
@@ -331,21 +326,21 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       return;
     }
 
-    // Se não tem conteúdo, tenta abrir o link externo
     if (noticia?.LinkNoticia) {
       window.open(noticia.LinkNoticia, '_blank');
     }
   }
 
-  // RENDERIZA A CAIXA BRANCA EDITORIAL POR BAIXO DO BANNER
-  private renderExpandedMainNews = (noticia: any): React.ReactNode => {
+private renderExpandedMainNews = (noticia: any): React.ReactNode => {
     if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
       return null;
     }
 
     return (
       <div className={styles.expandedArticleWrapper}>
-        <p>{noticia.ConteudoNoticia}</p>
+        
+        {/* TROCAMOS O <p> POR ESSA DIV QUE LÊ HTML: */}
+        <div dangerouslySetInnerHTML={{ __html: noticia.ConteudoNoticia }} />
 
         {noticia.LinkNoticia && (
           <div style={{ marginTop: '35px', display: 'flex', justifyContent: 'flex-start' }}>
@@ -361,7 +356,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     );
   }
 
-  // RENDERIZA O CARD PEQUENO COMO SE FOSSE O BANNER GRANDE QUANDO EXPANDIDO
   private renderExpandedSubNewsCard = (noticia: any): React.ReactNode => {
     if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
       return null;
@@ -481,7 +475,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
           <main className={styles.grid}>
             <section className={styles.newsSection}>
-              {/* NOTÍCIA DE DESTAQUE */}
               {noticiaDestaque && (
                 <div 
                   className={styles.heroBanner}
@@ -509,7 +502,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                         💬 {this.getCommentsCount(noticiaDestaque.ID)} Comentários
                       </button>
 
-                      {/* LÓGICA DO BOTÃO APLICADA AQUI */}
                       <button
                         className={styles.readMoreBtn}
                         onClick={() => this.handleReadMore(noticiaDestaque)}
@@ -525,10 +517,9 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 </div>
               )}
 
-              {/* RENDERIZA O TEXTO SE O DESTAQUE FOR EXPANDIDO */}
               {this.renderExpandedMainNews(noticiaDestaque)}
 
-              {/* LISTA DE NOTÍCIAS MENORES */}
+{/* LISTA DE NOTÍCIAS MENORES */}
               <div className={styles.subNewsGrid}>
                 {outrasNoticias.map((noticia, i) => {
                   const isExpanded = this.state.expandedNoticiaId === noticia.ID && this.noticiaTemConteudo(noticia);
@@ -538,36 +529,42 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                       {isExpanded ? (
                         this.renderExpandedSubNewsCard(noticia)
                       ) : (
-                        <div className={styles.cardNewsSmall}>
+                        <div className={styles.cardNewsSmall} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                           <div
                             className={styles.smallNewsImg}
                             style={{ backgroundImage: `url(${noticia.ImagemURL})` }}
                             onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
                           />
 
-                          <div className={styles.smallNewsContent}>
-                            <h3 onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}>
+                          <div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
+                            <h3 
+                              style={{ margin: '0 0 15px 0', cursor: 'pointer', lineHeight: 1.4 }} 
+                              onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
+                            >
                               {noticia.Title}
                             </h3>
 
-                            <div className={styles.smallInteractions}>
+                            <div className={styles.smallInteractions} style={{ display: 'flex', gap: '15px', marginTop: 'auto', paddingTop: '15px', borderTop: '1px solid #F3F4F6', fontSize: '14px', marginBottom: '15px' }}>
                               <span
+                                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                                 onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}
                                 title={this.getTextQuemCurtiu(noticia.ID)}
                               >
                                 {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} <small>{this.getLikesCount(noticia.ID)}</small>
                               </span>
 
-                              <span onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}>
+                              <span 
+                                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}
+                              >
                                 💬 <small>{this.getCommentsCount(noticia.ID)}</small>
                               </span>
                             </div>
 
-                            <div style={{ marginTop: '15px' }}>
-                              {/* LÓGICA DO BOTÃO APLICADA AQUI TAMBÉM */}
+                            <div>
                               <button
-                                className={styles.btnSecondaryOutline}
                                 onClick={() => this.handleReadMore(noticia)}
+                                style={{ width: '100%', backgroundColor: '#2E5C31', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}
                               >
                                 {this.noticiaTemConteudo(noticia) ? 'Ler Matéria ➔' : 'Abrir Link ➔'}
                               </button>
@@ -629,7 +626,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           </main>
         </div>
 
-        {/* MODAL DE COMENTÁRIOS */}
         {this.state.isModalOpen && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
