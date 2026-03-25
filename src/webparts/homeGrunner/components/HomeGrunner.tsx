@@ -19,6 +19,7 @@ interface IHomeGrunnerState {
   todasCurtidas: any[];
   todosComentarios: any[];
   isMobileMenuOpen: boolean;
+  expandedNoticiaId: number | null;
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -38,7 +39,8 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       loadingComentarios: false,
       todasCurtidas: [],
       todosComentarios: [],
-      isMobileMenuOpen: false
+      isMobileMenuOpen: false,
+      expandedNoticiaId: null
     };
   }
 
@@ -176,7 +178,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
   private buscarNoticias = async () => {
     try {
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia&$top=5&$orderby=Created desc`;
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia,ConteudoNoticia&$top=5&$orderby=Created desc`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
       if (data?.value) this.setState({ noticiasReais: data.value });
@@ -329,6 +331,167 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     return this.state.todasCurtidas.some(c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail === userEmail);
   }
 
+  private noticiaTemConteudo = (noticia: any): boolean => {
+    const conteudo = (noticia?.ConteudoNoticia || '').toString().trim();
+    return conteudo.length > 0;
+  }
+
+  private handleReadMore = (noticia: any): void => {
+    if (!noticia) return;
+
+    if (this.noticiaTemConteudo(noticia)) {
+      this.setState((prevState) => ({
+        expandedNoticiaId: prevState.expandedNoticiaId === noticia.ID ? null : noticia.ID
+      }));
+      return;
+    }
+
+    if (noticia?.LinkNoticia) {
+      window.open(noticia.LinkNoticia, '_blank');
+    }
+  }
+
+private renderExpandedMainNews = (noticia: any): React.ReactNode => {
+  if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        marginTop: '-8px',
+        marginBottom: '22px',
+        borderRadius: '0 0 18px 18px',
+        overflow: 'hidden',
+        background: 'linear-gradient(180deg, rgba(28,37,16,0.98) 0%, rgba(35,49,20,0.96) 100%)',
+        borderTop: '4px solid #2E5C31',
+        boxShadow: '0 14px 30px rgba(0,0,0,0.16)'
+      }}
+    >
+      <div
+        style={{
+          padding: '22px 26px 18px 26px',
+          borderBottom: '1px solid rgba(255,255,255,0.08)'
+        }}
+      >
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: '#2E5C31',
+            color: '#FFFFFF',
+            padding: '6px 12px',
+            borderRadius: '999px',
+            fontWeight: 800,
+            fontSize: '12px',
+            textTransform: 'uppercase',
+            marginBottom: '12px'
+          }}
+        >
+          Matéria completa
+        </span>
+
+        <h3
+          style={{
+            margin: 0,
+            color: '#FFFFFF',
+            fontSize: '30px',
+            lineHeight: '1.2',
+            fontWeight: 900
+          }}
+        >
+          {noticia.Title}
+        </h3>
+
+        {noticia.Resumo && (
+          <p
+            style={{
+              margin: '12px 0 0 0',
+              color: 'rgba(255,255,255,0.82)',
+              fontSize: '16px',
+              lineHeight: '1.7'
+            }}
+          >
+            {noticia.Resumo}
+          </p>
+        )}
+      </div>
+
+      <div style={{ padding: '24px 26px 26px 26px' }}>
+        <p
+          style={{
+            margin: 0,
+            color: 'rgba(255,255,255,0.9)',
+            lineHeight: '1.9',
+            whiteSpace: 'pre-line',
+            fontSize: '15px'
+          }}
+        >
+          {noticia.ConteudoNoticia}
+        </p>
+
+        {noticia.LinkNoticia && (
+          <div style={{ marginTop: '18px' }}>
+            <button
+              className={styles.readMoreBtn}
+              onClick={() => window.open(noticia.LinkNoticia, '_blank')}
+            >
+              Abrir Link Original
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+private renderExpandedSubNewsCard = (noticia: any): React.ReactNode => {
+  if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
+    return null;
+  }
+
+  return (
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div className={styles.heroBanner}>
+        <div className={styles.heroImage} style={{ backgroundImage: `url(${noticia.ImagemURL})` }} />
+        <div className={styles.heroOverlay}>
+          <span className={styles.badge}>Matéria em Leitura</span>
+          <h2 className={styles.heroTitle}>{noticia.Title}</h2>
+          {noticia.Resumo && (
+            <p className={styles.heroResumo}>{noticia.Resumo}</p>
+          )}
+
+          <div className={styles.interactions}>
+            <button
+              className={styles.actionBtn}
+              onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}
+              title={this.getTextQuemCurtiu(noticia.ID)}
+            >
+              {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} {this.getLikesCount(noticia.ID)} Curtidas
+            </button>
+
+            <button
+              className={styles.actionBtn}
+              onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}
+            >
+              💬 {this.getCommentsCount(noticia.ID)} Comentários
+            </button>
+
+            <button
+              className={styles.readMoreBtn}
+              onClick={() => this.handleReadMore(noticia)}
+            >
+              Fechar Matéria
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {this.renderExpandedMainNews(noticia)}
+    </div>
+  );
+}
+
   public render(): React.ReactElement<IHomeGrunnerProps> {
     const nomeUsuario = this.props.userDisplayName?.split(' ')[0] || 'Colaborador';
     const noticiaDestaque = this.state.noticiasReais[0];
@@ -402,7 +565,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
             <h2>Intranet Grunner</h2>
           </div>
 
-         <div className={styles.navGroup}>
+          <div className={styles.navGroup}>
             <h3>Navegação</h3>
             <a href="#" className={styles.active}>🏠 Painel Inicial</a>
             <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/centraldeatalhos.aspx?env=Embedded">🖥️ Central de Atalhos</a>
@@ -469,42 +632,85 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
                       <button
                         className={styles.readMoreBtn}
-                        onClick={() => window.open(noticiaDestaque.LinkNoticia, '_blank')}
+                        onClick={() => this.handleReadMore(noticiaDestaque)}
                       >
-                        Ler Matéria
+                        {this.noticiaTemConteudo(noticiaDestaque)
+                          ? this.state.expandedNoticiaId === noticiaDestaque.ID
+                            ? 'Fechar Matéria'
+                            : 'Ler Matéria'
+                          : 'Abrir Link'}
                       </button>
                     </div>
                   </div>
                 </div>
               )}
 
+             {this.renderExpandedMainNews(noticiaDestaque)}
+
               <div className={styles.subNewsGrid}>
-                {outrasNoticias.map((noticia, i) => (
-                  <div key={i} className={styles.cardNewsSmall}>
+                {outrasNoticias.map((noticia, i) => {
+                  const isExpanded =
+                    this.state.expandedNoticiaId === noticia.ID &&
+                    this.noticiaTemConteudo(noticia);
+
+                  return (
                     <div
-                      className={styles.smallNewsImg}
-                      style={{ backgroundImage: `url(${noticia.ImagemURL})` }}
-                      onClick={() => window.open(noticia.LinkNoticia, '_blank')}
-                    />
+                      key={i}
+                      style={isExpanded ? { gridColumn: '1 / -1' } : undefined}
+                    >
+                      {isExpanded ? (
+                        this.renderExpandedSubNewsCard(noticia)
+                      ) : (
+                        <div className={styles.cardNewsSmall}>
+                          <div
+                            className={styles.smallNewsImg}
+                            style={{ backgroundImage: `url(${noticia.ImagemURL})` }}
+                            onClick={() =>
+                              this.noticiaTemConteudo(noticia)
+                                ? this.handleReadMore(noticia)
+                                : window.open(noticia.LinkNoticia, '_blank')
+                            }
+                          />
 
-                    <div className={styles.smallNewsContent}>
-                      <h3 onClick={() => window.open(noticia.LinkNoticia, '_blank')}>{noticia.Title}</h3>
+                          <div className={styles.smallNewsContent}>
+                            <h3
+                              onClick={() =>
+                                this.noticiaTemConteudo(noticia)
+                                  ? this.handleReadMore(noticia)
+                                  : window.open(noticia.LinkNoticia, '_blank')
+                              }
+                            >
+                              {noticia.Title}
+                            </h3>
 
-                      <div className={styles.smallInteractions}>
-                        <span
-                          onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}
-                          title={this.getTextQuemCurtiu(noticia.ID)}
-                        >
-                          {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} <small>{this.getLikesCount(noticia.ID)}</small>
-                        </span>
+                            <div className={styles.smallInteractions}>
+                              <span
+                                onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}
+                                title={this.getTextQuemCurtiu(noticia.ID)}
+                              >
+                                {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} <small>{this.getLikesCount(noticia.ID)}</small>
+                              </span>
 
-                        <span onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}>
-                          💬 <small>{this.getCommentsCount(noticia.ID)}</small>
-                        </span>
-                      </div>
+                              <span onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}>
+                                💬 <small>{this.getCommentsCount(noticia.ID)}</small>
+                              </span>
+                            </div>
+
+                            <div style={{ marginTop: '16px' }}>
+                              <button
+                                className={styles.readMoreBtn}
+                                style={{ width: '100%' }}
+                                onClick={() => this.handleReadMore(noticia)}
+                              >
+                                {this.noticiaTemConteudo(noticia) ? 'Ler Matéria Completa ➔' : 'Abrir Link Original ➔'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 

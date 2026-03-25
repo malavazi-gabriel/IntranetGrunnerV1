@@ -1,10 +1,11 @@
 /* =======================================
-   VARIÁVEIS DE CORES DA MARCA
+   VARIÁVEIS DE CORES DA MARCA (MODERNIZADAS)
 ======================================= */
-$grunner-green: #A6CE39;
-$grunner-dark: #1C2510;
-$bg-light: #F3F4F6;
-$text-gray: #6B7280;
+$grunner-green: #2E5C31; /* Verde floresta profundo e elegante */
+$grunner-accent: #A6CE39; /* Verde original usado apenas para pequenos destaques */
+$grunner-dark: #171E0D;
+$bg-light: #F8FAFC; /* Cinza super claro moderno */
+$text-gray: #4B5563;
 
 /* =======================================
    ESTRUTURA PRINCIPAL
@@ -40,8 +41,8 @@ $text-gray: #6B7280;
 
 .hamburgerBtn {
   background: transparent;
-  color: $grunner-green;
-  border: 1px solid $grunner-green;
+  color: $grunner-accent;
+  border: 1px solid $grunner-accent;
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 16px;
@@ -63,6 +64,7 @@ $text-gray: #6B7280;
     height: 100vh;
     background: rgba(0, 0, 0, 0.6);
     z-index: 90;
+    backdrop-filter: blur(3px);
   }
 }
 
@@ -78,7 +80,7 @@ $text-gray: #6B7280;
   flex-shrink: 0;
   min-height: 100vh;
   padding: 30px 20px;
-  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.08);
   z-index: 100;
   transition: left 0.3s ease-in-out;
 
@@ -92,7 +94,7 @@ $text-gray: #6B7280;
     gap: 15px;
     margin-bottom: 40px;
     padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 
     .logoSemente {
       width: 50px;
@@ -105,6 +107,7 @@ $text-gray: #6B7280;
       font-size: 18px;
       color: white;
       font-weight: 700;
+      letter-spacing: 0.5px;
     }
   }
 
@@ -128,20 +131,21 @@ $text-gray: #6B7280;
       text-decoration: none;
       padding: 12px 10px;
       border-radius: 8px;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       font-size: 15px;
       margin-bottom: 5px;
 
       &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.08);
         color: white;
+        transform: translateX(4px);
       }
 
-&.active {
-        background-color: rgba(166, 206, 57, 0.15); 
-        color: $grunner-green; 
+      &.active {
+        background-color: rgba(46, 92, 49, 0.2); 
+        color: $grunner-accent; 
         font-weight: 700;
-        border-left: 3px solid $grunner-green; 
+        border-left: 3px solid $grunner-accent; 
         border-radius: 4px 8px 8px 4px; 
       }
     }
@@ -191,15 +195,15 @@ $text-gray: #6B7280;
    CABEÇALHO DE BOAS-VINDAS PREMIUM
 ======================================= */
 .header {
-  background: linear-gradient(135deg, $grunner-dark 0%, #2A3618 100%);
-  border-radius: 16px;
-  padding: 30px 40px;
+  background: linear-gradient(135deg, $grunner-dark 0%, #202b14 100%);
+  border-radius: 20px;
+  padding: 35px 45px;
   margin: 30px 5% 10px 5%;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 
   .headerLeft {
     display: flex;
@@ -208,12 +212,12 @@ $text-gray: #6B7280;
   }
 
   .userAvatar {
-    width: 80px;
-    height: 80px;
+    width: 85px;
+    height: 85px;
     border-radius: 50%;
     border: 3px solid $grunner-green;
     object-fit: cover;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   }
 
   .headerText {
@@ -231,37 +235,37 @@ $text-gray: #6B7280;
     }
 
     p {
-      margin: 5px 0 12px 0;
+      margin: 8px 0 14px 0;
       color: rgba(255, 255, 255, 0.85);
       font-size: 16px;
-      font-weight: 500;
+      font-weight: 400;
     }
   }
 
   .dateBadge {
     display: inline-flex;
     align-items: center;
-    background: transparent;
-    border: none;
-    padding: 4px 0;
+    background: rgba(255,255,255,0.1);
+    padding: 6px 14px;
+    border-radius: 20px;
     color: #f3f4f6;
-    font-size: 14px;
-    font-weight: 500;
-    opacity: 0.85;
+    font-size: 13px;
+    font-weight: 600;
     letter-spacing: 0.5px;
     gap: 6px;
+    backdrop-filter: blur(4px);
   }
 
   .logoCentral {
-    height: 55px;
+    height: 50px;
     width: auto;
-    filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.2));
   }
 
   @media (max-width: 850px) {
     flex-direction: column;
     padding: 25px;
-    margin: 20px 5% 10px 5%;
+    border-radius: 16px;
 
     .headerLeft {
       flex-direction: column;
@@ -271,16 +275,8 @@ $text-gray: #6B7280;
 
     .headerText {
       align-items: center;
-
-      h1 {
-        font-size: 28px;
-      }
-
-      p {
-        font-size: 14px;
-        text-align: center;
-        line-height: 1.4;
-      }
+      h1 { font-size: 28px; }
+      p { font-size: 14px; text-align: center; line-height: 1.5; }
     }
 
     .logoCentral {
@@ -300,27 +296,26 @@ $text-gray: #6B7280;
   width: 100%;
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 30px;
+  gap: 35px;
   box-sizing: border-box;
   align-items: start;
 
   @media (max-width: 850px) {
     grid-template-columns: 1fr;
-    padding: 20px;
-    gap: 20px;
+    gap: 25px;
   }
 }
 
 /* =======================================
-   HERO BANNER
+   HERO BANNER (DESTAQUE)
 ======================================= */
 .heroBanner {
   position: relative;
-  height: 450px;
-  border-radius: 16px;
+  height: 480px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+  margin-bottom: 25px;
 
   .heroImage {
     position: absolute;
@@ -330,12 +325,12 @@ $text-gray: #6B7280;
     height: 100%;
     background-size: cover;
     background-position: center;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
   }
 
   &:hover .heroImage {
-    transform: scale(1.05);
+    transform: scale(1.03);
   }
 
   .heroOverlay {
@@ -343,8 +338,8 @@ $text-gray: #6B7280;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 40px;
-    background: linear-gradient(transparent, rgba(28, 37, 16, 0.95));
+    padding: 50px 40px 40px 40px;
+    background: linear-gradient(transparent, rgba(23, 30, 13, 0.95) 80%);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -353,34 +348,27 @@ $text-gray: #6B7280;
 
   .heroTitle {
     color: white !important;
-    font-size: 32px;
-    margin: 12px 0;
+    font-size: 34px;
+    margin: 14px 0;
     font-weight: 800;
+    line-height: 1.2;
   }
 
   .heroResumo {
-    color: rgba(255, 255, 255, 0.85) !important;
-    margin-bottom: 20px;
+    color: rgba(255, 255, 255, 0.9) !important;
+    margin-bottom: 25px;
     max-width: 85%;
     font-size: 16px;
+    line-height: 1.6;
   }
 
   @media (max-width: 850px) {
-    height: 480px;
+    height: 450px;
+    border-radius: 16px;
 
-    .heroOverlay {
-      padding: 20px;
-    }
-
-    .heroTitle {
-      font-size: 24px;
-    }
-
-    .heroResumo {
-      font-size: 14px;
-      max-width: 100%;
-      margin-bottom: 15px;
-    }
+    .heroOverlay { padding: 30px 20px 20px 20px; }
+    .heroTitle { font-size: 24px; }
+    .heroResumo { font-size: 14px; max-width: 100%; margin-bottom: 20px; }
   }
 }
 
@@ -388,76 +376,72 @@ $text-gray: #6B7280;
    BOTÕES E BADGES (INTERAÇÃO)
 ======================================= */
 .badge {
-  background: $grunner-green;
+  background: $grunner-accent;
   color: $grunner-dark;
   padding: 6px 14px;
   font-weight: 800;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 12px;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
   margin-bottom: 10px;
+  box-shadow: 0 4px 10px rgba(166, 206, 57, 0.3);
 }
 
 .interactions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   align-items: center;
   flex-wrap: wrap;
   margin-top: 10px;
 
   .actionBtn {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
-    padding: 10px 18px;
-    border-radius: 6px;
+    padding: 12px 20px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    transition: 0.2s;
-    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
 
     &:hover {
-      background: $grunner-green;
-      color: $grunner-dark;
-      border-color: $grunner-green;
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
     }
   }
 
+  /* NOVO BOTÃO LER MATÉRIA ELEGANTE */
   .readMoreBtn {
     margin-left: auto;
     background: $grunner-green;
-    color: $grunner-dark;
+    color: white;
     border: none;
-    padding: 10px 24px;
-    border-radius: 6px;
-    font-weight: 700;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 16px rgba(46, 92, 49, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 
     &:hover {
-      filter: brightness(1.1);
+      background: lighten(#2E5C31, 5%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(46, 92, 49, 0.4);
     }
   }
 
   @media (max-width: 850px) {
-    .actionBtn {
-      flex: 1;
-      padding: 10px;
-      font-size: 13px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .readMoreBtn {
-      margin-left: 0;
-      width: 100%;
-      padding: 12px;
-      margin-top: 5px;
-      text-align: center;
-    }
+    .actionBtn { flex: 1; padding: 12px; font-size: 13px; justify-content: center; }
+    .readMoreBtn { margin-left: 0; width: 100%; margin-top: 10px; }
   }
 }
 
@@ -467,7 +451,7 @@ $text-gray: #6B7280;
 .subNewsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 25px;
 
   @media (max-width: 850px) {
     grid-template-columns: 1fr;
@@ -476,51 +460,64 @@ $text-gray: #6B7280;
 
 .cardNewsSmall {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
 
   &:hover {
-    transform: translateY(-5px);
+    transform: translateY(-6px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
   }
 
   .smallNewsImg {
-    height: 160px;
+    height: 180px;
     background-size: cover;
     background-position: center;
     cursor: pointer;
+    border-bottom: 1px solid rgba(0,0,0,0.03);
   }
 
   .smallNewsContent {
-    padding: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 
     h3 {
-      margin: 0;
-      font-size: 18px;
+      margin: 0 0 15px 0;
+      font-size: 19px;
+      font-weight: 700;
       color: $grunner-dark;
       cursor: pointer;
-      line-height: 1.3;
+      line-height: 1.4;
     }
 
     .smallInteractions {
       display: flex;
       gap: 15px;
-      margin-top: 15px;
+      margin-top: auto;
       padding-top: 15px;
-      border-top: 1px solid #f0f0f0;
-      font-size: 16px;
+      border-top: 1px solid #F3F4F6;
+      font-size: 15px;
+      color: $text-gray;
 
       span {
         cursor: pointer;
         transition: 0.2s;
-        padding: 4px 8px;
-        border-radius: 4px;
+        padding: 6px 10px;
+        border-radius: 6px;
         background: $bg-light;
+        display: flex;
+        align-items: center;
+        gap: 6px;
 
         &:hover {
-          transform: scale(1.1);
-          background: #e5e7eb;
+          background: #E5E7EB;
+          color: $grunner-dark;
         }
       }
     }
@@ -532,48 +529,63 @@ $text-gray: #6B7280;
 ======================================= */
 .card {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
   border-top: 4px solid $grunner-green;
   margin-bottom: 25px;
+  border-left: 1px solid rgba(0,0,0,0.02);
+  border-right: 1px solid rgba(0,0,0,0.02);
+  border-bottom: 1px solid rgba(0,0,0,0.02);
 
   h2 {
     margin-top: 0;
     color: $grunner-dark;
     font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 20px;
+    font-weight: 800;
+    margin-bottom: 24px;
+    letter-spacing: -0.3px;
   }
 }
 
 .eventItem {
   display: flex;
-  gap: 15px;
+  gap: 18px;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed #E5E7EB;
+
+  &:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
 
   .eventDate {
     background: $bg-light;
-    padding: 10px;
-    border-radius: 8px;
-    min-width: 65px;
+    padding: 12px;
+    border-radius: 12px;
+    min-width: 70px;
     text-align: center;
     border: 1px solid #E5E7EB;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 
     .eventDay {
       display: block;
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 900;
       color: $grunner-green;
       line-height: 1;
+      margin-bottom: 2px;
     }
 
     .eventMonth {
       font-size: 11px;
-      font-weight: 800;
+      font-weight: 700;
       text-transform: uppercase;
-      color: $grunner-dark;
+      color: $text-gray;
+      letter-spacing: 0.5px;
     }
   }
 
@@ -581,34 +593,41 @@ $text-gray: #6B7280;
     font-weight: 700;
     color: $grunner-dark;
     font-size: 16px;
+    line-height: 1.3;
   }
 
   .eventLocal {
     font-size: 13px;
     color: $text-gray;
-    margin-top: 4px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 }
 
 .teamItem {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding-bottom: 15px;
+  gap: 16px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
   border-bottom: 1px solid #F3F4F6;
 
   &:last-child {
     border-bottom: none;
     padding-bottom: 0;
+    margin-bottom: 0;
   }
 
   .teamAvatar,
   .teamAvatarPlaceholder {
-    width: 48px;
-    height: 48px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     border: 2px solid $grunner-green;
     object-fit: cover;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
   }
 
   .teamAvatarPlaceholder {
@@ -628,7 +647,7 @@ $text-gray: #6B7280;
   .teamDetail {
     font-size: 13px;
     color: $text-gray;
-    margin-top: 2px;
+    margin-top: 4px;
   }
 }
 
