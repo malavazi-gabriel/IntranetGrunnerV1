@@ -20,6 +20,7 @@ interface IHomeGrunnerState {
   todosComentarios: any[];
   isMobileMenuOpen: boolean;
   expandedNoticiaId: number | null;
+  limiteNoticias: number;
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -40,7 +41,8 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       todasCurtidas: [],
       todosComentarios: [],
       isMobileMenuOpen: false,
-      expandedNoticiaId: null
+      expandedNoticiaId: null,
+      limiteNoticias: 5,
     };
   }
 
@@ -169,16 +171,22 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     this.setState({ loading: false });
   }
 
-  private buscarNoticias = async () => {
+private buscarNoticias = async () => {
     try {
-      // QUERY ATUALIZADA: Puxa a ImagemURL e também expande os Anexos (AttachmentFiles)
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia,ConteudoNoticia,Attachments,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$top=5&$orderby=Created desc`;
+      // A URL puxa o número de notícias baseado no limite do estado
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia,ConteudoNoticia,Attachments,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$top=${this.state.limiteNoticias}&$orderby=Created desc`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
       if (data?.value) this.setState({ noticiasReais: data.value });
     } catch (e) {
       console.error("Erro ao buscar notícias:", e);
     }
+  }
+
+  private carregarMaisNoticias = () => {
+    this.setState((prevState) => ({
+      limiteNoticias: prevState.limiteNoticias + 4
+    }), this.buscarNoticias); // Chama a busca novamente após aumentar o limite
   }
 
   private buscarEngajamento = async () => {
@@ -593,6 +601,16 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                   );
                 })}
               </div>
+
+              {/* BOTÃO CARREGAR MAIS FICA AQUI */}
+              {this.state.noticiasReais.length >= this.state.limiteNoticias && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px', width: '100%' }}>
+                  <button className={styles.btnSecondaryOutline} onClick={this.carregarMaisNoticias} style={{ maxWidth: '300px' }}>
+                    Carregar mais notícias ↓
+                  </button>
+                </div>
+              )}
+
             </section>
 
             <aside className={styles.widgetsSection}>
