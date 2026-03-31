@@ -42,7 +42,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       todosComentarios: [],
       isMobileMenuOpen: false,
       expandedNoticiaId: null,
-      limiteNoticias: 5,
+      limiteNoticias: 7,
     };
   }
 
@@ -185,7 +185,7 @@ private buscarNoticias = async () => {
 
   private carregarMaisNoticias = () => {
     this.setState((prevState) => ({
-      limiteNoticias: prevState.limiteNoticias + 4
+      limiteNoticias: prevState.limiteNoticias + 3
     }), this.buscarNoticias); // Chama a busca novamente após aumentar o limite
   }
 
