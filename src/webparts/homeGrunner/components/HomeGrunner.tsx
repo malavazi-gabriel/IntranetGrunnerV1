@@ -126,6 +126,13 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   public componentDidMount(): void {
     this.carregarDadosIniciais();
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const noticiaIdParam = urlParams.get('noticiaId');
+    
+    if (noticiaIdParam) {
+      this.setState({ expandedNoticiaId: parseInt(noticiaIdParam, 10) });
+    }
+
     if (this.shouldHideSharePointChrome()) {
       const applyFixes = (): void => {
         this.hideSharePointFooter();
@@ -164,7 +171,8 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
   private buscarNoticias = async () => {
     try {
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia,ConteudoNoticia&$top=5&$orderby=Created desc`;
+      // QUERY ATUALIZADA: Puxa a ImagemURL e também expande os Anexos (AttachmentFiles)
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia,ConteudoNoticia,Attachments,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$top=5&$orderby=Created desc`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
       if (data?.value) this.setState({ noticiasReais: data.value });
@@ -331,15 +339,21 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     }
   }
 
-private renderExpandedMainNews = (noticia: any): React.ReactNode => {
+  // FUNÇÃO INTELIGENTE: Pega o anexo se existir, senão pega a ImagemURL
+  private getImagemNoticia = (noticia: any): string => {
+    if (noticia.Attachments && noticia.AttachmentFiles && noticia.AttachmentFiles.length > 0) {
+      return noticia.AttachmentFiles[0].ServerRelativeUrl;
+    }
+    return noticia.ImagemURL || '';
+  }
+
+  private renderExpandedMainNews = (noticia: any): React.ReactNode => {
     if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
       return null;
     }
 
     return (
       <div className={styles.expandedArticleWrapper}>
-        
-        {/* TROCAMOS O <p> POR ESSA DIV QUE LÊ HTML: */}
         <div dangerouslySetInnerHTML={{ __html: noticia.ConteudoNoticia }} />
 
         {noticia.LinkNoticia && (
@@ -361,10 +375,12 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
       return null;
     }
 
+    const imagemExibicao = this.getImagemNoticia(noticia);
+
     return (
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
         <div className={styles.heroBanner} style={{ marginBottom: 0, borderRadius: '20px 20px 0 0' }}>
-          <div className={styles.heroImage} style={{ backgroundImage: `url(${noticia.ImagemURL})` }} />
+          <div className={styles.heroImage} style={{ backgroundImage: `url('${imagemExibicao}')` }} />
           <div className={styles.heroOverlay}>
             <span className={styles.badge}>Matéria em Leitura</span>
             <h2 className={styles.heroTitle}>{noticia.Title}</h2>
@@ -475,12 +491,13 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
 
           <main className={styles.grid}>
             <section className={styles.newsSection}>
+              {/* NOTÍCIA DE DESTAQUE */}
               {noticiaDestaque && (
                 <div 
                   className={styles.heroBanner}
                   style={this.state.expandedNoticiaId === noticiaDestaque.ID ? { marginBottom: 0, borderRadius: '20px 20px 0 0' } : {}}
                 >
-                  <div className={styles.heroImage} style={{ backgroundImage: `url(${noticiaDestaque.ImagemURL})` }} />
+                  <div className={styles.heroImage} style={{ backgroundImage: `url('${this.getImagemNoticia(noticiaDestaque)}')` }} />
                   <div className={styles.heroOverlay}>
                     <span className={styles.badge}>Destaque Operacional</span>
                     <h2 className={styles.heroTitle}>{noticiaDestaque.Title}</h2>
@@ -519,7 +536,7 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
 
               {this.renderExpandedMainNews(noticiaDestaque)}
 
-{/* LISTA DE NOTÍCIAS MENORES */}
+              {/* LISTA DE NOTÍCIAS MENORES */}
               <div className={styles.subNewsGrid}>
                 {outrasNoticias.map((noticia, i) => {
                   const isExpanded = this.state.expandedNoticiaId === noticia.ID && this.noticiaTemConteudo(noticia);
@@ -532,7 +549,7 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                         <div className={styles.cardNewsSmall} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                           <div
                             className={styles.smallNewsImg}
-                            style={{ backgroundImage: `url(${noticia.ImagemURL})` }}
+                            style={{ backgroundImage: `url('${this.getImagemNoticia(noticia)}')` }}
                             onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
                           />
 
@@ -626,6 +643,7 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
           </main>
         </div>
 
+        {/* MODAL DE COMENTÁRIOS */}
         {this.state.isModalOpen && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
