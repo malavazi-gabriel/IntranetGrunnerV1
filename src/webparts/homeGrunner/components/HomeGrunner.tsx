@@ -21,6 +21,7 @@ interface IHomeGrunnerState {
   isMobileMenuOpen: boolean;
   expandedNoticiaId: number | null;
   limiteNoticias: number;
+  mostrarTodosAniversariantes: boolean;
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -43,6 +44,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       isMobileMenuOpen: false,
       expandedNoticiaId: null,
       limiteNoticias: 7,
+      mostrarTodosAniversariantes: false
     };
   }
 
@@ -171,9 +173,8 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     this.setState({ loading: false });
   }
 
-private buscarNoticias = async () => {
+  private buscarNoticias = async () => {
     try {
-      // A URL puxa o número de notícias baseado no limite do estado
       const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia,ConteudoNoticia,Attachments,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$top=${this.state.limiteNoticias}&$orderby=Created desc`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
@@ -186,7 +187,7 @@ private buscarNoticias = async () => {
   private carregarMaisNoticias = () => {
     this.setState((prevState) => ({
       limiteNoticias: prevState.limiteNoticias + 3
-    }), this.buscarNoticias); // Chama a busca novamente após aumentar o limite
+    }), this.buscarNoticias); 
   }
 
   private buscarEngajamento = async () => {
@@ -211,7 +212,7 @@ private buscarNoticias = async () => {
 
   private buscarAniversariantes = async () => {
     try {
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('AniversariantesGrunner')/items?$select=Title,Dia,Setor,Email&$top=4`;
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('AniversariantesGrunner')/items?$select=Title,Dia,Setor,Email&$top=100`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
       if (data?.value) this.setState({ aniversariantesReais: data.value });
@@ -229,6 +230,25 @@ private buscarNoticias = async () => {
     } catch (e) {
       console.error("Erro ao buscar eventos:", e);
     }
+  }
+
+  private isAniversarianteDaSemana = (diaStr: string): boolean => {
+    const dia = parseInt(diaStr, 10);
+    if (isNaN(dia)) return false;
+
+    const hoje = new Date();
+    const diasDaSemana: number[] = []; 
+    
+    const domingo = new Date(hoje);
+    domingo.setDate(hoje.getDate() - hoje.getDay());
+
+    for (let i = 0; i < 7; i++) {
+      const dataDaSemana = new Date(domingo);
+      dataDaSemana.setDate(domingo.getDate() + i);
+      diasDaSemana.push(dataDaSemana.getDate());
+    }
+
+    return diasDaSemana.indexOf(dia) !== -1;
   }
 
   private handleLike = async (noticiaId: number) => {
@@ -347,7 +367,6 @@ private buscarNoticias = async () => {
     }
   }
 
-  // FUNÇÃO INTELIGENTE: Pega o anexo se existir, senão pega a ImagemURL
   private getImagemNoticia = (noticia: any): string => {
     if (noticia.Attachments && noticia.AttachmentFiles && noticia.AttachmentFiles.length > 0) {
       return noticia.AttachmentFiles[0].ServerRelativeUrl;
@@ -639,23 +658,121 @@ private buscarNoticias = async () => {
                 </div>
               </div>
 
-              <div className={styles.card}>
+<div className={styles.card}>
                 <h2>Aniversariantes do mês</h2>
-                <div className={styles.teamList}>
-                  {this.state.aniversariantesReais.length > 0 ? this.state.aniversariantesReais.map((niver, i) => (
-                    <div key={i} className={styles.teamItem}>
-                      {niver.Email ? (
-                        <img src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${niver.Email}`} alt={niver.Title} className={styles.teamAvatar} />
-                      ) : (
-                        <div className={styles.teamAvatarPlaceholder}>🎉</div>
-                      )}
-                      <div className={styles.teamInfo}>
-                        <div className={styles.teamName}>{niver.Title}</div>
-                        <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
+                
+                {(() => {
+                  if (this.state.aniversariantesReais.length === 0) {
+                    return <p>Nenhum aniversariante neste mês.</p>;
+                  }
+
+                  // 0. Ordenar cronologicamente pelo Dia (do 1 ao 31)
+                  const aniversariantesOrdenados = [...this.state.aniversariantesReais].sort((a, b) => {
+                    return parseInt(a.Dia, 10) - parseInt(b.Dia, 10);
+                  });
+
+                  // 1. Separa quem é da semana e quem não é (usando a lista já ordenada)
+                  const aniversariantesDaSemana = aniversariantesOrdenados.filter(n => this.isAniversarianteDaSemana(n.Dia));
+                  const aniversariantesRestantes = aniversariantesOrdenados.filter(n => !this.isAniversarianteDaSemana(n.Dia));
+
+                  // Pega o dia de hoje para o super destaque
+                  const diaDeHoje = new Date().getDate();
+
+                  return (
+                    <>
+                      {/* A LISTA COM ROLAGEM FICA AQUI DENTRO */}
+                      <div className={styles.teamList}>
+                        
+                        {/* 2. RENDERIZA APENAS OS DA SEMANA (COM CARD PREMIUM) */}
+                        {aniversariantesDaSemana.length > 0 ? (
+                          aniversariantesDaSemana.map((niver, i) => {
+                            const isHoje = parseInt(niver.Dia, 10) === diaDeHoje;
+
+return (
+                              <div key={`semana-${i}`} className={styles.teamItem} style={{
+                                backgroundColor: isHoje ? '#ffffff' : '#F4FAEB', // Branco puro se for hoje para destacar a borda
+                                border: isHoje ? '2px solid #A6CE39' : '1px solid #A6CE39', // Borda mais grossa verde limão se for hoje
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                boxShadow: isHoje ? '0 6px 16px rgba(166, 206, 57, 0.4)' : '0 4px 12px rgba(166, 206, 57, 0.2)', // Sombra mais forte e brilhante se for hoje
+                                borderBottom: isHoje ? '2px solid #A6CE39' : 'none',
+                                marginBottom: '16px'
+                              }}>
+                                {niver.Email ? (
+                                  <img src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${niver.Email}`} alt={niver.Title} className={styles.teamAvatar} />
+                                ) : (
+                                  <div className={styles.teamAvatarPlaceholder}>🎉</div>
+                                )}
+                                <div className={styles.teamInfo}>
+                                  <div className={styles.teamName}>{niver.Title}</div>
+                                  <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
+                                </div>
+                                
+                                {/* SELO TOTALMENTE NA IDENTIDADE GRUNNER */}
+                                <div style={{ 
+                                  marginLeft: 'auto', 
+                                  background: isHoje ? '#A6CE39' : '#2E5C31', // Verde Limão se for hoje, Verde Escuro na semana
+                                  color: isHoje ? '#171E0D' : '#ffffff', // Letra super escura se for hoje para dar contraste
+                                  padding: '6px 12px', 
+                                  borderRadius: '20px', 
+                                  fontSize: '11px', 
+                                  fontWeight: '900', // Letra um pouco mais gordinha
+                                  boxShadow: isHoje ? '0 4px 10px rgba(166, 206, 57, 0.5)' : '0 2px 6px rgba(46, 92, 49, 0.4)',
+                                  whiteSpace: 'nowrap' 
+                                }}>
+                                  {isHoje ? 'É Hoje! 🎂' : 'Nesta semana 🎈'}
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <p style={{ fontSize: '14px', color: '#6B7280', fontStyle: 'italic', marginBottom: '15px' }}>Nenhum aniversariante para esta semana.</p>
+                        )}
+
+                        {/* 3. RENDERIZA OS RESTANTES DO MÊS ORDENADOS CRONOLOGICAMENTE */}
+                        {this.state.mostrarTodosAniversariantes && (
+                          aniversariantesRestantes.map((niver, i) => (
+                            <div key={`resto-${i}`} className={styles.teamItem}>
+                              {niver.Email ? (
+                                <img src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${niver.Email}`} alt={niver.Title} className={styles.teamAvatar} />
+                              ) : (
+                                <div className={styles.teamAvatarPlaceholder}>🎉</div>
+                              )}
+                              <div className={styles.teamInfo}>
+                                <div className={styles.teamName}>{niver.Title}</div>
+                                <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
-                    </div>
-                  )) : <p>Nenhum aniversariante hoje.</p>}
-                </div>
+
+                      {/* 4. BOTÃO FIXO FORA DA ROLAGEM! SEMPRE VISÍVEL! */}
+                      {aniversariantesRestantes.length > 0 && (
+                        <button 
+                          onClick={() => this.setState({ mostrarTodosAniversariantes: !this.state.mostrarTodosAniversariantes })}
+                          style={{ 
+                            width: '100%', 
+                            background: 'transparent', 
+                            border: '1px dashed #cbd5e1', 
+                            padding: '8px', 
+                            borderRadius: '8px', 
+                            color: '#64748b', 
+                            cursor: 'pointer', 
+                            fontWeight: 'bold', 
+                            fontSize: '12px', 
+                            marginTop: '15px', // Desgruda um pouco da lista de cima
+                            transition: '0.2s' 
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          {this.state.mostrarTodosAniversariantes ? '↑ Ocultar restantes' : `↓ Ver outros ${aniversariantesRestantes.length} do mês`}
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </aside>
           </main>
