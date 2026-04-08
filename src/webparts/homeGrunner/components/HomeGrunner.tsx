@@ -486,10 +486,10 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           </div>
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
-            <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">🖥️ TI</a>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer">📢 Marketing</a>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer">🚗 Frotas</a>
-            <a href="https://forms.monday.com/forms/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
+              <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">🖥️ TI</a>
+              <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
+              <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
+              <a href="https://forms.monday.com/forms/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
           </div>
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
@@ -621,7 +621,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 })}
               </div>
 
-              {/* BOTÃO CARREGAR MAIS FICA AQUI */}
+              {/* BOTÃO CARREGAR MAIS */}
               {this.state.noticiasReais.length >= this.state.limiteNoticias && (
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px', width: '100%' }}>
                   <button className={styles.btnSecondaryOutline} onClick={this.carregarMaisNoticias} style={{ maxWidth: '300px' }}>
@@ -680,7 +680,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
                   return (
                     <>
-                      {/* A LISTA COM ROLAGEM FICA AQUI DENTRO */}
+                      {/* A LISTA COM ROLAGEM */}
                       <div className={styles.teamList}>
                         
                         {/* 2. RENDERIZA APENAS OS DA SEMANA (COM CARD PREMIUM) */}
