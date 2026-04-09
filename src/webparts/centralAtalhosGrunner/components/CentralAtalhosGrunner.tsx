@@ -513,7 +513,7 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
                           <p className={styles.shortcutDescription}>{link.Descricao}</p>
                         )}
                       </a>
-                    ))}
+                    ))} 
                   </div>
                 </div>
               ) : (
