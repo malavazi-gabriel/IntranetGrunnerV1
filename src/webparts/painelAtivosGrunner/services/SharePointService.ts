@@ -126,7 +126,6 @@ export class SharePointService {
     }
   }
 
-  // --- NOVA FUNÇÃO PARA TRANSFERÊNCIA EM LOTE ---
   public async transferirAtivo(id: number, nomeResponsavel: string, departamento: string, emailResponsavel: string, observacoes: string): Promise<void> {
     try {
       const payload: any = {
@@ -228,4 +227,86 @@ export class SharePointService {
       return "";
     }
   }
+
+  public async getHistoricoAtivo(id: number): Promise<any[]> {
+    try {
+      const versoes = await this._sp.web.lists.getByTitle("Ativos de TI").items.getById(id).versions();
+      return versoes.map((v: any) => ({
+        versao: v.VersionLabel,
+        data: new Date(v.Created).toLocaleString('pt-BR'),
+        modificadoPor: v.Editor ? (v.Editor.LookupValue || v.Editor.Email) : "Sistema",
+        responsavel: v.Title || "Sem Responsável",
+        observacao: v.field_11 || ""
+      }));
+    } catch (error) {
+      console.warn("Não foi possível buscar o histórico de versões. Verifique se o Versionamento está ativo na lista.", error);
+      return [];
+    }
+  }
+
+  // --- NOVA FUNÇÃO: LER LISTA DINÂMICA DE ACESSOS ---
+  public async verificarAcessoUsuario(emailLogado: string): Promise<{ isTI: boolean, isVisualizador: boolean }> {
+    try {
+      // Puxa todos os itens da nossa nova lista de acessos
+      const itens = await this._sp.web.lists.getByTitle("Acessos_Painel_Ativos").items.select("Email", "NivelAcesso")();
+      
+      let isTI = false;
+      let isVisualizador = false;
+
+      for (const item of itens) {
+        // Validação ignorando letras maiúsculas/minúsculas e espaços
+        if (item.Email && item.Email.trim().toLowerCase() === emailLogado.trim().toLowerCase()) {
+          if (item.NivelAcesso === "TI") {
+            isTI = true;
+          } else if (item.NivelAcesso === "Visualizador") {
+            isVisualizador = true;
+          }
+        }
+      }
+      
+      return { isTI, isVisualizador };
+    } catch (error) {
+      console.warn("Erro ao buscar acessos na lista 'Acessos_Painel_Ativos'. O usuário será tratado como Colaborador comum por segurança.", error);
+      return { isTI: false, isVisualizador: false };
+    }
+  }
+
+  // --- FUNÇÕES DE GERENCIAMENTO DE ACESSOS ---
+  public async getTodosAcessos(): Promise<any[]> {
+    try {
+      const itens = await this._sp.web.lists.getByTitle("Acessos_Painel_Ativos").items.select("Id", "Title", "Email", "NivelAcesso")();
+      return itens.map((item: any) => ({
+        id: item.Id,
+        nome: item.Title || "",
+        email: item.Email || "",
+        nivel: item.NivelAcesso || "Visualizador"
+      }));
+    } catch (error) {
+      console.error("Erro ao buscar a lista de acessos:", error);
+      return [];
+    }
+  }
+
+  public async adicionarAcesso(nome: string, email: string, nivel: string): Promise<void> {
+    try {
+      await this._sp.web.lists.getByTitle("Acessos_Painel_Ativos").items.add({
+        Title: nome,
+        Email: email,
+        NivelAcesso: nivel
+      });
+    } catch (error) {
+      console.error("Erro ao salvar novo acesso:", error);
+      throw error;
+    }
+  }
+
+  public async removerAcesso(id: number): Promise<void> {
+    try {
+      await this._sp.web.lists.getByTitle("Acessos_Painel_Ativos").items.getById(id).delete();
+    } catch (error) {
+      console.error("Erro ao remover acesso:", error);
+      throw error;
+    }
+  }
+
 }
