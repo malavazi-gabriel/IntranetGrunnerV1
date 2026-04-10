@@ -33,6 +33,14 @@
           "manifest": "./src/webparts/centralAtalhosGrunner/CentralAtalhosGrunnerWebPart.manifest.json"
         }
       ]
+    },
+    "painel-ativos-grunner-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/painelAtivosGrunner/PainelAtivosGrunnerWebPart.js",
+          "manifest": "./src/webparts/painelAtivosGrunner/PainelAtivosGrunnerWebPart.manifest.json"
+        }
+      ]
     }
   },
   "externals": {},
@@ -40,6 +48,8 @@
     "HomeGrunnerWebPartStrings": "lib/webparts/homeGrunner/loc/{locale}.js",
     "PoliticasGrunnerWebPartStrings": "lib/webparts/politicasGrunner/loc/{locale}.js",
     "HistoriaGrunnerWebPartStrings": "lib/webparts/historiaGrunner/loc/{locale}.js",
-    "CentralAtalhosGrunnerWebPartStrings": "lib/webparts/centralAtalhosGrunner/loc/{locale}.js"
+    "CentralAtalhosGrunnerWebPartStrings": "lib/webparts/centralAtalhosGrunner/loc/{locale}.js",
+    "PainelAtivosGrunnerWebPartStrings": "lib/webparts/painelAtivosGrunner/loc/{locale}.js",
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js"
   }
 }
