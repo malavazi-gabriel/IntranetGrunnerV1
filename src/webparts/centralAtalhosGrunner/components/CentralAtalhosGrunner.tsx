@@ -445,7 +445,7 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
                   Bem-vindo à <strong>Central de Atalhos Grunner</strong>.<br />
                   Seu desktop corporativo com os sistemas mais usados.
                 </p>
-              </div>
+              </div> 
             </div>
 
             <div className={styles.headerActions}>
