@@ -21,31 +21,40 @@ export class SharePointService {
     this._sp = spfi().using(SPFx(context));
   }
 
-  public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
+public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
     try {
-      const letraBase = tipoAtivo === "Celular / Smartphone" ? "C" : "N";
+      // 1. Define a letra base dinamicamente para TODOS os tipos de equipamentos
+      let letraBase = "O"; // Outros
+      if (tipoAtivo.includes("Notebook")) letraBase = "N";
+      else if (tipoAtivo.includes("Desktop")) letraBase = "D";
+      else if (tipoAtivo.includes("Celular") || tipoAtivo.includes("Smartphone")) letraBase = "C";
+      else if (tipoAtivo.includes("Tablet")) letraBase = "T";
+      else if (tipoAtivo.includes("Monitor")) letraBase = "M";
+      else if (tipoAtivo.includes("Periférico")) letraBase = "P";
 
+      // 2. Busca um lote bem maior de itens para varrer todos os IDs existentes
       const itens = await this._sp.web.lists.getByTitle("Ativos de TI")
         .items.select(COLUNA_ID_PATRIMONIO)
-        .orderBy("Created", false)
-        .top(50)();
+        .top(5000)();
 
-      if (!itens || itens.length === 0) return `${letraBase}0001`;
+      let maiorNumeroGlobal = 0;
 
-      let ultimoCodigoValido = "";
+      // 3. Lê todos os códigos, remove a letra e encontra o maior número absoluto global
       for (const item of itens) {
         const valorCodigo = item[COLUNA_ID_PATRIMONIO];
-        if (valorCodigo && typeof valorCodigo === "string" && valorCodigo.startsWith(letraBase)) {
-          ultimoCodigoValido = valorCodigo;
-          break; 
+        if (valorCodigo && typeof valorCodigo === "string") {
+          // Remove qualquer letra (ex: "M0336" vira 336)
+          const numeroApenas = parseInt(valorCodigo.replace(/\D/g, ""), 10);
+          if (!isNaN(numeroApenas) && numeroApenas > maiorNumeroGlobal) {
+            maiorNumeroGlobal = numeroApenas;
+          }
         }
       }
 
-      if (!ultimoCodigoValido) return `${letraBase}0001`;
-      
-      const numeroApenas = parseInt(ultimoCodigoValido.replace(/\D/g, ""), 10);
-      const proximoNumero = isNaN(numeroApenas) ? 1 : numeroApenas + 1;
+      // 4. O próximo número é o maior número encontrado + 1
+      const proximoNumero = maiorNumeroGlobal === 0 ? 1 : maiorNumeroGlobal + 1;
 
+      // 5. Junta a Letra + o Número formatado com 4 casas (ex: N0338)
       return `${letraBase}${proximoNumero.toString().padStart(4, '0')}`;
     } catch (error) {
       console.error("Erro ao gerar ID Sequencial:", error);
