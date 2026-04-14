@@ -7,6 +7,7 @@ const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunne
 const logoCompleta = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo.png";
 
 interface IHomeGrunnerState {
+  isChamadoModalOpen: boolean;
   noticiasReais: any[];
   aniversariantesReais: any[];
   eventosReais: any[];
@@ -30,6 +31,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   constructor(props: IHomeGrunnerProps) {
     super(props);
     this.state = {
+      isChamadoModalOpen: false,
       noticiasReais: [],
       aniversariantesReais: [],
       eventosReais: [],
@@ -487,7 +489,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
               <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">💻 Gestão de Ativos (TI)</a>
-              <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">🖥️ TI</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); this.setState({ isChamadoModalOpen: true }); }}>🖥️ Chamado de TI</a>
               <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
               <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
               <a href="https://forms.monday.com/forms/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
@@ -659,7 +661,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 </div>
               </div>
 
-<div className={styles.card}>
+              <div className={styles.card}>
                 <h2>Aniversariantes do mês</h2>
                 
                 {(() => {
@@ -667,35 +669,30 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                     return <p>Nenhum aniversariante neste mês.</p>;
                   }
 
-                  // 0. Ordenar cronologicamente pelo Dia (do 1 ao 31)
                   const aniversariantesOrdenados = [...this.state.aniversariantesReais].sort((a, b) => {
                     return parseInt(a.Dia, 10) - parseInt(b.Dia, 10);
                   });
 
-                  // 1. Separa quem é da semana e quem não é (usando a lista já ordenada)
                   const aniversariantesDaSemana = aniversariantesOrdenados.filter(n => this.isAniversarianteDaSemana(n.Dia));
                   const aniversariantesRestantes = aniversariantesOrdenados.filter(n => !this.isAniversarianteDaSemana(n.Dia));
 
-                  // Pega o dia de hoje para o super destaque
                   const diaDeHoje = new Date().getDate();
 
                   return (
                     <>
-                      {/* A LISTA COM ROLAGEM */}
                       <div className={styles.teamList}>
                         
-                        {/* 2. RENDERIZA APENAS OS DA SEMANA (COM CARD PREMIUM) */}
                         {aniversariantesDaSemana.length > 0 ? (
                           aniversariantesDaSemana.map((niver, i) => {
                             const isHoje = parseInt(niver.Dia, 10) === diaDeHoje;
 
-return (
+                            return (
                               <div key={`semana-${i}`} className={styles.teamItem} style={{
-                                backgroundColor: isHoje ? '#ffffff' : '#F4FAEB', // Branco puro se for hoje para destacar a borda
-                                border: isHoje ? '2px solid #A6CE39' : '1px solid #A6CE39', // Borda mais grossa verde limão se for hoje
+                                backgroundColor: isHoje ? '#ffffff' : '#F4FAEB',
+                                border: isHoje ? '2px solid #A6CE39' : '1px solid #A6CE39', 
                                 padding: '12px 16px',
                                 borderRadius: '12px',
-                                boxShadow: isHoje ? '0 6px 16px rgba(166, 206, 57, 0.4)' : '0 4px 12px rgba(166, 206, 57, 0.2)', // Sombra mais forte e brilhante se for hoje
+                                boxShadow: isHoje ? '0 6px 16px rgba(166, 206, 57, 0.4)' : '0 4px 12px rgba(166, 206, 57, 0.2)', 
                                 borderBottom: isHoje ? '2px solid #A6CE39' : 'none',
                                 marginBottom: '16px'
                               }}>
@@ -709,15 +706,14 @@ return (
                                   <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
                                 </div>
                                 
-                                {/* SELO TOTALMENTE NA IDENTIDADE GRUNNER */}
                                 <div style={{ 
                                   marginLeft: 'auto', 
-                                  background: isHoje ? '#A6CE39' : '#2E5C31', // Verde Limão se for hoje, Verde Escuro na semana
-                                  color: isHoje ? '#171E0D' : '#ffffff', // Letra super escura se for hoje para dar contraste
+                                  background: isHoje ? '#A6CE39' : '#2E5C31', 
+                                  color: isHoje ? '#171E0D' : '#ffffff', 
                                   padding: '6px 12px', 
                                   borderRadius: '20px', 
                                   fontSize: '11px', 
-                                  fontWeight: '900', // Letra um pouco mais gordinha
+                                  fontWeight: '900', 
                                   boxShadow: isHoje ? '0 4px 10px rgba(166, 206, 57, 0.5)' : '0 2px 6px rgba(46, 92, 49, 0.4)',
                                   whiteSpace: 'nowrap' 
                                 }}>
@@ -730,7 +726,6 @@ return (
                           <p style={{ fontSize: '14px', color: '#6B7280', fontStyle: 'italic', marginBottom: '15px' }}>Nenhum aniversariante para esta semana.</p>
                         )}
 
-                        {/* 3. RENDERIZA OS RESTANTES DO MÊS ORDENADOS CRONOLOGICAMENTE */}
                         {this.state.mostrarTodosAniversariantes && (
                           aniversariantesRestantes.map((niver, i) => (
                             <div key={`resto-${i}`} className={styles.teamItem}>
@@ -748,7 +743,6 @@ return (
                         )}
                       </div>
 
-                      {/* 4. BOTÃO FIXO FORA DA ROLAGEM! SEMPRE VISÍVEL! */}
                       {aniversariantesRestantes.length > 0 && (
                         <button 
                           onClick={() => this.setState({ mostrarTodosAniversariantes: !this.state.mostrarTodosAniversariantes })}
@@ -762,7 +756,7 @@ return (
                             cursor: 'pointer', 
                             fontWeight: 'bold', 
                             fontSize: '12px', 
-                            marginTop: '15px', // Desgruda um pouco da lista de cima
+                            marginTop: '15px', 
                             transition: '0.2s' 
                           }}
                           onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
@@ -827,6 +821,28 @@ return (
             </div>
           </div>
         )}
+
+        {/* === MODAL DO CLICKUP (CHAMADO DE TI) === */}
+        {this.state.isChamadoModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent} style={{ width: '800px', height: '85vh', maxWidth: '95%' }}>
+              <header className={styles.modalHeader}>
+                <h3>🖥️ Abertura de Chamado - TI</h3>
+                <button className={styles.closeBtn} onClick={() => this.setState({ isChamadoModalOpen: false })}>✕</button>
+              </header>
+              <div style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
+                <iframe 
+                  src="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 'none', display: 'block' }}
+                  title="Formulário de Chamado de TI"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     );
   }
