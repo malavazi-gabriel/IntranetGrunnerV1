@@ -23,6 +23,21 @@ interface IHomeGrunnerState {
   expandedNoticiaId: number | null;
   limiteNoticias: number;
   mostrarTodosAniversariantes: boolean;
+  
+  // ESTADOS DO MENU E CHAMADOS DE TI
+  isTiMenuOpen: boolean;
+  isMeusChamadosModalOpen: boolean;
+  meusChamados: any[];
+  loadingChamados: boolean;
+  
+  // ESTADOS DA ÁREA EXPANDIDA E RESPOSTA (NOVOS)
+  expandedTicketIndex: number | null;
+  novoComentarioChamado: string;
+  enviandoComentarioChamado: boolean;
+
+  // ESTADOS DO BATE-PAPO
+  comentariosDoChamado: any[];
+  loadingHistorico: boolean;
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -46,7 +61,20 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       isMobileMenuOpen: false,
       expandedNoticiaId: null,
       limiteNoticias: 7,
-      mostrarTodosAniversariantes: false
+      mostrarTodosAniversariantes: false,
+      
+      // INICIALIZANDO ESTADOS DE TI
+      isTiMenuOpen: false,
+      isMeusChamadosModalOpen: false,
+      meusChamados: [],
+      loadingChamados: false,
+      expandedTicketIndex: null,
+      novoComentarioChamado: "",
+      enviandoComentarioChamado: false,
+
+      // INICIALIZANDO O BATE-PAPO
+      comentariosDoChamado: [],
+      loadingHistorico: false
     };
   }
 
@@ -174,6 +202,110 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     ]);
     this.setState({ loading: false });
   }
+
+  // ==== FUNÇÃO: BATER NA API DO STRAPI (LISTAR CHAMADOS) ====
+  private abrirModalMeusChamados = async () => {
+    this.setState({ 
+      isMeusChamadosModalOpen: true, 
+      loadingChamados: true, 
+      meusChamados: [],
+      expandedTicketIndex: null,
+      novoComentarioChamado: ""
+    });
+    
+    const rawEmail = this.props.context.pageContext.user.email || "";
+    const userEmail = rawEmail.toLowerCase().trim();
+
+    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${userEmail}`;
+
+    try {
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      
+      this.setState({ 
+        meusChamados: data.sucesso && Array.isArray(data.chamados) ? data.chamados : [], 
+        loadingChamados: false 
+      });
+    } catch (error) {
+      console.error("Erro ao buscar chamados no Strapi:", error);
+      this.setState({ loadingChamados: false, meusChamados: [] });
+    }
+  }
+
+  // ==== FUNÇÃO: ABRIR DETALHES E CARREGAR O CHAT ====
+  private toggleDetalhesChamado = async (index: number, idChamado: string) => {
+    if (this.state.expandedTicketIndex === index) {
+      // Fecha e limpa o chat
+      this.setState({ expandedTicketIndex: null, comentariosDoChamado: [] });
+      return;
+    }
+
+    this.setState({ 
+      expandedTicketIndex: index, 
+      loadingHistorico: true,
+      comentariosDoChamado: []
+    });
+
+    this.carregarHistoricoDoChamado(idChamado);
+  }
+
+  // ==== FUNÇÃO: BUSCAR O HISTÓRICO DO BATE-PAPO ====
+  private carregarHistoricoDoChamado = async (idChamado: string) => {
+    try {
+      const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentarios?idChamado=${idChamado}`;
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      if (data.sucesso) {
+        this.setState({ comentariosDoChamado: data.comentarios, loadingHistorico: false });
+      } else {
+        this.setState({ loadingHistorico: false });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar chat:", error);
+      this.setState({ loadingHistorico: false });
+    }
+  }
+
+  // ==== FUNÇÃO: ENVIAR COMENTÁRIO PRO CLICKUP ====
+  private enviarComentarioChamado = async (idChamado: string) => {
+    if (!this.state.novoComentarioChamado.trim()) return;
+
+    this.setState({ enviandoComentarioChamado: true });
+    
+    const rawEmail = this.props.context.pageContext.user.email || "";
+    const userEmail = rawEmail.toLowerCase().trim();
+
+    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentar`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idChamado: idChamado,
+          comentario: this.state.novoComentarioChamado,
+          email: userEmail
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.sucesso) {
+        alert("Sua resposta foi enviada com sucesso para a equipe de TI! 🚀");
+        this.setState({ novoComentarioChamado: "", enviandoComentarioChamado: false });
+        this.carregarHistoricoDoChamado(idChamado);
+      } else {
+        alert("Ocorreu um erro ao enviar: " + result.mensagem);
+        this.setState({ enviandoComentarioChamado: false });
+      }
+    } catch (error) {
+      console.error("Erro ao enviar comentário:", error);
+      alert("Erro de comunicação com o servidor.");
+      this.setState({ enviandoComentarioChamado: false });
+    }
+  }
+  // ==============================================
 
   private buscarNoticias = async () => {
     try {
@@ -488,8 +620,27 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           </div>
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
-              <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">💻 Gestão de Ativos (TI)</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); this.setState({ isChamadoModalOpen: true }); }}>🖥️ Chamado de TI</a>
+              
+              {/* === MENU SANFONA DE TI === */}
+              <div className={styles.accordionGroup}>
+                <button
+                  className={`${styles.accordionToggle} ${this.state.isTiMenuOpen ? styles.open : ''}`}
+                  onClick={() => this.setState({ isTiMenuOpen: !this.state.isTiMenuOpen })}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>💻 Tecnologia (TI)</span>
+                  <span className={styles.chevron}>▼</span>
+                </button>
+                
+                {this.state.isTiMenuOpen && (
+                  <div className={styles.accordionContent}>
+                    <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🖥️ Gestão de Ativos</a>
+                    <a href="#" onClick={(e) => { e.preventDefault(); this.setState({ isChamadoModalOpen: true }); }}>➕ Abrir Novo Chamado</a>
+                    <a href="#" onClick={(e) => { e.preventDefault(); this.abrirModalMeusChamados(); }}>🎫 Meus Chamados</a>
+                  </div>
+                )}
+              </div>
+              {/* =========================== */}
+
               <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
               <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
               <a href="https://forms.monday.com/forms/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
@@ -773,7 +924,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           </main>
         </div>
 
-        {/* MODAL DE COMENTÁRIOS */}
+        {/* MODAL DE COMENTÁRIOS DE NOTÍCIAS */}
         {this.state.isModalOpen && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent}>
@@ -822,7 +973,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           </div>
         )}
 
-        {/* === MODAL DO CLICKUP (CHAMADO DE TI) === */}
+        {/* === MODAL DO CLICKUP (ABRIR CHAMADO NOVO) === */}
         {this.state.isChamadoModalOpen && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent} style={{ width: '800px', height: '85vh', maxWidth: '95%' }}>
@@ -838,6 +989,136 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                   style={{ border: 'none', display: 'block' }}
                   title="Formulário de Chamado de TI"
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === MODAL: MEUS CHAMADOS === */}
+        {this.state.isMeusChamadosModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent} style={{ width: '750px', maxHeight: '85vh', maxWidth: '95%' }}>
+              <header className={styles.modalHeader}>
+                <h3>🎫 Meus Chamados de TI</h3>
+                <button className={styles.closeBtn} onClick={() => this.setState({ isMeusChamadosModalOpen: false })}>✕</button>
+              </header>
+              
+              <div className={styles.commentsList} style={{ padding: '25px', backgroundColor: '#F8FAFC' }}>
+                {this.state.loadingChamados ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B7280' }}>
+                    <p style={{ fontSize: '16px', fontWeight: 'bold' }}>📡 Conectando ao painel de TI...</p>
+                    <p style={{ fontSize: '13px' }}>Buscando seus chamados em andamento.</p>
+                  </div>
+                ) : this.state.meusChamados.length > 0 ? (
+                  <div className={styles.ticketsGrid}>
+                    
+                    {this.state.meusChamados.map((ticket: any, index: number) => {
+                      const isExpanded = this.state.expandedTicketIndex === index;
+                      
+                      return (
+                        <div key={index} className={styles.ticketCard}>
+                          <div className={styles.ticketHeader}>
+                            <h4>{ticket.titulo || "Chamado sem título"}</h4>
+                            <span 
+                              className={styles.ticketStatus} 
+                              style={{ backgroundColor: ticket.corStatus || '#A6CE39' }}
+                            >
+                              {ticket.status || "Sem Status"}
+                            </span>
+                          </div>
+                          
+                          <div className={styles.ticketBody}>
+                            <p><strong>Filas/Área:</strong> {ticket.area || "Geral TI"}</p>
+                            <p><strong>Criado em:</strong> {ticket.dataCriacao}</p>
+                          </div>
+
+                          {/* === ÁREA EXPANDIDA COM OS DETALHES E COMENTÁRIOS === */}
+                          {isExpanded && (
+                            <div className={styles.ticketExpandedArea}>
+                              <div className={styles.ticketDetailsBox}>
+                                <h5>Descrição do Chamado:</h5>
+                                <p>{ticket.descricao ? ticket.descricao : "Nenhuma descrição fornecida na abertura deste chamado."}</p>
+
+                                {/* MOTIVO DA PAUSA */}
+                                {ticket.motivoPausa && (
+                                  <div className={styles.ticketCustomField}>
+                                    <strong>⏸️ Motivo da Pausa:</strong>
+                                    <p>{ticket.motivoPausa}</p>
+                                  </div>
+                                )}
+
+                                {/* COMENTÁRIO DE ENCERRAMENTO */}
+                                {ticket.comentarioEncerramento && (
+                                  <div className={styles.ticketCustomField}>
+                                    <strong>✅ Comentário de Encerramento:</strong>
+                                    <p>{ticket.comentarioEncerramento}</p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* CAIXA DE RESPOSTA DO USUÁRIO */}
+                              <div className={styles.ticketReplyArea}>
+                                <h5>Responder à TI:</h5>
+                                {/* ÁREA DE BATE-PAPO */}
+                                <div className={styles.chatHistoryArea}>
+                                  <h5>Histórico de Mensagens:</h5>
+                                  
+                                  {this.state.loadingHistorico ? (
+                                    <p style={{ fontSize: '13px', color: '#6B7280', fontStyle: 'italic' }}>Carregando conversas do ClickUp...</p>
+                                  ) : this.state.comentariosDoChamado.length === 0 ? (
+                                    <p style={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' }}>Nenhuma mensagem trocada neste chamado ainda.</p>
+                                  ) : (
+                                    <div className={styles.chatContainer}>
+                                      {this.state.comentariosDoChamado.map((c: any, i: number) => (
+                                        <div key={i} className={`${styles.chatBubble} ${c.isIntranet ? styles.chatUser : styles.chatIT}`}>
+                                          <span className={styles.chatAuthor}>{c.autor} • {c.data}</span>
+                                          <p>{c.texto}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <textarea 
+                                  className={styles.ticketTextarea}
+                                  placeholder="Digite sua resposta, dúvida ou adicione mais informações ao chamado..."
+                                  value={this.state.novoComentarioChamado}
+                                  onChange={(e) => this.setState({ novoComentarioChamado: e.target.value })}
+                                  disabled={this.state.enviandoComentarioChamado}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                                  <button 
+                                    className={styles.btnReply}
+                                    onClick={() => this.enviarComentarioChamado(ticket.id)}
+                                    disabled={this.state.enviandoComentarioChamado || !this.state.novoComentarioChamado.trim()}
+                                  >
+                                    {this.state.enviandoComentarioChamado ? "⏳ Enviando..." : "Enviar Resposta ➔"}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* BOTÃO PARA ABRIR/FECHAR DETALHES */}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                            <button 
+                              className={styles.btnToggleDetails}
+                              onClick={() => this.toggleDetalhesChamado(index, ticket.id)}
+                            >
+                              {isExpanded ? "↑ Ocultar detalhes" : "↓ Ver detalhes"}
+                            </button>
+                          </div>
+
+                        </div>
+                      );
+                    })}
+
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B7280' }}>
+                    <p style={{ fontSize: '16px', fontWeight: 'bold' }}>✅ Tudo limpo por aqui!</p>
+                    <p style={{ fontSize: '13px' }}>Você não tem chamados abertos atrelados ao seu e-mail.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
