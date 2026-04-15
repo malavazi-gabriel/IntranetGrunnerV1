@@ -24,20 +24,21 @@ interface IHomeGrunnerState {
   limiteNoticias: number;
   mostrarTodosAniversariantes: boolean;
   
-  // ESTADOS DO MENU E CHAMADOS DE TI
   isTiMenuOpen: boolean;
   isMeusChamadosModalOpen: boolean;
   meusChamados: any[];
   loadingChamados: boolean;
   
-  // ESTADOS DA ÁREA EXPANDIDA E RESPOSTA (NOVOS)
   expandedTicketIndex: number | null;
   novoComentarioChamado: string;
   enviandoComentarioChamado: boolean;
-
-  // ESTADOS DO BATE-PAPO
+  
   comentariosDoChamado: any[];
   loadingHistorico: boolean;
+
+  // === ESTADOS DA NOTIFICAÇÃO (NOVOS) ===
+  unreadTicketsCount: number;
+  isNotificacaoOpen: boolean;
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -63,7 +64,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       limiteNoticias: 7,
       mostrarTodosAniversariantes: false,
       
-      // INICIALIZANDO ESTADOS DE TI
       isTiMenuOpen: false,
       isMeusChamadosModalOpen: false,
       meusChamados: [],
@@ -72,9 +72,12 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       novoComentarioChamado: "",
       enviandoComentarioChamado: false,
 
-      // INICIALIZANDO O BATE-PAPO
       comentariosDoChamado: [],
-      loadingHistorico: false
+      loadingHistorico: false,
+
+      // INICIALIZANDO AS NOTIFICAÇÕES
+      unreadTicketsCount: 0,
+      isNotificacaoOpen: false
     };
   }
 
@@ -198,19 +201,59 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       this.buscarNoticias(),
       this.buscarAniversariantes(),
       this.buscarEventos(),
-      this.buscarEngajamento()
+      this.buscarEngajamento(),
+      this.buscarChamadosEmBackground()
     ]);
     this.setState({ loading: false });
   }
 
-  // ==== FUNÇÃO: BATER NA API DO STRAPI (LISTAR CHAMADOS) ====
+  // ==== NOVA FUNÇÃO: BUSCAR CHAMADOS SILENCIOSAMENTE PARA O BANNER ====
+  private buscarChamadosEmBackground = async () => {
+    const rawEmail = this.props.context.pageContext.user.email || "";
+    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${rawEmail.toLowerCase().trim()}`;
+
+    try {
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      
+      if (data.sucesso && Array.isArray(data.chamados)) {
+        this.setState({ meusChamados: data.chamados }, this.recalcularNotificacoes);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar chamados no background", error);
+    }
+  }
+
+  // ==== FUNÇÃO: RECALCULAR A MATEMÁTICA DO SININHO ====
+  private recalcularNotificacoes = () => {
+    let unreadCount = 0;
+    this.state.meusChamados.forEach((ticket: any) => {
+      const lastSeen = localStorage.getItem(`grunner_visto_${ticket.id}`);
+      const isEscondido = localStorage.getItem(`grunner_escondido_${ticket.id}`) === "true";
+      const isEncerrado = ticket.status.toLowerCase().includes('encerrado') || ticket.status.toLowerCase().includes('conclu');
+      
+      if (isEscondido && isEncerrado) return; // Se escondeu e tá fechado, ignora
+      
+      const dataClickUp = parseInt(ticket.dataAtualizacao || '0');
+      const dataLida = parseInt(lastSeen || '0');
+      
+      if (dataClickUp > dataLida) {
+        unreadCount++;
+      }
+    });
+
+    this.setState({ unreadTicketsCount: unreadCount });
+  }
+
   private abrirModalMeusChamados = async () => {
     this.setState({ 
       isMeusChamadosModalOpen: true, 
+      isNotificacaoOpen: false,
       loadingChamados: true, 
       meusChamados: [],
       expandedTicketIndex: null,
-      novoComentarioChamado: ""
+      novoComentarioChamado: "",
+      comentariosDoChamado: []
     });
     
     const rawEmail = this.props.context.pageContext.user.email || "";
@@ -227,29 +270,43 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
         loadingChamados: false 
       });
     } catch (error) {
-      console.error("Erro ao buscar chamados no Strapi:", error);
       this.setState({ loadingChamados: false, meusChamados: [] });
     }
   }
 
-  // ==== FUNÇÃO: ABRIR DETALHES E CARREGAR O CHAT ====
+  // ==== FUNÇÃO ATUALIZADA: ABRIR DETALHES E MARCAR COMO LIDO ====
   private toggleDetalhesChamado = async (index: number, idChamado: string) => {
+    const ticket = this.state.meusChamados[index];
+    
     if (this.state.expandedTicketIndex === index) {
-      // Fecha e limpa o chat
       this.setState({ expandedTicketIndex: null, comentariosDoChamado: [] });
       return;
+    }
+
+    // Salva a data da última atualização vista no navegador (para apagar a bolinha vermelha)
+    if (ticket.dataAtualizacao) {
+      localStorage.setItem(`grunner_visto_${idChamado}`, ticket.dataAtualizacao);
     }
 
     this.setState({ 
       expandedTicketIndex: index, 
       loadingHistorico: true,
       comentariosDoChamado: []
-    });
+    }, this.recalcularNotificacoes);
 
     this.carregarHistoricoDoChamado(idChamado);
   }
 
-  // ==== FUNÇÃO: BUSCAR O HISTÓRICO DO BATE-PAPO ====
+  // ==== NOVA FUNÇÃO: OCULTAR CHAMADO ENCERRADO ====
+  private dispensarChamado = (idChamado: string) => {
+    if (window.confirm("Deseja ocultar este chamado da sua lista?")) {
+      localStorage.setItem(`grunner_escondido_${idChamado}`, "true");
+      this.setState({ expandedTicketIndex: null }, this.recalcularNotificacoes);
+      this.setState({ expandedTicketIndex: null }); // Fecha a sanfona
+      this.forceUpdate(); // Força a tela a desenhar de novo para o chamado sumir
+    }
+  }
+
   private carregarHistoricoDoChamado = async (idChamado: string) => {
     try {
       const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentarios?idChamado=${idChamado}`;
@@ -267,7 +324,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     }
   }
 
-  // ==== FUNÇÃO: ENVIAR COMENTÁRIO PRO CLICKUP ====
   private enviarComentarioChamado = async (idChamado: string) => {
     if (!this.state.novoComentarioChamado.trim()) return;
 
@@ -275,7 +331,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     
     const rawEmail = this.props.context.pageContext.user.email || "";
     const userEmail = rawEmail.toLowerCase().trim();
-
     const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentar`;
 
     try {
@@ -292,7 +347,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       const result = await response.json();
 
       if (result.sucesso) {
-        alert("Sua resposta foi enviada com sucesso para a equipe de TI! 🚀");
         this.setState({ novoComentarioChamado: "", enviandoComentarioChamado: false });
         this.carregarHistoricoDoChamado(idChamado);
       } else {
@@ -300,12 +354,10 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
         this.setState({ enviandoComentarioChamado: false });
       }
     } catch (error) {
-      console.error("Erro ao enviar comentário:", error);
       alert("Erro de comunicação com o servidor.");
       this.setState({ enviandoComentarioChamado: false });
     }
   }
-  // ==============================================
 
   private buscarNoticias = async () => {
     try {
@@ -621,7 +673,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
               
-              {/* === MENU SANFONA DE TI === */}
               <div className={styles.accordionGroup}>
                 <button
                   className={`${styles.accordionToggle} ${this.state.isTiMenuOpen ? styles.open : ''}`}
@@ -639,7 +690,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                   </div>
                 )}
               </div>
-              {/* =========================== */}
 
               <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
               <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
@@ -653,7 +703,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
         </aside>
 
         <div className={styles.contentArea}>
-          <header className={styles.header}>
+        <header className={styles.header}>
             <div className={styles.headerLeft}>
               <img
                 src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=L&accountname=${userEmail}`}
@@ -667,12 +717,55 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 <span className={styles.dateBadge}>📅 {dataAtual.charAt(0).toUpperCase() + dataAtual.slice(1)}</span>
               </div>
             </div>
-            <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
+
+            {/* === NOVO BLOCO DO ENVELOPE (FICA FLUTUANDO NO CANTO INFERIOR DIREITO) === */}
+            <div className={styles.notificationContainer}>
+              <button 
+                className={styles.notificationBtn} 
+                onClick={() => this.setState({ isNotificacaoOpen: !this.state.isNotificacaoOpen })}
+                title="Mensagens não lidas da TI"
+              >
+                {/* Ícone de Envelope Moderno (SVG) */}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: '22px', height: '22px' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                </svg>
+
+                {this.state.unreadTicketsCount > 0 && (
+                  <span className={styles.notificationBadge}>{this.state.unreadTicketsCount}</span>
+                )}
+              </button>
+
+              {/* Dropdown de Notificações - Abre para CIMA */}
+              {this.state.isNotificacaoOpen && (
+                <div className={styles.notificationDropdown}>
+                  <div className={styles.notifHeader}>
+                     <h4>Mensagens da TI</h4>
+                  </div>
+                  <div className={styles.notifBody}>
+                     {this.state.unreadTicketsCount > 0 ? (
+                        <div className={styles.notifItem} onClick={() => this.abrirModalMeusChamados()}>
+                           <div className={styles.notifIcon}>💬</div>
+                           <div className={styles.notifText}>
+                              <p>Você tem <strong>{this.state.unreadTicketsCount}</strong> chamado(s) com novas mensagens.</p>
+                              <span>Clique para visualizar ➔</span>
+                           </div>
+                        </div>
+                     ) : (
+                        <p className={styles.notifEmpty}>Tudo limpo! Nenhuma mensagem nova por aqui.</p>
+                     )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* ========================================================================= */}
+            
+            <div className={styles.headerRight}>
+               <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
+            </div>
           </header>
 
           <main className={styles.grid}>
             <section className={styles.newsSection}>
-              {/* NOTÍCIA DE DESTAQUE */}
               {noticiaDestaque && (
                 <div 
                   className={styles.heroBanner}
@@ -717,7 +810,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
               {this.renderExpandedMainNews(noticiaDestaque)}
 
-              {/* LISTA DE NOTÍCIAS MENORES */}
               <div className={styles.subNewsGrid}>
                 {outrasNoticias.map((noticia, i) => {
                   const isExpanded = this.state.expandedNoticiaId === noticia.ID && this.noticiaTemConteudo(noticia);
@@ -775,7 +867,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 })}
               </div>
 
-              {/* BOTÃO CARREGAR MAIS */}
               {this.state.noticiasReais.length >= this.state.limiteNoticias && (
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px', width: '100%' }}>
                   <button className={styles.btnSecondaryOutline} onClick={this.carregarMaisNoticias} style={{ maxWidth: '300px' }}>
@@ -994,7 +1085,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
           </div>
         )}
 
-        {/* === MODAL: MEUS CHAMADOS === */}
+        {/* === MODAL: MEUS CHAMADOS (COM BATE-PAPO E OCULTAR) === */}
         {this.state.isMeusChamadosModalOpen && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent} style={{ width: '750px', maxHeight: '85vh', maxWidth: '95%' }}>
@@ -1015,10 +1106,23 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                     {this.state.meusChamados.map((ticket: any, index: number) => {
                       const isExpanded = this.state.expandedTicketIndex === index;
                       
+                      // LÓGICA DA BOLINHA VERMELHA E OCULTAÇÃO MANUAL
+                      const lastSeen = localStorage.getItem(`grunner_visto_${ticket.id}`);
+                      const isEscondido = localStorage.getItem(`grunner_escondido_${ticket.id}`) === "true";
+                      const isUnread = parseInt(ticket.dataAtualizacao) > parseInt(lastSeen || '0');
+                      const isEncerrado = ticket.status.toLowerCase().includes('encerrado') || ticket.status.toLowerCase().includes('conclu');
+
+                      // Se o usuário ocultou e já está encerrado, não mostra na tela
+                      if (isEscondido && isEncerrado) return null;
+                      
                       return (
-                        <div key={index} className={styles.ticketCard}>
+                        <div key={index} className={styles.ticketCard} style={{ opacity: isEncerrado && !isUnread ? 0.7 : 1 }}>
                           <div className={styles.ticketHeader}>
-                            <h4>{ticket.titulo || "Chamado sem título"}</h4>
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {ticket.titulo || "Chamado sem título"}
+                              {/* BOLINHA VERMELHA DE NOTIFICAÇÃO */}
+                              {isUnread && <span className={styles.unreadBadge}>🔴 Novo</span>}
+                            </h4>
                             <span 
                               className={styles.ticketStatus} 
                               style={{ backgroundColor: ticket.corStatus || '#A6CE39' }}
@@ -1032,14 +1136,14 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                             <p><strong>Criado em:</strong> {ticket.dataCriacao}</p>
                           </div>
 
-                          {/* === ÁREA EXPANDIDA COM OS DETALHES E COMENTÁRIOS === */}
+                          {/* === ÁREA EXPANDIDA COM OS DETALHES E BATE-PAPO === */}
                           {isExpanded && (
                             <div className={styles.ticketExpandedArea}>
+                              
                               <div className={styles.ticketDetailsBox}>
                                 <h5>Descrição do Chamado:</h5>
                                 <p>{ticket.descricao ? ticket.descricao : "Nenhuma descrição fornecida na abertura deste chamado."}</p>
 
-                                {/* MOTIVO DA PAUSA */}
                                 {ticket.motivoPausa && (
                                   <div className={styles.ticketCustomField}>
                                     <strong>⏸️ Motivo da Pausa:</strong>
@@ -1047,7 +1151,6 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                                   </div>
                                 )}
 
-                                {/* COMENTÁRIO DE ENCERRAMENTO */}
                                 {ticket.comentarioEncerramento && (
                                   <div className={styles.ticketCustomField}>
                                     <strong>✅ Comentário de Encerramento:</strong>
@@ -1056,28 +1159,29 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                                 )}
                               </div>
 
+                              {/* ÁREA DE BATE-PAPO */}
+                              <div className={styles.chatHistoryArea}>
+                                <h5>Histórico de Mensagens:</h5>
+                                
+                                {this.state.loadingHistorico ? (
+                                  <p style={{ fontSize: '13px', color: '#6B7280', fontStyle: 'italic' }}>Carregando conversas do ClickUp...</p>
+                                ) : this.state.comentariosDoChamado.length === 0 ? (
+                                  <p style={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' }}>Nenhuma mensagem trocada neste chamado ainda.</p>
+                                ) : (
+                                  <div className={styles.chatContainer}>
+                                    {this.state.comentariosDoChamado.map((c: any, i: number) => (
+                                      <div key={i} className={`${styles.chatBubble} ${c.isIntranet ? styles.chatUser : styles.chatIT}`}>
+                                        <span className={styles.chatAuthor}>{c.autor} • {c.data}</span>
+                                        <p>{c.texto}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
                               {/* CAIXA DE RESPOSTA DO USUÁRIO */}
                               <div className={styles.ticketReplyArea}>
                                 <h5>Responder à TI:</h5>
-                                {/* ÁREA DE BATE-PAPO */}
-                                <div className={styles.chatHistoryArea}>
-                                  <h5>Histórico de Mensagens:</h5>
-                                  
-                                  {this.state.loadingHistorico ? (
-                                    <p style={{ fontSize: '13px', color: '#6B7280', fontStyle: 'italic' }}>Carregando conversas do ClickUp...</p>
-                                  ) : this.state.comentariosDoChamado.length === 0 ? (
-                                    <p style={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' }}>Nenhuma mensagem trocada neste chamado ainda.</p>
-                                  ) : (
-                                    <div className={styles.chatContainer}>
-                                      {this.state.comentariosDoChamado.map((c: any, i: number) => (
-                                        <div key={i} className={`${styles.chatBubble} ${c.isIntranet ? styles.chatUser : styles.chatIT}`}>
-                                          <span className={styles.chatAuthor}>{c.autor} • {c.data}</span>
-                                          <p>{c.texto}</p>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
                                 <textarea 
                                   className={styles.ticketTextarea}
                                   placeholder="Digite sua resposta, dúvida ou adicione mais informações ao chamado..."
@@ -1098,8 +1202,16 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                             </div>
                           )}
 
-                          {/* BOTÃO PARA ABRIR/FECHAR DETALHES */}
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                          {/* BOTÕES: OCULTAR (SE ENCERRADO) E DETALHES */}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                            {isEncerrado && (
+                              <button 
+                                className={styles.btnDismiss} 
+                                onClick={() => this.dispensarChamado(ticket.id)}
+                              >
+                                🗑️ Ocultar
+                              </button>
+                            )}
                             <button 
                               className={styles.btnToggleDetails}
                               onClick={() => this.toggleDetalhesChamado(index, ticket.id)}
