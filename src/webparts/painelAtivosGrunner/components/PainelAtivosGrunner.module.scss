@@ -54,6 +54,8 @@ $text-light: #6B7280;
   &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
   .logoArea { display: flex; align-items: center; gap: 15px; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); .logoSemente { width: 50px; height: auto; object-fit: contain; } h2 { margin: 0; font-size: 17px; color: white; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap; }}
   .navGroup { margin-bottom: 30px; h3 { font-size: 11px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; padding-left: 10px; } a { display: flex; align-items: center; gap: 12px; color: #D1D5DB; text-decoration: none; padding: 12px 10px; border-radius: 8px; transition: all 0.2s ease; font-size: 15px; margin-bottom: 5px; &:hover { background-color: rgba(255, 255, 255, 0.08); color: white; transform: translateX(4px); } &.active { background-color: rgba(46, 92, 49, 0.2); color: $grunner-accent; font-weight: 700; border-left: 3px solid $grunner-accent; border-radius: 4px 8px 8px 4px; } } }
+  .menuToggle { justify-content: space-between !important; cursor: pointer; }
+  .navSubGroup { margin-left: 18px; padding-left: 12px; border-left: 1px dashed rgba(255, 255, 255, 0.2); display: flex; flex-direction: column; margin-top: 5px; margin-bottom: 15px; a { font-size: 14px; padding: 8px 10px; margin-bottom: 2px; &:hover { background-color: rgba(255, 255, 255, 0.05); } &.active { background-color: transparent; border-left: none; color: $grunner-green; } } }
   @media (max-width: 850px) { position: fixed; top: 0; left: -300px; height: 100vh; width: 280px; &.open { left: 0; } .closeMenuBtn { display: block; align-self: flex-end; background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; margin-bottom: 10px; } }
 }
 
@@ -78,6 +80,7 @@ $text-light: #6B7280;
   .headerText { text-align: left; display: flex; flex-direction: column; align-items: flex-start; h1 { margin: 0; font-size: 34px; font-weight: 800; color: white; letter-spacing: -0.5px; } p { margin: 8px 0 14px 0; color: rgba(255, 255, 255, 0.85); font-size: 16px; font-weight: 400; } }
   .dateBadge { display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.1); padding: 6px 14px; border-radius: 20px; color: #f3f4f6; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; gap: 6px; backdrop-filter: blur(4px); }
   .logoCentral { height: 50px; width: auto; filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.2)); }
+  position: relative;
   @media (max-width: 850px) { flex-direction: column; padding: 25px; border-radius: 16px; .headerLeft { flex-direction: column; text-align: center; gap: 15px; } .headerText { align-items: center; h1 { font-size: 28px; } p { font-size: 14px; text-align: center; line-height: 1.5; } } .logoCentral { height: 40px; margin-top: 25px; } }
 }
 

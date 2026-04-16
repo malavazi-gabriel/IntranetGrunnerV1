@@ -2,6 +2,7 @@ import * as React from 'react';
 import styles from './CentralAtalhosGrunner.module.scss';
 import type { ICentralAtalhosGrunnerProps } from './ICentralAtalhosGrunnerProps';
 import { SPHttpClient } from '@microsoft/sp-http';
+import { MenuChamados } from '../../../shared/components/MenuChamado/MenuChamados';
 
 const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo-grunner.png";
 const logoCompleta = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo.png";
@@ -27,6 +28,10 @@ interface ICentralAtalhosGrunnerState {
   termoBusca: string;
   categoriaAtiva: string;
   isMobileMenuOpen: boolean;
+  isIframeModalOpen: boolean;
+  iframeUrl: string;
+  iframeTitle: string;
+  isMenuTIOpen: boolean;
 }
 
 export default class CentralAtalhosGrunner extends React.Component<ICentralAtalhosGrunnerProps, ICentralAtalhosGrunnerState> {
@@ -35,12 +40,16 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
   constructor(props: ICentralAtalhosGrunnerProps) {
     super(props);
 
-    this.state = {
+this.state = {
       todosLinks: [],
       loading: true,
       termoBusca: '',
       categoriaAtiva: 'Todos',
-      isMobileMenuOpen: false
+      isMobileMenuOpen: false,
+      isIframeModalOpen: false,
+      iframeUrl: '',
+      iframeTitle: '',
+      isMenuTIOpen: false
     };
   }
 
@@ -184,6 +193,15 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
     if (this.footerObserver) {
       this.footerObserver.disconnect();
     }
+  }
+
+  private abrirModalFormulario = (url: string, titulo: string, e: React.MouseEvent) => {
+    e.preventDefault(); // Impede o navegador de abrir uma aba nova!
+    this.setState({ 
+      isIframeModalOpen: true, 
+      iframeUrl: url, 
+      iframeTitle: titulo 
+    });
   }
 
   private buscarLinks = async (): Promise<void> => {
@@ -414,13 +432,32 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
             <a href={atalhosUrl} className={styles.active}>🖥️ Central de Atalhos</a>
           </div>
 
-          <div className={styles.navGroup}>
+<div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">💻 Gestão de Ativos (TI)</a>
-            <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">🖥️ TI</a>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
-            <a href="https://forms.monday.com/forms/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
+
+            {/* BOTÃO PRINCIPAL DE TI (ACORDEÃO) */}
+            <a
+              href="#"
+              className={`${styles.menuToggle} ${this.state.isMenuTIOpen ? styles.active : ''}`}
+              onClick={(e) => { e.preventDefault(); this.setState({ isMenuTIOpen: !this.state.isMenuTIOpen }); }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>💻 Tecnologia (TI)</span>
+              <span style={{ fontSize: '10px', opacity: 0.8 }}>{this.state.isMenuTIOpen ? '▲' : '▼'}</span>
+            </a>
+
+            {/* SUB-ITENS DE TI (A abrir perfeitamente no Modal de Iframe!) */}
+            {this.state.isMenuTIOpen && (
+              <div className={styles.navSubGroup}>
+                <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded", "🖥️ Gestão de Ativos", e)}>🖥️ Gestão de Ativos</a>
+                <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5", "➕ Abrir Novo Chamado", e)}>➕ Abrir Novo Chamado</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 Meus Chamados</a>
+              </div>
+            )}
+
+            {/* RESTANTE DOS DEPARTAMENTOS */}
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3", "📢 Solicitação - Marketing", e)}>📢 Marketing</a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi", "🚗 Solicitação - Frotas", e)}>🚗 Frotas</a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.monday.com/forms/embed/2a2a29caa20e7e1517cc397586af97eb?r=use1", "🛠️ Solicitação - Facilities", e)}>🛠️ Facilities</a>
           </div>
 
           <div className={styles.navGroup}>
@@ -432,6 +469,10 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
 
         <div className={styles.contentArea}>
           <header className={styles.unifiedHeader}>
+            <MenuChamados 
+               departamento="TI" 
+               emailUsuario={userEmail} 
+            />
             <div className={styles.headerProfile}>
               <img
                 src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=L&accountname=${userEmail}`}
@@ -527,6 +568,25 @@ export default class CentralAtalhosGrunner extends React.Component<ICentralAtalh
             </section>
           </main>
         </div>
+        {/* ==============================================
+            MODAL DE IFRAME PARA FORMULÁRIOS EXTERNOS
+        ============================================== */}
+        {this.state.isIframeModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <header className={styles.modalHeader}>
+                <h3>{this.state.iframeTitle}</h3>
+                <button className={styles.closeBtn} onClick={() => this.setState({ isIframeModalOpen: false })}>✕</button>
+              </header>
+              <iframe 
+                 src={this.state.iframeUrl} 
+                 className={styles.iframeContainer} 
+                 title={this.state.iframeTitle} 
+              />
+            </div>
+          </div>
+        )}
+
       </div>
     );
   }

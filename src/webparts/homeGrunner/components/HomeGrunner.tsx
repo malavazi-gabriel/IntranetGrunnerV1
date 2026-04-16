@@ -2,6 +2,7 @@ import * as React from 'react';
 import styles from './HomeGrunner.module.scss';
 import { IHomeGrunnerProps } from './IHomeGrunnerProps';
 import { SPHttpClient, ISPHttpClientOptions } from '@microsoft/sp-http';
+import { MenuChamados } from '../../../shared/components/MenuChamado/MenuChamados';
 
 const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo-grunner.png";
 const logoCompleta = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo.png";
@@ -39,6 +40,11 @@ interface IHomeGrunnerState {
   // === ESTADOS DA NOTIFICAÇÃO (NOVOS) ===
   unreadTicketsCount: number;
   isNotificacaoOpen: boolean;
+  
+  // AS 3 VARIÁVEIS NOVAS DO IFRAME 
+  isIframeModalOpen: boolean;
+  iframeUrl: string;
+  iframeTitle: string;
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -77,7 +83,12 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
       // INICIALIZANDO AS NOTIFICAÇÕES
       unreadTicketsCount: 0,
-      isNotificacaoOpen: false
+      isNotificacaoOpen: false,
+
+      // INICIALIZANDO O IFRAME 👇
+      isIframeModalOpen: false,
+      iframeUrl: '',
+      iframeTitle: ''
     };
   }
 
@@ -158,6 +169,15 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       el.style.setProperty('width', '100%', 'important');
     });
     document.body?.style.setProperty('overflow-x', 'hidden', 'important');
+  }
+
+  private abrirModalFormulario = (url: string, titulo: string, e: React.MouseEvent) => {
+    e.preventDefault(); 
+    this.setState({ 
+      isIframeModalOpen: true, 
+      iframeUrl: url, 
+      iframeTitle: titulo 
+    });
   }
 
   public componentDidMount(): void {
@@ -684,16 +704,17 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 
                 {this.state.isTiMenuOpen && (
                   <div className={styles.accordionContent}>
-                    <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🖥️ Gestão de Ativos</a>
-                    <a href="#" onClick={(e) => { e.preventDefault(); this.setState({ isChamadoModalOpen: true }); }}>➕ Abrir Novo Chamado</a>
-                    <a href="#" onClick={(e) => { e.preventDefault(); this.abrirModalMeusChamados(); }}>🎫 Meus Chamados</a>
+                    <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded", "🖥️ Gestão de Ativos", e)}>🖥️ Gestão de Ativos</a>
+                    <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5", "➕ Abrir Novo Chamado", e)}>➕ Abrir Novo Chamado</a>
+                    <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 Meus Chamados</a>
                   </div>
                 )}
               </div>
 
-              <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
-              <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
-              <a href="https://forms.monday.com/forms/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
+              {/* RESTANTE DOS DEPARTAMENTOS A USAR O MODAL */}
+              <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3&env=Embedded", "📢 Solicitação - Marketing", e)}>📢 Marketing</a>
+              <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi&env=Embedded", "🚗 Solicitação - Frotas", e)}>🚗 Frotas</a>
+              <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.monday.com/forms/embed/2a2a29caa20e7e1517cc397586af97eb?r=use1", "🛠️ Solicitação - Facilities", e)}>🛠️ Facilities</a>
           </div>
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
@@ -717,48 +738,11 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 <span className={styles.dateBadge}>📅 {dataAtual.charAt(0).toUpperCase() + dataAtual.slice(1)}</span>
               </div>
             </div>
-
-            {/* === NOVO BLOCO DO ENVELOPE (FICA FLUTUANDO NO CANTO INFERIOR DIREITO) === */}
-            <div className={styles.notificationContainer}>
-              <button 
-                className={styles.notificationBtn} 
-                onClick={() => this.setState({ isNotificacaoOpen: !this.state.isNotificacaoOpen })}
-                title="Mensagens não lidas da TI"
-              >
-                {/* Ícone de Envelope Moderno (SVG) */}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: '22px', height: '22px' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                </svg>
-
-                {this.state.unreadTicketsCount > 0 && (
-                  <span className={styles.notificationBadge}>{this.state.unreadTicketsCount}</span>
-                )}
-              </button>
-
-              {/* Dropdown de Notificações - Abre para CIMA */}
-              {this.state.isNotificacaoOpen && (
-                <div className={styles.notificationDropdown}>
-                  <div className={styles.notifHeader}>
-                     <h4>Mensagens da TI</h4>
-                  </div>
-                  <div className={styles.notifBody}>
-                     {this.state.unreadTicketsCount > 0 ? (
-                        <div className={styles.notifItem} onClick={() => this.abrirModalMeusChamados()}>
-                           <div className={styles.notifIcon}>💬</div>
-                           <div className={styles.notifText}>
-                              <p>Você tem <strong>{this.state.unreadTicketsCount}</strong> chamado(s) com novas mensagens.</p>
-                              <span>Clique para visualizar ➔</span>
-                           </div>
-                        </div>
-                     ) : (
-                        <p className={styles.notifEmpty}>Tudo limpo! Nenhuma mensagem nova por aqui.</p>
-                     )}
-                  </div>
-                </div>
-              )}
-            </div>
-            {/* ========================================================================= */}
-            
+            {/* NOSSO NOVO COMPONENTE COMPARTILHADO */}
+              <MenuChamados 
+                departamento="TI" 
+                emailUsuario={userEmail} 
+              />
             <div className={styles.headerRight}>
                <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
             </div>
@@ -1063,180 +1047,26 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
             </div>
           </div>
         )}
-
-        {/* === MODAL DO CLICKUP (ABRIR CHAMADO NOVO) === */}
-        {this.state.isChamadoModalOpen && (
+{/* ==============================================
+            MODAL UNIVERSAL DE FORMULÁRIOS EXTERNOS
+ ============================================== */}
+        {this.state.isIframeModalOpen && (
           <div className={styles.modalOverlay}>
-            <div className={styles.modalContent} style={{ width: '800px', height: '85vh', maxWidth: '95%' }}>
+            <div className={styles.modalContent} style={{ width: '900px', height: '85vh', maxWidth: '95%', display: 'flex', flexDirection: 'column' }}>
               <header className={styles.modalHeader}>
-                <h3>🖥️ Abertura de Chamado - TI</h3>
-                <button className={styles.closeBtn} onClick={() => this.setState({ isChamadoModalOpen: false })}>✕</button>
+                <h3>{this.state.iframeTitle}</h3>
+                <button className={styles.closeBtn} onClick={() => this.setState({ isIframeModalOpen: false })}>✕</button>
               </header>
-              <div style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
-                <iframe 
-                  src="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" 
-                  width="100%" 
-                  height="100%" 
-                  style={{ border: 'none', display: 'block' }}
-                  title="Formulário de Chamado de TI"
-                />
-              </div>
+              <iframe 
+                 src={this.state.iframeUrl} 
+                 style={{ flex: 1, width: '100%', border: 'none', background: '#F8FAFC' }}
+                 title={this.state.iframeTitle} 
+              />
             </div>
           </div>
         )}
 
-        {/* === MODAL: MEUS CHAMADOS (COM BATE-PAPO E OCULTAR) === */}
-        {this.state.isMeusChamadosModalOpen && (
-          <div className={styles.modalOverlay}>
-            <div className={styles.modalContent} style={{ width: '750px', maxHeight: '85vh', maxWidth: '95%' }}>
-              <header className={styles.modalHeader}>
-                <h3>🎫 Meus Chamados de TI</h3>
-                <button className={styles.closeBtn} onClick={() => this.setState({ isMeusChamadosModalOpen: false })}>✕</button>
-              </header>
-              
-              <div className={styles.commentsList} style={{ padding: '25px', backgroundColor: '#F8FAFC' }}>
-                {this.state.loadingChamados ? (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B7280' }}>
-                    <p style={{ fontSize: '16px', fontWeight: 'bold' }}>📡 Conectando ao painel de TI...</p>
-                    <p style={{ fontSize: '13px' }}>Buscando seus chamados em andamento.</p>
-                  </div>
-                ) : this.state.meusChamados.length > 0 ? (
-                  <div className={styles.ticketsGrid}>
-                    
-                    {this.state.meusChamados.map((ticket: any, index: number) => {
-                      const isExpanded = this.state.expandedTicketIndex === index;
-                      
-                      // LÓGICA DA BOLINHA VERMELHA E OCULTAÇÃO MANUAL
-                      const lastSeen = localStorage.getItem(`grunner_visto_${ticket.id}`);
-                      const isEscondido = localStorage.getItem(`grunner_escondido_${ticket.id}`) === "true";
-                      const isUnread = parseInt(ticket.dataAtualizacao) > parseInt(lastSeen || '0');
-                      const isEncerrado = ticket.status.toLowerCase().includes('encerrado') || ticket.status.toLowerCase().includes('conclu');
-
-                      // Se o usuário ocultou e já está encerrado, não mostra na tela
-                      if (isEscondido && isEncerrado) return null;
-                      
-                      return (
-                        <div key={index} className={styles.ticketCard} style={{ opacity: isEncerrado && !isUnread ? 0.7 : 1 }}>
-                          <div className={styles.ticketHeader}>
-                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {ticket.titulo || "Chamado sem título"}
-                              {/* BOLINHA VERMELHA DE NOTIFICAÇÃO */}
-                              {isUnread && <span className={styles.unreadBadge}>🔴 Novo</span>}
-                            </h4>
-                            <span 
-                              className={styles.ticketStatus} 
-                              style={{ backgroundColor: ticket.corStatus || '#A6CE39' }}
-                            >
-                              {ticket.status || "Sem Status"}
-                            </span>
-                          </div>
-                          
-                          <div className={styles.ticketBody}>
-                            <p><strong>Filas/Área:</strong> {ticket.area || "Geral TI"}</p>
-                            <p><strong>Criado em:</strong> {ticket.dataCriacao}</p>
-                          </div>
-
-                          {/* === ÁREA EXPANDIDA COM OS DETALHES E BATE-PAPO === */}
-                          {isExpanded && (
-                            <div className={styles.ticketExpandedArea}>
-                              
-                              <div className={styles.ticketDetailsBox}>
-                                <h5>Descrição do Chamado:</h5>
-                                <p>{ticket.descricao ? ticket.descricao : "Nenhuma descrição fornecida na abertura deste chamado."}</p>
-
-                                {ticket.motivoPausa && (
-                                  <div className={styles.ticketCustomField}>
-                                    <strong>⏸️ Motivo da Pausa:</strong>
-                                    <p>{ticket.motivoPausa}</p>
-                                  </div>
-                                )}
-
-                                {ticket.comentarioEncerramento && (
-                                  <div className={styles.ticketCustomField}>
-                                    <strong>✅ Comentário de Encerramento:</strong>
-                                    <p>{ticket.comentarioEncerramento}</p>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* ÁREA DE BATE-PAPO */}
-                              <div className={styles.chatHistoryArea}>
-                                <h5>Histórico de Mensagens:</h5>
-                                
-                                {this.state.loadingHistorico ? (
-                                  <p style={{ fontSize: '13px', color: '#6B7280', fontStyle: 'italic' }}>Carregando conversas do ClickUp...</p>
-                                ) : this.state.comentariosDoChamado.length === 0 ? (
-                                  <p style={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' }}>Nenhuma mensagem trocada neste chamado ainda.</p>
-                                ) : (
-                                  <div className={styles.chatContainer}>
-                                    {this.state.comentariosDoChamado.map((c: any, i: number) => (
-                                      <div key={i} className={`${styles.chatBubble} ${c.isIntranet ? styles.chatUser : styles.chatIT}`}>
-                                        <span className={styles.chatAuthor}>{c.autor} • {c.data}</span>
-                                        <p>{c.texto}</p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* CAIXA DE RESPOSTA DO USUÁRIO */}
-                              <div className={styles.ticketReplyArea}>
-                                <h5>Responder à TI:</h5>
-                                <textarea 
-                                  className={styles.ticketTextarea}
-                                  placeholder="Digite sua resposta, dúvida ou adicione mais informações ao chamado..."
-                                  value={this.state.novoComentarioChamado}
-                                  onChange={(e) => this.setState({ novoComentarioChamado: e.target.value })}
-                                  disabled={this.state.enviandoComentarioChamado}
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                                  <button 
-                                    className={styles.btnReply}
-                                    onClick={() => this.enviarComentarioChamado(ticket.id)}
-                                    disabled={this.state.enviandoComentarioChamado || !this.state.novoComentarioChamado.trim()}
-                                  >
-                                    {this.state.enviandoComentarioChamado ? "⏳ Enviando..." : "Enviar Resposta ➔"}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* BOTÕES: OCULTAR (SE ENCERRADO) E DETALHES */}
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                            {isEncerrado && (
-                              <button 
-                                className={styles.btnDismiss} 
-                                onClick={() => this.dispensarChamado(ticket.id)}
-                              >
-                                🗑️ Ocultar
-                              </button>
-                            )}
-                            <button 
-                              className={styles.btnToggleDetails}
-                              onClick={() => this.toggleDetalhesChamado(index, ticket.id)}
-                            >
-                              {isExpanded ? "↑ Ocultar detalhes" : "↓ Ver detalhes"}
-                            </button>
-                          </div>
-
-                        </div>
-                      );
-                    })}
-
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B7280' }}>
-                    <p style={{ fontSize: '16px', fontWeight: 'bold' }}>✅ Tudo limpo por aqui!</p>
-                    <p style={{ fontSize: '13px' }}>Você não tem chamados abertos atrelados ao seu e-mail.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
+      </div> 
     );
   }
 }

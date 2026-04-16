@@ -826,24 +826,6 @@ $text-light: #6B7280;
   }
 }
 
-/* =======================================
-   MODAL DE COMENTÁRIOS
-======================================= */
-.modalOverlay { 
-  position: fixed; 
-  top: 0; 
-  left: 0; 
-  width: 100vw; 
-  height: 100vh; 
-  background: rgba(0, 0, 0, 0.6); 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  z-index: 999; 
-  backdrop-filter: blur(4px); 
-  padding: 15px; 
-}
-
 .modalContent { 
   background: white; 
   width: 550px; 
@@ -1049,16 +1031,6 @@ $text-light: #6B7280;
   }
 }
 
-/* =======================================
-   ESTILOS DOS DETALHES DO CHAMADO
-======================================= */
-.ticketExpandedArea {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px dashed #E5E7EB;
-  animation: fadeInDown 0.3s ease;
-}
-
 .ticketDetailsBox {
   background-color: #F8FAFC;
   border: 1px solid #E2E8F0;
@@ -1079,15 +1051,6 @@ $text-light: #6B7280;
     line-height: 1.5;
     white-space: pre-wrap; /* Mantém as quebras de linha digitadas no ClickUp */
   }
-}
-
-/* =======================================
-   ESTILOS DOS CHAMADOS (CARDS)
-======================================= */
-.ticketsGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
 }
 
 .ticketCard {
@@ -1153,16 +1116,6 @@ $text-light: #6B7280;
       color: $grunner-dark;
     }
   }
-}
-
-/* =======================================
-   ESTILOS DE DETALHES, PAUSA E RESPOSTA
-======================================= */
-.ticketExpandedArea {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px dashed #E5E7EB;
-  animation: fadeInDown 0.3s ease;
 }
 
 .ticketDetailsBox {
@@ -1296,141 +1249,23 @@ $text-light: #6B7280;
 }
 
 /* =======================================
-   ESTILOS DO BATE-PAPO
-======================================= */
-.chatHistoryArea {
-  margin-top: 15px; padding-top: 15px; border-top: 1px solid #E2E8F0;
-  h5 { margin: 0 0 10px 0; color: $grunner-dark; font-size: 14px; font-weight: 700; }
-}
-
-.chatContainer {
-  display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding-right: 5px;
-  margin-bottom: 10px; background-color: #F8FAFC; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0;
-  &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-}
-
-.chatBubble {
-  padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 13px; line-height: 1.4; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  p { margin: 0; white-space: pre-wrap; color: inherit; }
-}
-
-.chatAuthor { display: block; font-size: 10px; opacity: 0.8; margin-bottom: 4px; font-weight: 600; }
-.chatUser { align-self: flex-end; background-color: $grunner-green; color: white; border-bottom-right-radius: 2px; }
-.chatIT { align-self: flex-start; background-color: #ffffff; border: 1px solid #E2E8F0; color: $grunner-dark; border-bottom-left-radius: 2px; }
-
-/* =======================================
    NOTIFICAÇÕES NO HEADER (ENVELOPE MINIMALISTA) E LOGO
 ======================================= */
 .header {
   position: relative !important; // Fundamental para o envelope flutuar sobre ele
 }
 
-/* === ESTA FOI A CLASSE QUE FALTOU E CAUSOU O ERRO === */
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: 25px;
-}
+/* =======================================
+   CLASSES RESTAURADAS (MODAIS E LOGO DA HOME)
+======================================= */
+.headerRight { display: flex; align-items: center; gap: 25px; }
 
-.notificationContainer {
-  position: absolute !important;
-  top: 15px !important;     // Puxa o envelope para o topo
-  bottom: auto !important;  // Garante que a regra de baixo seja desativada
-  right: 50px !important;   // Mantém alinhado com a logo da Mercedes
-  z-index: 100 !important;
-}
-
-.notificationBtn {
-  // === A MÁGICA DO DISCRETO ESTÁ AQUI ===
-  background: transparent !important; // Remove o fundo
-  border: none !important;            // Remove a borda
-  padding: 0 !important;
-  
-  // Cor do envelope: Branco-transparente (quase some no fundo escuro)
-  color: rgba(255, 255, 255, 0.5) !important; 
-  
-  width: 32px;  
-  height: 32px; 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.3s ease; 
-  
-  &:hover {
-    background: transparent !important;
-    // Quando passa o mouse, o envelope acende pra branco total
-    color: rgba(255, 255, 255, 1) !important; 
-    transform: translateY(-2px); 
-  }
-}
-
-.notificationBadge {
-  position: absolute;
-  top: -4px;   
-  right: -6px; 
-  background-color: #EF4444; 
-  color: white;
-  font-size: 10px; 
-  font-weight: 800;
-  width: 17px;     
-  height: 17px;    
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid #171E0D; 
-  animation: pulseBadgeSuave 3s infinite; 
-}
-
-.notificationDropdown {
-  position: absolute !important;
-  top: 45px !important;     
-  bottom: auto !important;
-  right: 0 !important; 
-  width: 320px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-  z-index: 1000;
-  overflow: hidden;
-  border: 1px solid #E5E7EB;
-  animation: fadeInDown 0.2s ease; 
-  
-  .notifHeader {
-    padding: 15px 20px;
-    background: #F8FAFC;
-    border-bottom: 1px solid #E5E7EB;
-    h4 { margin: 0; color: $grunner-dark; font-size: 15px; font-weight: 700; }
-  }
-  
-  .notifBody { max-height: 300px; overflow-y: auto; }
-  
-  .notifItem {
-    display: flex; gap: 15px; padding: 15px 20px; border-bottom: 1px solid #F3F4F6; cursor: pointer; transition: background 0.2s;
-    &:hover { background: #F8FAFC; }
-    .notifIcon { font-size: 24px; }
-    .notifText {
-      p { margin: 0 0 4px 0; font-size: 13px; color: $grunner-dark; line-height: 1.4; }
-      span { font-size: 11px; color: $grunner-green; font-weight: 600; }
-    }
-  }
-  
-  .notifEmpty { padding: 20px; text-align: center; color: $text-light; font-size: 13px; margin: 0; }
-}
-
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulseBadgeSuave {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
-  70% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-}
+.modalOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(4px); padding: 15px; }
+.modalContent { background: white; width: 550px; max-width: 100%; max-height: 90vh; display: flex; flex-direction: column; border-radius: 16px; border-top: 6px solid #2E5C31; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); overflow: hidden; }
+.modalHeader { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 25px 30px 15px 30px; flex-shrink: 0; }
+.modalHeader h3 { margin: 0; color: #171E0D; font-size: 20px; }
+.closeBtn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; transition: 0.2s; }
+.closeBtn:hover { color: red; }
 
 /* ==============================================================================
    HACK DEFINITIVO PARA TELA CHEIA
@@ -1529,16 +1364,6 @@ $text-light: #6B7280;
     width: 100% !important; 
   }
 
-}
-
-/* =======================================
-   ESTILOS DOS DETALHES DO CHAMADO
-======================================= */
-.ticketExpandedArea {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px dashed #E5E7EB;
-  animation: fadeInDown 0.3s ease;
 }
 
 .ticketDetailsBox {

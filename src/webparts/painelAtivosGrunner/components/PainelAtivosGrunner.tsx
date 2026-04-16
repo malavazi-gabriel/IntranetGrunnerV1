@@ -2,6 +2,7 @@ import * as React from 'react';
 import styles from './PainelAtivosGrunner.module.scss';
 import { IPainelAtivosGrunnerProps } from './IPainelAtivosGrunnerProps';
 import { SharePointService } from '../services/SharePointService';
+import { MenuChamados } from '../../../shared/components/MenuChamado/MenuChamados';
 
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
@@ -20,8 +21,9 @@ interface IEquipamentoCarrinho {
 }
 
 interface IPainelState {
-  abaAtiva: 'consulta' | 'cadastro' | 'acessos'; // Nova aba incluída
+  abaAtiva: 'consulta' | 'cadastro' | 'acessos'; 
   isMobileMenuOpen: boolean;
+  isMenuTIOpen: boolean;
   isSalvando: boolean;
   
   novoNome: string; 
@@ -77,6 +79,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
     this.state = { 
       abaAtiva: 'consulta', 
       isMobileMenuOpen: false, 
+      isMenuTIOpen: false,
       isSalvando: false,
       novoNome: '', novoEmailResponsavel: '', novoDepartamento: '', novoTipo: 'Notebook', novoFabricante: '', novoModelo: '', novoSerie: '', novoImei: '', novoPatrimonioFin: '', novaEspecificacao: '', novaObservacao: '', carrinho: [],
       usuariosSugeridos: [], mostrarSugestoes: false,
@@ -478,18 +481,39 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
             <img src={logoGrunner} alt="Logo Semente" className={styles.logoSemente} />
             <h2>Intranet Grunner</h2>
           </div>
+
           <div className={styles.navGroup}>
             <h3>Navegação</h3>
             <a href={homeUrl}>🏠 Painel Inicial</a>
             <a href={atalhosUrl}>🖥️ Central de Atalhos</a>
           </div>
+          
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
-              <a href="#" className={styles.active}>💻 {isAdminView ? 'Gestão de Ativos (TI)' : 'Meus Equipamentos'}</a>
-              <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">🖥️ TI</a>
-              <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
-              <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
-              <a href="https://forms.monday.com/forms/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
+            
+            {/* BOTÃO PRINCIPAL DE TI (ACORDEÃO) */}
+            <a 
+              href="#" 
+              className={`${styles.menuToggle} ${this.state.isMenuTIOpen ? styles.active : ''}`}
+              onClick={(e) => { e.preventDefault(); this.setState({ isMenuTIOpen: !this.state.isMenuTIOpen }); }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>💻 Tecnologia (TI)</span>
+              <span style={{ fontSize: '10px', opacity: 0.8 }}>{this.state.isMenuTIOpen ? '▲' : '▼'}</span>
+            </a>
+
+            {/* SUB-ITENS DE TI (Só aparecem se estiver aberto) */}
+            {this.state.isMenuTIOpen && (
+              <div className={styles.navSubGroup}>
+                <a href="#" className={styles.active}>🖥️ {isAdminView ? 'Gestão de Ativos' : 'Meus Equipamentos'}</a>
+                <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">➕ Abrir Novo Chamado</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 Meus Chamados</a>
+              </div>
+            )}
+
+            {/* RESTANTE DOS DEPARTAMENTOS */}
+            <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
+            <a href="https://forms.monday.com/forms/embed/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
           </div>
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
@@ -500,6 +524,10 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
         <div className={styles.contentArea}>
           <header className={styles.header}>
+          <MenuChamados 
+             departamento="TI" 
+             emailUsuario={this.props.context.pageContext.user.email} 
+              />
                       <div className={styles.headerLeft}>
                         <img 
                           src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=L&accountname=${userEmailLogado}`} 
