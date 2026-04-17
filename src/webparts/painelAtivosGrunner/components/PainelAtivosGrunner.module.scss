@@ -249,6 +249,34 @@ $text-light: #6B7280;
   }
 }
 
+/* =======================================
+   MODAL DE FORMULÁRIOS (IFRAME)
+======================================= */
+.modalOverlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center;
+  z-index: 99999; backdrop-filter: blur(4px); padding: 15px;
+}
+
+.modalContent {
+  background: white; width: 900px; max-width: 100%; height: 85vh;
+  display: flex; flex-direction: column; border-radius: 16px;
+  border-top: 6px solid #2E5C31; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); overflow: hidden;
+  animation: fadeInDown 0.3s ease;
+}
+
+.modalHeader {
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid #eee; padding: 20px 30px; flex-shrink: 0;
+  h3 { margin: 0; color: #171E0D; font-size: 20px; }
+  .closeBtn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; transition: 0.2s; &:hover { color: red; } }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ==============================================================================
    HACK DEFINITIVO PARA TELA CHEIA
 ============================================================================== */

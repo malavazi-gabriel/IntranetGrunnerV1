@@ -67,6 +67,9 @@ interface IPainelState {
   novoNomeAcesso: string;
   novoEmailAcesso: string;
   novoNivelAcesso: string;
+  isIframeModalOpen: boolean;
+  iframeUrl: string;
+  iframeTitle: string;
 }
 
 export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGrunnerProps, IPainelState> {
@@ -97,7 +100,10 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
       listaAcessos: [],
       novoNomeAcesso: '',
       novoEmailAcesso: '',
-      novoNivelAcesso: 'Visualizador'
+      novoNivelAcesso: 'Visualizador',
+      isIframeModalOpen: false,
+      iframeUrl: '',
+      iframeTitle: ''
     };
   }
 
@@ -119,6 +125,15 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
     }
     
     this.inicializarAplicacao();
+  }
+
+  private abrirModalFormulario = (url: string, titulo: string, e: React.MouseEvent) => {
+    e.preventDefault(); 
+    this.setState({ 
+      isIframeModalOpen: true, 
+      iframeUrl: url, 
+      iframeTitle: titulo 
+    });
   }
 
   private inicializarAplicacao = async () => {
@@ -505,15 +520,15 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
             {this.state.isMenuTIOpen && (
               <div className={styles.navSubGroup}>
                 <a href="#" className={styles.active}>🖥️ {isAdminView ? 'Gestão de Ativos' : 'Meus Equipamentos'}</a>
-                <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">➕ Abrir Novo Chamado</a>
+                <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5", "➕ Abrir Novo Chamado", e)}>➕ Abrir Novo Chamado</a>
                 <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 Meus Chamados</a>
               </div>
             )}
 
             {/* RESTANTE DOS DEPARTAMENTOS */}
-            <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
-            <a href="https://forms.monday.com/forms/embed/2a2a29caa20e7e1517cc397586af97eb?r=use1" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3&env=Embedded", "📢 Solicitação - Marketing", e)}>📢 Marketing</a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi&env=Embedded", "🚗 Solicitação - Frotas", e)}>🚗 Frotas</a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.monday.com/forms/embed/2a2a29caa20e7e1517cc397586af97eb?r=use1", "🛠️ Solicitação - Facilities", e)}>🛠️ Facilities</a>
           </div>
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
@@ -1036,7 +1051,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
           </div>
         )}
 
-        {/* MODAL DE TRANSFERÊNCIA EM LOTE */}
+       {/* MODAL DE TRANSFERÊNCIA EM LOTE */}
         {this.state.mostrarModalTransferenciaLote && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(3px)' }}>
             <div style={{ background: 'white', padding: '35px', borderRadius: '12px', width: '90%', maxWidth: '600px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
@@ -1099,6 +1114,25 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                   {this.state.isSalvando ? 'A guardar...' : '💾 Apenas Transferir'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==============================================
+            MODAL DE IFRAME PARA FORMULÁRIOS EXTERNOS
+        ============================================== */}
+        {this.state.isIframeModalOpen && (
+          <div className={styles.modalOverlay} style={{ zIndex: 99999 }}>
+            <div className={styles.modalContent} style={{ width: '900px', height: '85vh', maxWidth: '95%', display: 'flex', flexDirection: 'column' }}>
+              <header className={styles.modalHeader} style={{ padding: '20px 30px' }}>
+                <h3 style={{ margin: 0, color: '#171E0D', fontSize: '20px' }}>{this.state.iframeTitle}</h3>
+                <button className={styles.closeBtn} onClick={() => this.setState({ isIframeModalOpen: false })}>✕</button>
+              </header>
+              <iframe 
+                 src={this.state.iframeUrl} 
+                 style={{ flex: 1, width: '100%', border: 'none', background: '#F8FAFC' }}
+                 title={this.state.iframeTitle} 
+              />
             </div>
           </div>
         )}
