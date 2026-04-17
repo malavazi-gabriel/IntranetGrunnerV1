@@ -100,6 +100,70 @@ $bg-light: #F8FAFC;
   &:disabled { background-color: #9CA3AF; cursor: not-allowed; transform: none; box-shadow: none; }
 }
 
+/* =======================================
+   AÇÕES DO CHAT E ANEXOS
+======================================= */
+.replyActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.attachSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.attachBtn {
+  background: transparent;
+  border: 1px solid #D1D5DB;
+  color: #4B5563;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #F8FAFC;
+    color: $grunner-green;
+    border-color: $grunner-green;
+  }
+}
+
+.attachmentPreview {
+  font-size: 12px;
+  color: $grunner-green;
+  background: rgba(46, 92, 49, 0.08);
+  padding: 6px 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(46, 92, 49, 0.2);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  button {
+    background: none;
+    border: none;
+    color: #EF4444;
+    cursor: pointer;
+    font-weight: 900;
+    padding: 0;
+    font-size: 12px;
+    &:hover { color: #B91C1C; transform: scale(1.1); }
+  }
+}
+
 .btnToggleDetails {
   background: transparent; color: $grunner-green; border: 1px solid rgba(46, 92, 49, 0.3); padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s ease;
   &:hover { background: rgba(46, 92, 49, 0.05); border-color: $grunner-green; }

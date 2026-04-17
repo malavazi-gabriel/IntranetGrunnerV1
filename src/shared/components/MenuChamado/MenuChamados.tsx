@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
-import styles from './MenuChamados.module.scss';
+import { useState, useEffect, useRef } from 'react';
+import styles from './MenuChamado.module.scss';
 
 export interface IMenuChamadosProps {
   departamento: 'TI' | 'Marketing' | 'Frotas' | 'Facilities'; 
@@ -22,6 +22,9 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
   
   const [novoComentarioChamado, setNovoComentarioChamado] = useState("");
   const [enviandoComentarioChamado, setEnviandoComentarioChamado] = useState(false);
+
+  const [arquivoAnexo, setArquivoAnexo] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const rawEmail = props.emailUsuario || "";
   const userEmail = rawEmail.toLowerCase().trim();
@@ -45,12 +48,13 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
       window.removeEventListener('abrirMeusChamadosGrunner', handleOpenTickets);
     };
   }, [userEmail, props.departamento]);
-  
+
   // === FUNÇÕES ===
   const buscarChamadosEmBackground = async () => {
-    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${userEmail}`;
+    // Adicionado quebrador de cache
+    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${userEmail}&t=${Date.now()}`;
     try {
-      const response = await fetch(apiUrl);
+      const response = await fetch(apiUrl, { cache: 'no-store' });
       const data = await response.json();
       if (data.sucesso && Array.isArray(data.chamados)) {
         setMeusChamados(data.chamados);
@@ -70,7 +74,8 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
       
       if (isEscondido && isEncerrado) return; 
       
-      const dataClickUp = parseInt(ticket.dataAtualizacao || '0');
+      // TIMESTAMP EM VEZ DA DATA FORMATADA
+      const dataClickUp = parseInt(ticket.timestampAtualizacao || '0');
       const dataLida = parseInt(lastSeen || '0');
       
       if (dataClickUp > dataLida) {
@@ -87,9 +92,10 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
     setExpandedTicketIndex(null);
     setComentariosDoChamado([]);
     
-    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${userEmail}`;
+    // Adicionado quebrador de cache
+    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${userEmail}&t=${Date.now()}`;
     try {
-      const response = await fetch(apiUrl);
+      const response = await fetch(apiUrl, { cache: 'no-store' });
       const data = await response.json();
       const lista = data.sucesso && Array.isArray(data.chamados) ? data.chamados : [];
       setMeusChamados(lista);
@@ -110,8 +116,8 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
       return;
     }
 
-    if (ticket.dataAtualizacao) {
-      localStorage.setItem(`grunner_visto_${idChamado}`, ticket.dataAtualizacao);
+    if (ticket.timestampAtualizacao) {
+      localStorage.setItem(`grunner_visto_${idChamado}`, ticket.timestampAtualizacao);
     }
 
     setExpandedTicketIndex(index);
@@ -120,8 +126,9 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
     recalcularNotificacoes(meusChamados);
 
     try {
-      const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentarios?idChamado=${idChamado}`;
-      const response = await fetch(apiUrl);
+      // Adicionado quebrador de cache
+      const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentarios?idChamado=${idChamado}&t=${Date.now()}`;
+      const response = await fetch(apiUrl, { cache: 'no-store' });
       const data = await response.json();
       if (data.sucesso) {
         setComentariosDoChamado(data.comentarios);
@@ -144,9 +151,27 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
   };
 
   const enviarComentarioChamado = async (idChamado: string) => {
-    if (!novoComentarioChamado.trim()) return;
+    // Só bloqueia se NÃO houver texto E NÃO houver anexo
+    if (!novoComentarioChamado.trim() && !arquivoAnexo) return;
 
     setEnviandoComentarioChamado(true);
+    
+    // Função mágica para converter o ficheiro em texto (Base64)
+    const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+
+    let anexoBase64 = null;
+    let nomeArquivo = null;
+
+    if (arquivoAnexo) {
+      anexoBase64 = await toBase64(arquivoAnexo);
+      nomeArquivo = arquivoAnexo.name;
+    }
+
     const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentar`;
 
     try {
@@ -156,15 +181,19 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
         body: JSON.stringify({
           idChamado: idChamado,
           comentario: novoComentarioChamado,
-          email: userEmail
+          email: userEmail,
+          anexo: anexoBase64,      
+          nomeArquivo: nomeArquivo  
         })
       });
 
       const result = await response.json();
       if (result.sucesso) {
         setNovoComentarioChamado("");
-        // Recarrega chat
-        const chatResp = await fetch(`https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentarios?idChamado=${idChamado}`);
+        setArquivoAnexo(null); // Limpa o clipe de papel após o envio
+        
+        // Recarrega o chat com quebrador de cache
+        const chatResp = await fetch(`https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentarios?idChamado=${idChamado}&t=${Date.now()}`, { cache: 'no-store' });
         const chatData = await chatResp.json();
         if (chatData.sucesso) setComentariosDoChamado(chatData.comentarios);
       } else {
@@ -249,7 +278,7 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
                     const isExpanded = expandedTicketIndex === index;
                     const lastSeen = localStorage.getItem(`grunner_visto_${ticket.id}`);
                     const isEscondido = localStorage.getItem(`grunner_escondido_${ticket.id}`) === "true";
-                    const isUnread = parseInt(ticket.dataAtualizacao) > parseInt(lastSeen || '0');
+                    const isUnread = ticket.timestampAtualizacao && parseInt(ticket.timestampAtualizacao) > parseInt(lastSeen || '0');
                     const isEncerrado = ticket.status.toLowerCase().includes('encerrado') || ticket.status.toLowerCase().includes('conclu');
 
                     if (isEscondido && isEncerrado) return null;
@@ -304,6 +333,34 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
                                     <div key={i} className={`${styles.chatBubble} ${c.isIntranet ? styles.chatUser : styles.chatIT}`}>
                                       <span className={styles.chatAuthor}>{c.autor} • {c.data}</span>
                                       <p>{c.texto}</p>
+                                      
+                                      {/* 👇 RENDERIZAÇÃO DOS ANEXOS 👇 */}
+                                      {c.anexos && c.anexos.length > 0 && (
+                                        <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                          {c.anexos.map((url: string, anidx: number) => (
+                                            <a 
+                                              key={anidx} 
+                                              href={url} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              style={{ 
+                                                padding: '6px 12px', 
+                                                backgroundColor: c.isIntranet ? '#A6CE39' : '#E2E8F0', 
+                                                color: '#171E0D', 
+                                                borderRadius: '6px', 
+                                                fontSize: '11px', 
+                                                fontWeight: 'bold', 
+                                                textDecoration: 'none',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '5px'
+                                              }}
+                                            >
+                                              📎 Ver Anexo
+                                            </a>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
@@ -314,18 +371,46 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
                               <h5>Responder:</h5>
                               <textarea 
                                 className={styles.ticketTextarea}
-                                placeholder="Digite sua resposta ou adicione mais informações..."
+                                placeholder="Digite a sua resposta ou adicione mais informações..."
                                 value={novoComentarioChamado}
                                 onChange={(e) => setNovoComentarioChamado(e.target.value)}
                                 disabled={enviandoComentarioChamado}
                               />
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                              
+                              {/* BARRA DE AÇÕES (ANEXO + ENVIAR) */}
+                              <div className={styles.replyActions}>
+                                <div className={styles.attachSection}>
+                                  {/* Input invisível que abre a janela de ficheiros */}
+                                  <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => setArquivoAnexo(e.target.files ? e.target.files[0] : null)}
+                                  />
+                                  <button
+                                    className={styles.attachBtn}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={enviandoComentarioChamado}
+                                    title="Anexar print ou ficheiro"
+                                  >
+                                    📎 Anexar
+                                  </button>
+                                  
+                                  {/* Pílula com o nome do ficheiro selecionado */}
+                                  {arquivoAnexo && (
+                                    <span className={styles.attachmentPreview} title={arquivoAnexo.name}>
+                                      {arquivoAnexo.name}
+                                      <button onClick={() => setArquivoAnexo(null)}>✕</button>
+                                    </span>
+                                  )}
+                                </div>
+
                                 <button 
                                   className={styles.btnReply}
                                   onClick={() => enviarComentarioChamado(ticket.id)}
-                                  disabled={enviandoComentarioChamado || !novoComentarioChamado.trim()}
+                                  disabled={enviandoComentarioChamado || (!novoComentarioChamado.trim() && !arquivoAnexo)}
                                 >
-                                  {enviandoComentarioChamado ? "⏳ Enviando..." : "Enviar Resposta ➔"}
+                                  {enviandoComentarioChamado ? "⏳ A enviar..." : "Enviar ➔"}
                                 </button>
                               </div>
                             </div>
