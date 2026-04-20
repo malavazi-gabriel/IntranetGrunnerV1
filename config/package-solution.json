@@ -32,9 +32,17 @@
         "id": "1837c82e-f12e-407b-ad12-08be7f921362",
         "version": "1.0.0.14"
       }
+    ],
+    "webApiPermissionRequests": [
+      {
+        "resource": "Microsoft Graph",
+        "scope": "User.Read.All"
+      }
     ]
   },
   "paths": {
     "zippedPackage": "solution/intranet-grunnerv-1.sppkg"
   }
+  
 }
+

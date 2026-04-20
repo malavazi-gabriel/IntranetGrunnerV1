@@ -3,6 +3,7 @@ import styles from './HomeGrunner.module.scss';
 import { IHomeGrunnerProps } from './IHomeGrunnerProps';
 import { SPHttpClient, ISPHttpClientOptions } from '@microsoft/sp-http';
 import { MenuChamados } from '../../../shared/components/MenuChamado/MenuChamados';
+import { MSGraphClientV3 } from '@microsoft/sp-http';
 
 const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo-grunner.png";
 const logoCompleta = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo.png";
@@ -45,6 +46,10 @@ interface IHomeGrunnerState {
   isIframeModalOpen: boolean;
   iframeUrl: string;
   iframeTitle: string;
+
+  filtroCelebracao: 'todos' | 'nascimento' | 'empresa';
+  loadingCelebracoes: boolean;
+  
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -85,10 +90,13 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       unreadTicketsCount: 0,
       isNotificacaoOpen: false,
 
-      // INICIALIZANDO O IFRAME 👇
+      // INICIALIZANDO O IFRAME
       isIframeModalOpen: false,
       iframeUrl: '',
-      iframeTitle: ''
+      iframeTitle: '',
+
+      filtroCelebracao: 'todos',
+      loadingCelebracoes: true
     };
   }
 
@@ -219,12 +227,72 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   private carregarDadosIniciais = async () => {
     await Promise.all([
       this.buscarNoticias(),
-      this.buscarAniversariantes(),
+      // this.buscarAniversariantes()
+      this.buscarCelebracoesDoGraph(),
       this.buscarEventos(),
       this.buscarEngajamento(),
       this.buscarChamadosEmBackground()
     ]);
     this.setState({ loading: false });
+  }
+
+  // ==== NOVO MOTOR DE BUSCA: ENTRA ID ====
+  private buscarCelebracoesDoGraph = async () => {
+    try {
+      const client: MSGraphClientV3 = await this.props.context.msGraphClientFactory.getClient("3");
+      
+      const response = await client.api('/users')
+        .version('v1.0')
+        .select('displayName,mail,jobTitle,onPremisesExtensionAttributes')
+        .filter('accountEnabled eq true')
+        .get();
+
+      const hoje = new Date();
+      const mesAtual = hoje.getMonth() + 1;
+
+      const celebracoesMap = response.value.reduce((acc: any[], user: any) => {
+        const attrs = user.onPremisesExtensionAttributes;
+        
+        // 1. Processa Aniversário de Vida (extensionAttribute1: DD/MM)
+        if (attrs?.extensionAttribute1) {
+          const [dia, mes] = attrs.extensionAttribute1.split('/');
+          if (parseInt(mes) === mesAtual) {
+            acc.push({
+              Title: user.displayName,
+              Dia: dia,
+              Setor: user.jobTitle || "Grunner",
+              Email: user.mail,
+              Tipo: 'nascimento'
+            });
+          }
+        }
+
+        // 2. Processa Tempo de Empresa (extensionAttribute10: DD/MM/YYYY)
+        if (attrs?.extensionAttribute10) {
+          const [dia, mes, ano] = attrs.extensionAttribute10.split('/');
+          if (parseInt(mes) === mesAtual) {
+            acc.push({
+              Title: user.displayName,
+              Dia: dia,
+              Setor: user.jobTitle || "Grunner",
+              Email: user.mail,
+              Tipo: 'empresa',
+              Anos: hoje.getFullYear() - parseInt(ano)
+            });
+          }
+        }
+        return acc;
+      }, []);
+
+      this.setState({ 
+        aniversariantesReais: celebracoesMap.sort((a: any, b: any) => parseInt(a.Dia) - parseInt(b.Dia)),
+        loadingCelebracoes: false 
+      });
+
+    } catch (error) {
+      console.error("Erro ao buscar dados do Entra ID:", error);
+      this.setState({ loadingCelebracoes: false });
+    }
   }
 
   // ==== NOVA FUNÇÃO: BUSCAR CHAMADOS SILENCIOSAMENTE PARA O BANNER ====
@@ -552,6 +620,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     const userEmail = this.props.context.pageContext.user.email;
     return this.state.todasCurtidas.some(c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail === userEmail);
   }
+  
 
   private noticiaTemConteudo = (noticia: any): boolean => {
     const conteudo = (noticia?.ConteudoNoticia || '').toString().trim();
@@ -888,112 +957,65 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
               </div>
 
               <div className={styles.card}>
-                <h2>Aniversariantes do mês</h2>
-                
-                {(() => {
-                  if (this.state.aniversariantesReais.length === 0) {
-                    return <p>Nenhum aniversariante neste mês.</p>;
-                  }
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h2 style={{ margin: 0 }}>Celebrações do Mês</h2>
+                  
+                  {/* Botões de Filtro de UX */}
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {(['todos', 'nascimento', 'empresa'] as const).map(f => (
+                      <button
+                        key={f}
+                        onClick={() => this.setState({ filtroCelebracao: f })}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '12px',
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          border: '1px solid #2E5C31',
+                          backgroundColor: this.state.filtroCelebracao === f ? '#2E5C31' : 'transparent',
+                          color: this.state.filtroCelebracao === f ? '#fff' : '#2E5C31',
+                          transition: '0.2s'
+                        }}
+                      >
+                        {f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Bday' : 'Casa'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                  const aniversariantesOrdenados = [...this.state.aniversariantesReais].sort((a, b) => {
-                    return parseInt(a.Dia, 10) - parseInt(b.Dia, 10);
-                  });
-
-                  const aniversariantesDaSemana = aniversariantesOrdenados.filter(n => this.isAniversarianteDaSemana(n.Dia));
-                  const aniversariantesRestantes = aniversariantesOrdenados.filter(n => !this.isAniversarianteDaSemana(n.Dia));
-
-                  const diaDeHoje = new Date().getDate();
-
-                  return (
-                    <>
-                      <div className={styles.teamList}>
-                        
-                        {aniversariantesDaSemana.length > 0 ? (
-                          aniversariantesDaSemana.map((niver, i) => {
-                            const isHoje = parseInt(niver.Dia, 10) === diaDeHoje;
-
-                            return (
-                              <div key={`semana-${i}`} className={styles.teamItem} style={{
-                                backgroundColor: isHoje ? '#ffffff' : '#F4FAEB',
-                                border: isHoje ? '2px solid #A6CE39' : '1px solid #A6CE39', 
-                                padding: '12px 16px',
-                                borderRadius: '12px',
-                                boxShadow: isHoje ? '0 6px 16px rgba(166, 206, 57, 0.4)' : '0 4px 12px rgba(166, 206, 57, 0.2)', 
-                                borderBottom: isHoje ? '2px solid #A6CE39' : 'none',
-                                marginBottom: '16px'
-                              }}>
-                                {niver.Email ? (
-                                  <img src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${niver.Email}`} alt={niver.Title} className={styles.teamAvatar} />
-                                ) : (
-                                  <div className={styles.teamAvatarPlaceholder}>🎉</div>
-                                )}
-                                <div className={styles.teamInfo}>
-                                  <div className={styles.teamName}>{niver.Title}</div>
-                                  <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
-                                </div>
-                                
-                                <div style={{ 
-                                  marginLeft: 'auto', 
-                                  background: isHoje ? '#A6CE39' : '#2E5C31', 
-                                  color: isHoje ? '#171E0D' : '#ffffff', 
-                                  padding: '6px 12px', 
-                                  borderRadius: '20px', 
-                                  fontSize: '11px', 
-                                  fontWeight: '900', 
-                                  boxShadow: isHoje ? '0 4px 10px rgba(166, 206, 57, 0.5)' : '0 2px 6px rgba(46, 92, 49, 0.4)',
-                                  whiteSpace: 'nowrap' 
-                                }}>
-                                  {isHoje ? 'É Hoje! 🎂' : 'Nesta semana 🎈'}
-                                </div>
-                              </div>
-                            );
-                          })
+                <div className={styles.teamList}>
+                  {this.state.aniversariantesReais
+                    .filter(c => this.state.filtroCelebracao === 'todos' || c.Tipo === this.state.filtroCelebracao)
+                    .map((niver, i) => (
+                      <div key={i} className={styles.teamItem} style={{ borderLeft: niver.Tipo === 'empresa' ? '4px solid #2E5C31' : 'none', paddingLeft: '8px' }}>
+                        {niver.Email ? (
+                          <img 
+                            src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${niver.Email}`} 
+                            className={styles.teamAvatar} 
+                          />
                         ) : (
-                          <p style={{ fontSize: '14px', color: '#6B7280', fontStyle: 'italic', marginBottom: '15px' }}>Nenhum aniversariante para esta semana.</p>
+                          <div className={styles.teamAvatarPlaceholder}>🎉</div>
                         )}
-
-                        {this.state.mostrarTodosAniversariantes && (
-                          aniversariantesRestantes.map((niver, i) => (
-                            <div key={`resto-${i}`} className={styles.teamItem}>
-                              {niver.Email ? (
-                                <img src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${niver.Email}`} alt={niver.Title} className={styles.teamAvatar} />
-                              ) : (
-                                <div className={styles.teamAvatarPlaceholder}>🎉</div>
-                              )}
-                              <div className={styles.teamInfo}>
-                                <div className={styles.teamName}>{niver.Title}</div>
-                                <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
-                              </div>
-                            </div>
-                          ))
-                        )}
+                        <div className={styles.teamInfo}>
+                          <div className={styles.teamName}>{niver.Title}</div>
+                          <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
+                        </div>
+                        
+                        <div style={{ 
+                          marginLeft: 'auto', 
+                          background: niver.Tipo === 'empresa' ? '#2E5C31' : '#A6CE39', 
+                          color: niver.Tipo === 'empresa' ? '#ffffff' : '#171E0D', 
+                          padding: '4px 10px', 
+                          borderRadius: '20px', 
+                          fontSize: '10px', 
+                          fontWeight: '900' 
+                        }}>
+                          {niver.Tipo === 'empresa' ? `${niver.Anos} Anos 🚜` : 'Bday 🎂'}
+                        </div>
                       </div>
-
-                      {aniversariantesRestantes.length > 0 && (
-                        <button 
-                          onClick={() => this.setState({ mostrarTodosAniversariantes: !this.state.mostrarTodosAniversariantes })}
-                          style={{ 
-                            width: '100%', 
-                            background: 'transparent', 
-                            border: '1px dashed #cbd5e1', 
-                            padding: '8px', 
-                            borderRadius: '8px', 
-                            color: '#64748b', 
-                            cursor: 'pointer', 
-                            fontWeight: 'bold', 
-                            fontSize: '12px', 
-                            marginTop: '15px', 
-                            transition: '0.2s' 
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                          {this.state.mostrarTodosAniversariantes ? '↑ Ocultar restantes' : `↓ Ver outros ${aniversariantesRestantes.length} do mês`}
-                        </button>
-                      )}
-                    </>
-                  );
-                })()}
+                  ))}
+                </div>
               </div>
             </aside>
           </main>
