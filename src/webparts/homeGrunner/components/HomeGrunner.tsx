@@ -245,6 +245,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
         .version('v1.0')
         .select('displayName,mail,jobTitle,onPremisesExtensionAttributes')
         .filter('accountEnabled eq true')
+        .top(999)
         .get();
 
       const hoje = new Date();
@@ -978,7 +979,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                           transition: '0.2s'
                         }}
                       >
-                        {f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Bday' : 'Casa'}
+                        {f === 'todos' ? 'Todos' : f === 'nascimento' ? 'É hoje' : 'Casa'}
                       </button>
                     ))}
                   </div>
@@ -1011,7 +1012,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                           fontSize: '10px', 
                           fontWeight: '900' 
                         }}>
-                          {niver.Tipo === 'empresa' ? `${niver.Anos} Anos 🚜` : 'Bday 🎂'}
+                          {niver.Tipo === 'empresa' ? `${niver.Anos} Anos de Grunner` : 'É Hoje 🎂'}
                         </div>
                       </div>
                   ))}
