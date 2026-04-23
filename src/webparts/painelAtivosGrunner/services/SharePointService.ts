@@ -1,4 +1,5 @@
 import { WebPartContext } from "@microsoft/sp-webpart-base";
+import { MSGraphClientV3 } from '@microsoft/sp-http';
 import { spfi, SPFx, SPFI } from "@pnp/sp";
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
@@ -16,9 +17,11 @@ const COLUNA_RESPONSAVEL_AD = "Responsavel_AD";
 
 export class SharePointService {
   private _sp: SPFI;
+  private context: WebPartContext;
 
   constructor(context: WebPartContext) {
     this._sp = spfi().using(SPFx(context));
+    this.context = context;
   }
 
 public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
@@ -202,21 +205,47 @@ public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
     }
   }
 
-  public async buscarUsuariosAD(termo: string): Promise<any[]> {
+public async buscarUsuariosAD(termo: string): Promise<any[]> {
     if (!termo || termo.length < 3) return [];
+    
     try {
-      const usuarios = await this._sp.web.siteUsers
-        .filter(`substringof('${termo}', Title) or substringof('${termo}', Email)`)
-        .top(5)();
-      
-      return usuarios.map((u: any) => ({
-        id: u.Id,
-        nome: u.Title,
-        email: u.Email || u.LoginName
+      // TENTA BUSCAR EM TEMPO REAL NO ENTRA ID (AZURE AD)
+      const graphClient: MSGraphClientV3 = await this.context.msGraphClientFactory.getClient('3');
+
+      const response = await graphClient
+        .api('/users')
+        .version('v1.0')
+        // Busca por nome ou e-mail, e ignora contas desativadas
+        .filter(`(startswith(displayName,'${termo}') or startswith(mail,'${termo}')) and accountEnabled eq true`)
+        .select('id,displayName,mail,department')
+        .top(10)
+        .get();
+
+      return response.value.map((u: any) => ({
+        id: u.id,
+        nome: u.displayName,
+        email: u.mail || "",
+        departamento: u.department || ""
       }));
+
     } catch (error) {
-      console.warn("Erro ao buscar usuários:", error);
-      return [];
+      console.warn("Permissão do Graph não aprovada ou erro. Usando fallback do SharePoint local:", error);
+      
+      // FALLBACK (PLANO B): Usa a busca antiga caso o Graph falhe
+      try {
+        const usuarios = await this._sp.web.siteUsers
+          .filter(`substringof('${termo}', Title) or substringof('${termo}', Email)`)
+          .top(5)();
+        
+        return usuarios.map((u: any) => ({
+          id: u.Id,
+          nome: u.Title,
+          email: u.Email || u.LoginName
+        }));
+      } catch (fallbackError) {
+        console.warn("Erro no fallback de usuários:", fallbackError);
+        return [];
+      }
     }
   }
 
