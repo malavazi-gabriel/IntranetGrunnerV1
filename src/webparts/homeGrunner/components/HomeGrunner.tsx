@@ -731,13 +731,12 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     const userEmail = this.props.context.pageContext.user.email;
     const dataAtual = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
-    const diaHoje = new Date().getDate();
+const hoje = new Date();
+const diaHoje = hoje.getDate();
 
-    
-
-    const ultimoDiaDoMes = new Date(
-  new Date().getFullYear(),
-  new Date().getMonth() + 1,
+const ultimoDiaDoMes = new Date(
+  hoje.getFullYear(),
+  hoje.getMonth() + 1,
   0
 ).getDate();
 
@@ -999,7 +998,10 @@ const celebracoesFiltradas = this.state.aniversariantesReais
 
   <div className={`${styles.card} ${styles.celebrationsCard}`}>
     <div className={styles.celebrationsHeader}>
-      <h2 className={styles.celebrationsTitle}>🎉 Celebrações</h2>
+      <div className={styles.celebrationsHeading}>
+        <h2 className={styles.celebrationsTitle}>🎉 Celebrações</h2>
+        <p className={styles.celebrationsSubtitle}>Aniversários e tempo de casa</p>
+      </div>
 
       <div className={styles.celebrationsFilters}>
         {(['todos', 'nascimento', 'empresa'] as const).map(f => {
@@ -1011,7 +1013,7 @@ const celebracoesFiltradas = this.state.aniversariantesReais
               type="button"
               onClick={() => this.setState({ filtroCelebracao: f })}
               title={f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Aniversários' : 'Tempo de empresa'}
-              className={`${styles.celebrationFilterBtn} ${ativo ? styles.celebrationFilterActive : ''}`}
+              className={`${styles.celebrationFilterBtn} ${ativo ? styles.celebrationFilterBtnActive : ''}`}
             >
               {f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Aniv.' : 'Emp.'}
             </button>
@@ -1021,42 +1023,67 @@ const celebracoesFiltradas = this.state.aniversariantesReais
     </div>
 
     <div className={styles.celebrationsList}>
-      {celebracoesFiltradas.map((niver, i) => {
-        const isHoje = parseInt(niver.Dia) === diaHoje;
+      {this.state.loadingCelebracoes ? (
+        <div className={styles.celebrationEmpty}>
+          Carregando celebrações...
+        </div>
+      ) : celebracoesFiltradas.length > 0 ? (
+        celebracoesFiltradas.map((niver, i) => {
+          const diaCelebracao = parseInt(niver.Dia, 10);
+          const isHoje = diaCelebracao === diaHoje;
+          const isEmpresa = niver.Tipo === 'empresa';
 
-        const badgeClass = niver.Tipo === 'empresa'
-          ? styles.celebrationBadgeEmpresa
-          : (isHoje ? styles.celebrationBadgeToday : styles.celebrationBadgeBirthday);
+          const badgeClass = isEmpresa
+            ? styles.celebrationBadgeEmpresa
+            : isHoje
+              ? styles.celebrationBadgeToday
+              : styles.celebrationBadgeBirthday;
 
-        return (
-          <div key={`${niver.Email || niver.Title}-${niver.Tipo}-${i}`} className={styles.celebrationItem}>
-            {niver.Email ? (
-              <img
-                src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=S&accountname=${niver.Email}`}
-                alt={niver.Title}
-                className={styles.celebrationAvatar}
-              />
-            ) : (
-              <div className={styles.celebrationAvatarPlaceholder}>
-                {niver.Tipo === 'empresa' ? '💼' : '🎉'}
+          const badgeText = isEmpresa
+            ? (niver.Anos === 0 ? 'Novo' : `${niver.Anos} ano${niver.Anos > 1 ? 's' : ''}`)
+            : (isHoje ? 'Hoje' : 'Aniv.');
+
+          const iniciais = String(niver.Title || '?')
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map(parte => parte.charAt(0))
+            .join('')
+            .toUpperCase();
+
+          return (
+            <div
+              key={`${niver.Email || niver.Title}-${niver.Tipo}-${i}`}
+              className={`${styles.celebrationItem} ${isHoje ? styles.celebrationItemToday : ''}`}
+            >
+              {niver.Email ? (
+                <img
+                  src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=S&accountname=${niver.Email}`}
+                  alt={niver.Title}
+                  className={styles.celebrationAvatar}
+                />
+              ) : (
+                <div className={styles.celebrationAvatarPlaceholder}>
+                  {iniciais}
+                </div>
+              )}
+
+              <div className={styles.celebrationInfo}>
+                <div className={styles.celebrationName}>{niver.Title}</div>
+                <div className={styles.celebrationDetail}>
+                  <span>{niver.Setor || 'Grunner'}</span>
+                  <span className={styles.celebrationDetailDot}>•</span>
+                  <span>{isHoje ? 'Hoje' : `Dia ${niver.Dia}`}</span>
+                </div>
               </div>
-            )}
 
-            <div className={styles.celebrationInfo}>
-              <div className={styles.celebrationName}>{niver.Title}</div>
-              <div className={styles.celebrationDetail}>{niver.Setor} • Dia {niver.Dia}</div>
+              <div className={`${styles.celebrationBadge} ${badgeClass}`}>
+                {badgeText}
+              </div>
             </div>
-
-            <div className={`${styles.celebrationBadge} ${badgeClass}`}>
-              {niver.Tipo === 'empresa'
-                ? (niver.Anos === 0 ? 'Novo(a)' : `${niver.Anos} Ano${niver.Anos > 1 ? 's' : ''}`)
-                : (isHoje ? 'É Hoje!' : 'Aniv.')}
-            </div>
-          </div>
-        );
-      })}
-
-      {celebracoesFiltradas.length === 0 && (
+          );
+        })
+      ) : (
         <div className={styles.celebrationEmpty}>
           Nenhuma celebração para este filtro.
         </div>

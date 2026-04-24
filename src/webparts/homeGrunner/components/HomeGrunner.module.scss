@@ -1503,6 +1503,300 @@ $text-light: #6B7280;
 .closeBtn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; transition: 0.2s; }
 .closeBtn:hover { color: red; }
 
+/* =======================================
+   WIDGET CELEBRAÇÕES - UX PREMIUM
+======================================= */
+
+.celebrationsCard {
+  height: 390px;
+  min-height: 390px;
+  max-height: 390px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border-top: 4px solid $grunner-green;
+}
+
+.celebrationsHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  align-items: start;
+  column-gap: 14px;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 18px;
+  flex: 0 0 auto;
+}
+
+.celebrationsHeading {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.celebrationsTitle {
+  margin: 0 !important;
+  padding: 0;
+  color: $grunner-dark;
+  font-size: 18px !important;
+  font-weight: 900;
+  line-height: 22px;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.celebrationsSubtitle {
+  margin: 3px 0 0 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.celebrationsFilters {
+  width: 160px;
+  min-width: 160px;
+  max-width: 160px;
+  height: 34px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  gap: 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.celebrationFilterBtn {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: $grunner-green;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 24px;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  appearance: none;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    background: rgba(46, 92, 49, 0.08);
+  }
+}
+
+.celebrationFilterBtnActive {
+  background: $grunner-green;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(46, 92, 49, 0.22);
+
+  &:hover {
+    background: $grunner-green;
+    color: #ffffff;
+  }
+}
+
+.celebrationsList {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding-right: 6px;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+.celebrationItem {
+  width: 100%;
+  height: 68px;
+  min-height: 68px;
+  max-height: 68px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 78px;
+  align-items: center;
+  column-gap: 12px;
+  padding: 8px 0 10px 0;
+  margin: 0;
+  border-bottom: 1px dashed #e5e7eb;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.celebrationItemToday {
+  grid-template-columns: 42px minmax(0, 1fr) 78px;
+  padding: 8px 8px 10px 10px;
+  border-left: 4px solid $grunner-green;
+  border-bottom: 1px solid rgba(46, 92, 49, 0.12);
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(46, 92, 49, 0.09), rgba(46, 92, 49, 0.025));
+}
+
+.celebrationAvatar,
+.celebrationAvatarPlaceholder {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  border-radius: 50%;
+  border: 2px solid $grunner-green;
+  box-sizing: border-box;
+}
+
+.celebrationAvatar {
+  display: block;
+  object-fit: cover;
+  background: #f8fafc;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.celebrationAvatarPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  color: $grunner-green;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+
+.celebrationInfo {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.celebrationName {
+  height: 18px;
+  line-height: 18px;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.celebrationDetail {
+  height: 17px;
+  line-height: 17px;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  span:first-child {
+    min-width: 0;
+  }
+}
+
+.celebrationDetailDot {
+  flex: 0 0 auto;
+  color: #cbd5e1;
+}
+
+.celebrationBadge {
+  width: 78px;
+  min-width: 78px;
+  max-width: 78px;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 24px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.celebrationBadgeEmpresa {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.celebrationBadgeBirthday {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.celebrationBadgeToday {
+  background: $grunner-green;
+  color: #ffffff;
+  box-shadow: 0 5px 12px rgba(46, 92, 49, 0.22);
+}
+
+.celebrationEmpty {
+  height: 270px;
+  min-height: 270px;
+  max-height: 270px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  box-sizing: border-box;
+}
+
 /* ==============================================================================
    HACK DEFINITIVO PARA TELA CHEIA
 ============================================================================== */
