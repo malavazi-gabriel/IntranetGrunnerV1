@@ -826,6 +826,242 @@ $text-light: #6B7280;
   }
 }
 
+/* =======================================
+   WIDGET CELEBRAÇÕES - PADRÃO FIXO
+======================================= */
+
+.celebrationsCard {
+  height: 360px;
+  min-height: 360px;
+  max-height: 360px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.celebrationsHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 168px;
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-sizing: border-box;
+  flex: 0 0 28px;
+}
+
+.celebrationsTitle {
+  margin: 0 !important;
+  padding: 0;
+  color: $grunner-dark;
+  font-size: 18px !important;
+  font-weight: 800;
+  line-height: 28px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.celebrationsFilters {
+  width: 168px;
+  min-width: 168px;
+  max-width: 168px;
+  height: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  gap: 6px;
+  overflow: hidden;
+}
+
+.celebrationFilterBtn {
+  width: 52px;
+  min-width: 52px;
+  max-width: 52px;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid $grunner-green;
+  border-radius: 6px;
+  background-color: transparent;
+  color: $grunner-green;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  appearance: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(46, 92, 49, 0.08);
+  }
+}
+
+.celebrationFilterActive {
+  background-color: $grunner-green;
+  color: #ffffff;
+
+  &:hover {
+    background-color: $grunner-green;
+    color: #ffffff;
+  }
+}
+
+.celebrationsList {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding-right: 6px;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+.celebrationItem {
+  width: 100%;
+  height: 58px;
+  min-height: 58px;
+  max-height: 58px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 82px;
+  align-items: center;
+  column-gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed #E5E7EB;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.celebrationAvatar,
+.celebrationAvatarPlaceholder {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  border-radius: 50%;
+  border: 2px solid $grunner-green;
+  object-fit: cover;
+  box-sizing: border-box;
+  display: block;
+}
+
+.celebrationAvatarPlaceholder {
+  background: #F8FAFC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.celebrationInfo {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.celebrationName {
+  height: 18px;
+  line-height: 18px;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.celebrationDetail {
+  height: 16px;
+  line-height: 16px;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.celebrationBadge {
+  width: 82px;
+  min-width: 82px;
+  max-width: 82px;
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.celebrationBadgeEmpresa {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.celebrationBadgeBirthday {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.celebrationBadgeToday {
+  background: $grunner-green;
+  color: #ffffff;
+}
+
+.celebrationEmpty {
+  height: 240px;
+  min-height: 240px;
+  max-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+
 .modalContent { 
   background: white; 
   width: 550px; 

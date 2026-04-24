@@ -288,7 +288,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
       }
 
       if (gerarTermo) {
-        const itensParaWord = ativosSelecionadosCompletos.filter(a => a.tipo === 'Notebook' || a.tipo === 'Celular / Smartphone');
+        const itensParaWord = ativosSelecionadosCompletos.filter(a => a.tipo !== 'Periférico');
         
         if (itensParaWord.length > 0) {
           const content = await this._service.getTemplateTermo();
@@ -315,7 +315,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
           
           alert(`Sucesso! ${ativosSelecionadosCompletos.length} iten(s) transferido(s) e Termo gerado com os equipamentos principais!`);
         } else {
-          alert(`Transferência guardada! Nenhum Termo foi gerado, pois não selecionou nenhum Notebook ou Telemóvel.`);
+          alert(`Transferência guardada! Nenhum Termo foi gerado, pois selecionou apenas periféricos.`);
         }
       } else {
         alert(`Sucesso! ${ativosSelecionadosCompletos.length} equipamento(s) transferido(s).`);
@@ -352,7 +352,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
     try {
       await this._service.atualizarAtivo(this.state.ativoSendoEditado.id, dadosAtualizados, this.state.editEmail);
       
-      if (gerarTermo && (this.state.editTipo === 'Notebook' || this.state.editTipo === 'Celular / Smartphone')) {
+      if (gerarTermo && this.state.editTipo !== 'Periférico') {
         const content = await this._service.getTemplateTermo();
         const zip = new PizZip(content);
         const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
@@ -404,7 +404,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
       }
       
       if (gerarTermo) {
-        const itensParaWord = carrinhoProcessado.filter(item => item.tipo === 'Notebook' || item.tipo === 'Celular / Smartphone');
+        const itensParaWord = carrinhoProcessado.filter(item => item.tipo !== 'Periférico');
 
         if (itensParaWord.length > 0) {
           const content = await this._service.getTemplateTermo();
@@ -426,7 +426,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
           
           alert(`Sucesso! ${carrinhoProcessado.length} equipamento(s) guardado(s) e Termo gerado!`);
         } else {
-          alert(`Sucesso! ${carrinhoProcessado.length} equipamento(s) guardado(s). Nenhum termo foi gerado (sem Notebooks/Telemóveis).`);
+          alert(`Sucesso! ${carrinhoProcessado.length} equipamento(s) guardado(s). "Sucesso! Nenhum termo foi gerado (apenas Periféricos selecionados).`);
         }
       } else {
         alert(`Sucesso! ${carrinhoProcessado.length} equipamento(s) cadastrado(s) diretamente no sistema.`);

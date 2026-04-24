@@ -731,6 +731,42 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     const userEmail = this.props.context.pageContext.user.email;
     const dataAtual = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
+    const diaHoje = new Date().getDate();
+
+    
+
+    const ultimoDiaDoMes = new Date(
+  new Date().getFullYear(),
+  new Date().getMonth() + 1,
+  0
+).getDate();
+
+const calcularDistanciaDoDia = (dia: any): number => {
+  const diaNumero = parseInt(dia, 10);
+
+  if (isNaN(diaNumero)) {
+    return 999;
+  }
+
+  return diaNumero >= diaHoje
+    ? diaNumero - diaHoje
+    : diaNumero + ultimoDiaDoMes - diaHoje;
+};
+
+const celebracoesFiltradas = this.state.aniversariantesReais
+  .filter(c => this.state.filtroCelebracao === 'todos' || c.Tipo === this.state.filtroCelebracao)
+  .slice()
+  .sort((a, b) => {
+    const distanciaA = calcularDistanciaDoDia(a.Dia);
+    const distanciaB = calcularDistanciaDoDia(b.Dia);
+
+    if (distanciaA !== distanciaB) {
+      return distanciaA - distanciaB;
+    }
+
+    return String(a.Title || '').localeCompare(String(b.Title || ''), 'pt-BR');
+  });
+
     return (
       <div className={styles.container}>
         {this.shouldHideSharePointChrome() && (
@@ -931,94 +967,103 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
             </section>
 
-            <aside className={styles.widgetsSection}>
-              <div className={styles.card}>
-                <h2>Datas importantes</h2>
-                <div className={styles.eventList}>
-                  {this.state.eventosReais.length > 0 ? this.state.eventosReais.map((evento, i) => {
-                    const urlImagem = evento.ImagemTema ? (evento.ImagemTema.Url || evento.ImagemTema) : null;
-                    const estiloDoQuadrado = urlImagem
-                      ? { backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.40)), url('${urlImagem}')`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                      : {};
+<aside className={styles.widgetsSection}>
+  <div className={styles.card}>
+    <h2>Datas importantes</h2>
+    <div className={styles.eventList}>
+      {this.state.eventosReais.length > 0 ? this.state.eventosReais.map((evento, i) => {
+        const urlImagem = evento.ImagemTema ? (evento.ImagemTema.Url || evento.ImagemTema) : null;
+        const estiloDoQuadrado = urlImagem
+          ? {
+              backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.40)), url('${urlImagem}')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }
+          : {};
 
-                    return (
-                      <div key={i} className={styles.eventItem}>
-                        <div className={styles.eventDate} style={estiloDoQuadrado}>
-                          <span className={styles.eventDay}>{evento.Dia}</span>
-                          <span className={styles.eventMonth}>{evento.Mes}</span>
-                        </div>
-                        <div className={styles.eventInfo}>
-                          <div className={styles.eventTitle}>{evento.Title}</div>
-                          <div className={styles.eventLocal}>📍 {evento.Local}</div>
-                        </div>
-                      </div>
-                    );
-                  }) : <p>Nenhum evento agendado.</p>}
-                </div>
+        return (
+          <div key={i} className={styles.eventItem}>
+            <div className={styles.eventDate} style={estiloDoQuadrado}>
+              <span className={styles.eventDay}>{evento.Dia}</span>
+              <span className={styles.eventMonth}>{evento.Mes}</span>
+            </div>
+            <div className={styles.eventInfo}>
+              <div className={styles.eventTitle}>{evento.Title}</div>
+              <div className={styles.eventLocal}>📍 {evento.Local}</div>
+            </div>
+          </div>
+        );
+      }) : <p>Nenhum evento agendado.</p>}
+    </div>
+  </div>
+
+  <div className={`${styles.card} ${styles.celebrationsCard}`}>
+    <div className={styles.celebrationsHeader}>
+      <h2 className={styles.celebrationsTitle}>🎉 Celebrações</h2>
+
+      <div className={styles.celebrationsFilters}>
+        {(['todos', 'nascimento', 'empresa'] as const).map(f => {
+          const ativo = this.state.filtroCelebracao === f;
+
+          return (
+            <button
+              key={f}
+              type="button"
+              onClick={() => this.setState({ filtroCelebracao: f })}
+              title={f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Aniversários' : 'Tempo de empresa'}
+              className={`${styles.celebrationFilterBtn} ${ativo ? styles.celebrationFilterActive : ''}`}
+            >
+              {f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Aniv.' : 'Emp.'}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+
+    <div className={styles.celebrationsList}>
+      {celebracoesFiltradas.map((niver, i) => {
+        const isHoje = parseInt(niver.Dia) === diaHoje;
+
+        const badgeClass = niver.Tipo === 'empresa'
+          ? styles.celebrationBadgeEmpresa
+          : (isHoje ? styles.celebrationBadgeToday : styles.celebrationBadgeBirthday);
+
+        return (
+          <div key={`${niver.Email || niver.Title}-${niver.Tipo}-${i}`} className={styles.celebrationItem}>
+            {niver.Email ? (
+              <img
+                src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=S&accountname=${niver.Email}`}
+                alt={niver.Title}
+                className={styles.celebrationAvatar}
+              />
+            ) : (
+              <div className={styles.celebrationAvatarPlaceholder}>
+                {niver.Tipo === 'empresa' ? '💼' : '🎉'}
               </div>
+            )}
 
-              <div className={styles.card}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h2 style={{ margin: 0 }}>Celebrações do Mês</h2>
-                  
-                  {/* Botões de Filtro de UX */}
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    {(['todos', 'nascimento', 'empresa'] as const).map(f => (
-                      <button
-                        key={f}
-                        onClick={() => this.setState({ filtroCelebracao: f })}
-                        style={{
-                          padding: '4px 8px',
-                          borderRadius: '12px',
-                          fontSize: '10px',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                          border: '1px solid #2E5C31',
-                          backgroundColor: this.state.filtroCelebracao === f ? '#2E5C31' : 'transparent',
-                          color: this.state.filtroCelebracao === f ? '#fff' : '#2E5C31',
-                          transition: '0.2s'
-                        }}
-                      >
-                        {f === 'todos' ? 'Todos' : f === 'nascimento' ? 'É hoje' : 'Casa'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <div className={styles.celebrationInfo}>
+              <div className={styles.celebrationName}>{niver.Title}</div>
+              <div className={styles.celebrationDetail}>{niver.Setor} • Dia {niver.Dia}</div>
+            </div>
 
-                <div className={styles.teamList}>
-                  {this.state.aniversariantesReais
-                    .filter(c => this.state.filtroCelebracao === 'todos' || c.Tipo === this.state.filtroCelebracao)
-                    .map((niver, i) => (
-                      <div key={i} className={styles.teamItem} style={{ borderLeft: niver.Tipo === 'empresa' ? '4px solid #2E5C31' : 'none', paddingLeft: '8px' }}>
-                        {niver.Email ? (
-                          <img 
-                            src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${niver.Email}`} 
-                            className={styles.teamAvatar} 
-                          />
-                        ) : (
-                          <div className={styles.teamAvatarPlaceholder}>🎉</div>
-                        )}
-                        <div className={styles.teamInfo}>
-                          <div className={styles.teamName}>{niver.Title}</div>
-                          <div className={styles.teamDetail}>{niver.Setor} • Dia {niver.Dia}</div>
-                        </div>
-                        
-                        <div style={{ 
-                          marginLeft: 'auto', 
-                          background: niver.Tipo === 'empresa' ? '#2E5C31' : '#A6CE39', 
-                          color: niver.Tipo === 'empresa' ? '#ffffff' : '#171E0D', 
-                          padding: '4px 10px', 
-                          borderRadius: '20px', 
-                          fontSize: '10px', 
-                          fontWeight: '900' 
-                        }}>
-                          {niver.Tipo === 'empresa' ? `${niver.Anos} Anos de Grunner` : 'É Hoje 🎂'}
-                        </div>
-                      </div>
-                  ))}
-                </div>
-              </div>
-            </aside>
+            <div className={`${styles.celebrationBadge} ${badgeClass}`}>
+              {niver.Tipo === 'empresa'
+                ? (niver.Anos === 0 ? 'Novo(a)' : `${niver.Anos} Ano${niver.Anos > 1 ? 's' : ''}`)
+                : (isHoje ? 'É Hoje!' : 'Aniv.')}
+            </div>
+          </div>
+        );
+      })}
+
+      {celebracoesFiltradas.length === 0 && (
+        <div className={styles.celebrationEmpty}>
+          Nenhuma celebração para este filtro.
+        </div>
+      )}
+    </div>
+  </div>
+</aside>
           </main>
         </div>
 
