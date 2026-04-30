@@ -237,64 +237,93 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   }
 
   // ==== NOVO MOTOR DE BUSCA: ENTRA ID ====
-  private buscarCelebracoesDoGraph = async () => {
-    try {
-      const client: MSGraphClientV3 = await this.props.context.msGraphClientFactory.getClient("3");
+private buscarCelebracoesDoGraph = async () => {
+  try {
+    const client: MSGraphClientV3 = await this.props.context.msGraphClientFactory.getClient("3");
+    
+    const response = await client.api('/users')
+      .version('v1.0')
+      .select('displayName,mail,jobTitle,onPremisesExtensionAttributes')
+      .filter('accountEnabled eq true')
+      .top(999)
+      .get();
+
+    // Congela a data de hoje sem horas para a matemática ser perfeita
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    // FUNÇÃO DO RADAR: Calcula quantos dias faltam para a data
+    const calcularDiasFaltantes = (dia: number, mes: number): number => {
+      const anoAtual = hoje.getFullYear();
+      let dataComemoracao = new Date(anoAtual, mes - 1, dia);
+
+      // Se a data já passou este ano, a próxima será só ano que vem
+      if (dataComemoracao < hoje) {
+        dataComemoracao.setFullYear(anoAtual + 1);
+      }
+
+      // Converte a diferença de milissegundos para dias
+      const diffTime = dataComemoracao.getTime() - hoje.getTime();
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+
+    const celebracoesMap = response.value.reduce((acc: any[], user: any) => {
+      const attrs = user.onPremisesExtensionAttributes;
       
-      const response = await client.api('/users')
-        .version('v1.0')
-        .select('displayName,mail,jobTitle,onPremisesExtensionAttributes')
-        .filter('accountEnabled eq true')
-        .top(999)
-        .get();
+      // 1. Processa Aniversário de Vida (extensionAttribute1: DD/MM)
+      if (attrs?.extensionAttribute1) {
+        const [diaStr, mesStr] = attrs.extensionAttribute1.split('/');
+        const diasFaltantes = calcularDiasFaltantes(parseInt(diaStr), parseInt(mesStr));
 
-      const hoje = new Date();
-      const mesAtual = hoje.getMonth() + 1;
-
-      const celebracoesMap = response.value.reduce((acc: any[], user: any) => {
-        const attrs = user.onPremisesExtensionAttributes;
-        
-        // 1. Processa Aniversário de Vida (extensionAttribute1: DD/MM)
-        if (attrs?.extensionAttribute1) {
-          const [dia, mes] = attrs.extensionAttribute1.split('/');
-          if (parseInt(mes) === mesAtual) {
-            acc.push({
-              Title: user.displayName,
-              Dia: dia,
-              Setor: user.jobTitle || "Grunner",
-              Email: user.mail,
-              Tipo: 'nascimento'
-            });
-          }
+        // Pega se for hoje (0) ou até os próximos 30 dias
+        if (diasFaltantes >= 0 && diasFaltantes <= 30) {
+          acc.push({
+            Title: user.displayName,
+            Dia: diaStr,
+            Mes: mesStr,
+            Setor: user.jobTitle || "Grunner",
+            Email: user.mail,
+            Tipo: 'nascimento',
+            DiasFaltantes: diasFaltantes // <-- Essa é a nossa nova arma secreta
+          });
         }
+      }
 
-        // 2. Processa Tempo de Empresa (extensionAttribute10: DD/MM/YYYY)
-        if (attrs?.extensionAttribute10) {
-          const [dia, mes, ano] = attrs.extensionAttribute10.split('/');
-          if (parseInt(mes) === mesAtual) {
-            acc.push({
-              Title: user.displayName,
-              Dia: dia,
-              Setor: user.jobTitle || "Grunner",
-              Email: user.mail,
-              Tipo: 'empresa',
-              Anos: hoje.getFullYear() - parseInt(ano)
-            });
-          }
+      // 2. Processa Tempo de Empresa (extensionAttribute10: DD/MM/YYYY)
+      if (attrs?.extensionAttribute10) {
+        const [diaStr, mesStr, anoStr] = attrs.extensionAttribute10.split('/');
+        const diasFaltantes = calcularDiasFaltantes(parseInt(diaStr), parseInt(mesStr));
+
+        if (diasFaltantes >= 0 && diasFaltantes <= 30) {
+          // Calcula a idade de empresa baseada no ano em que a comemoração vai cair
+          const anoDaCelebracao = diasFaltantes > 0 && parseInt(mesStr) < hoje.getMonth() + 1 ? hoje.getFullYear() + 1 : hoje.getFullYear();
+          
+          acc.push({
+            Title: user.displayName,
+            Dia: diaStr,
+            Mes: mesStr,
+            Setor: user.jobTitle || "Grunner",
+            Email: user.mail,
+            Tipo: 'empresa',
+            Anos: anoDaCelebracao - parseInt(anoStr),
+            DiasFaltantes: diasFaltantes
+          });
         }
-        return acc;
-      }, []);
+      }
+      return acc;
+    }, []);
 
-      this.setState({ 
-        aniversariantesReais: celebracoesMap.sort((a: any, b: any) => parseInt(a.Dia) - parseInt(b.Dia)),
-        loadingCelebracoes: false 
-      });
+    // Ordena do mais próximo (hoje) para o mais distante (daqui a 30 dias)
+    this.setState({ 
+      aniversariantesReais: celebracoesMap.sort((a: any, b: any) => a.DiasFaltantes - b.DiasFaltantes),
+      loadingCelebracoes: false 
+    });
 
-    } catch (error) {
-      console.error("Erro ao buscar dados do Entra ID:", error);
-      this.setState({ loadingCelebracoes: false });
-    }
+  } catch (error) {
+    console.error("Erro ao buscar dados do Entra ID:", error);
+    this.setState({ loadingCelebracoes: false });
   }
+}
 
   // ==== NOVA FUNÇÃO: BUSCAR CHAMADOS SILENCIOSAMENTE PARA O BANNER ====
   private buscarChamadosEmBackground = async () => {
@@ -723,7 +752,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     );
   }
 
-  public render(): React.ReactElement<IHomeGrunnerProps> {
+public render(): React.ReactElement<IHomeGrunnerProps> {
     const nomeUsuario = this.props.userDisplayName?.split(' ')[0] || 'Colaborador';
     const noticiaDestaque = this.state.noticiasReais[0];
     const outrasNoticias = this.state.noticiasReais.slice(1);
@@ -731,40 +760,9 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     const userEmail = this.props.context.pageContext.user.email;
     const dataAtual = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
-const hoje = new Date();
-const diaHoje = hoje.getDate();
-
-const ultimoDiaDoMes = new Date(
-  hoje.getFullYear(),
-  hoje.getMonth() + 1,
-  0
-).getDate();
-
-const calcularDistanciaDoDia = (dia: any): number => {
-  const diaNumero = parseInt(dia, 10);
-
-  if (isNaN(diaNumero)) {
-    return 999;
-  }
-
-  return diaNumero >= diaHoje
-    ? diaNumero - diaHoje
-    : diaNumero + ultimoDiaDoMes - diaHoje;
-};
-
-const celebracoesFiltradas = this.state.aniversariantesReais
-  .filter(c => this.state.filtroCelebracao === 'todos' || c.Tipo === this.state.filtroCelebracao)
-  .slice()
-  .sort((a, b) => {
-    const distanciaA = calcularDistanciaDoDia(a.Dia);
-    const distanciaB = calcularDistanciaDoDia(b.Dia);
-
-    if (distanciaA !== distanciaB) {
-      return distanciaA - distanciaB;
-    }
-
-    return String(a.Title || '').localeCompare(String(b.Title || ''), 'pt-BR');
-  });
+    // A FILTRAGEM LIMPA E DIRETA (A inteligência dos 30 dias já foi feita lá em cima na API)
+    const celebracoesFiltradas = this.state.aniversariantesReais
+      .filter(c => this.state.filtroCelebracao === 'todos' || c.Tipo === this.state.filtroCelebracao);
 
     return (
       <div className={styles.container}>
@@ -915,13 +913,29 @@ const celebracoesFiltradas = this.state.aniversariantesReais
                             onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
                           />
 
-                          <div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
+<div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
                             <h3 
-                              style={{ margin: '0 0 15px 0', cursor: 'pointer', lineHeight: 1.4 }} 
+                              style={{ margin: '0 0 10px 0', cursor: 'pointer', lineHeight: 1.4 }} 
                               onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
                             >
                               {noticia.Title}
                             </h3>
+
+                            {/* === O RESUMO ENTRA AQUI COM LIMITADOR DE 3 LINHAS === */}
+                            {noticia.Resumo && (
+                              <p style={{ 
+                                margin: '0 0 15px 0', 
+                                fontSize: '13px', 
+                                color: '#6B7280', 
+                                lineHeight: 1.5,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                              }}>
+                                {noticia.Resumo}
+                              </p>
+                            )}
 
                             <div className={styles.smallInteractions} style={{ display: 'flex', gap: '15px', marginTop: 'auto', paddingTop: '15px', borderTop: '1px solid #F3F4F6', fontSize: '14px', marginBottom: '15px' }}>
                               <span
@@ -1022,15 +1036,16 @@ const celebracoesFiltradas = this.state.aniversariantesReais
       </div>
     </div>
 
-    <div className={styles.celebrationsList}>
+<div className={styles.celebrationsList}>
       {this.state.loadingCelebracoes ? (
         <div className={styles.celebrationEmpty}>
           Carregando celebrações...
         </div>
       ) : celebracoesFiltradas.length > 0 ? (
         celebracoesFiltradas.map((niver, i) => {
-          const diaCelebracao = parseInt(niver.Dia, 10);
-          const isHoje = diaCelebracao === diaHoje;
+          
+          // A mágica: Só é hoje se faltam ZERO dias!
+          const isHoje = niver.DiasFaltantes === 0;
           const isEmpresa = niver.Tipo === 'empresa';
 
           const badgeClass = isEmpresa
@@ -1073,7 +1088,9 @@ const celebracoesFiltradas = this.state.aniversariantesReais
                 <div className={styles.celebrationDetail}>
                   <span>{niver.Setor || 'Grunner'}</span>
                   <span className={styles.celebrationDetailDot}>•</span>
-                  <span>{isHoje ? 'Hoje' : `Dia ${niver.Dia}`}</span>
+                  
+                  {/* Adicionando o Mês na exibição visual */}
+                  <span>{isHoje ? 'Hoje' : `Dia ${niver.Dia}/${niver.Mes}`}</span>
                 </div>
               </div>
 
