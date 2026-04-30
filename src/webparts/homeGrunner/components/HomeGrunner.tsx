@@ -25,23 +25,23 @@ interface IHomeGrunnerState {
   expandedNoticiaId: number | null;
   limiteNoticias: number;
   mostrarTodosAniversariantes: boolean;
-  
+
   isTiMenuOpen: boolean;
   isMeusChamadosModalOpen: boolean;
   meusChamados: any[];
   loadingChamados: boolean;
-  
+
   expandedTicketIndex: number | null;
   novoComentarioChamado: string;
   enviandoComentarioChamado: boolean;
-  
+
   comentariosDoChamado: any[];
   loadingHistorico: boolean;
 
   // === ESTADOS DA NOTIFICAÇÃO (NOVOS) ===
   unreadTicketsCount: number;
   isNotificacaoOpen: boolean;
-  
+
   // AS 3 VARIÁVEIS NOVAS DO IFRAME 
   isIframeModalOpen: boolean;
   iframeUrl: string;
@@ -49,7 +49,7 @@ interface IHomeGrunnerState {
 
   filtroCelebracao: 'todos' | 'nascimento' | 'empresa';
   loadingCelebracoes: boolean;
-  
+
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -74,7 +74,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       expandedNoticiaId: null,
       limiteNoticias: 7,
       mostrarTodosAniversariantes: false,
-      
+
       isTiMenuOpen: false,
       isMeusChamadosModalOpen: false,
       meusChamados: [],
@@ -180,11 +180,11 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   }
 
   private abrirModalFormulario = (url: string, titulo: string, e: React.MouseEvent) => {
-    e.preventDefault(); 
-    this.setState({ 
-      isIframeModalOpen: true, 
-      iframeUrl: url, 
-      iframeTitle: titulo 
+    e.preventDefault();
+    this.setState({
+      isIframeModalOpen: true,
+      iframeUrl: url,
+      iframeTitle: titulo
     });
   }
 
@@ -193,7 +193,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
     const urlParams = new URLSearchParams(window.location.search);
     const noticiaIdParam = urlParams.get('noticiaId');
-    
+
     if (noticiaIdParam) {
       this.setState({ expandedNoticiaId: parseInt(noticiaIdParam, 10) });
     }
@@ -237,93 +237,93 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   }
 
   // ==== NOVO MOTOR DE BUSCA: ENTRA ID ====
-private buscarCelebracoesDoGraph = async () => {
-  try {
-    const client: MSGraphClientV3 = await this.props.context.msGraphClientFactory.getClient("3");
-    
-    const response = await client.api('/users')
-      .version('v1.0')
-      .select('displayName,mail,jobTitle,onPremisesExtensionAttributes')
-      .filter('accountEnabled eq true')
-      .top(999)
-      .get();
+  private buscarCelebracoesDoGraph = async () => {
+    try {
+      const client: MSGraphClientV3 = await this.props.context.msGraphClientFactory.getClient("3");
 
-    // Congela a data de hoje sem horas para a matemática ser perfeita
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+      const response = await client.api('/users')
+        .version('v1.0')
+        .select('displayName,mail,jobTitle,onPremisesExtensionAttributes')
+        .filter('accountEnabled eq true')
+        .top(999)
+        .get();
 
-    // FUNÇÃO DO RADAR: Calcula quantos dias faltam para a data
-    const calcularDiasFaltantes = (dia: number, mes: number): number => {
-      const anoAtual = hoje.getFullYear();
-      let dataComemoracao = new Date(anoAtual, mes - 1, dia);
+      // Congela a data de hoje sem horas para a matemática ser perfeita
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
 
-      // Se a data já passou este ano, a próxima será só ano que vem
-      if (dataComemoracao < hoje) {
-        dataComemoracao.setFullYear(anoAtual + 1);
-      }
+      // FUNÇÃO DO RADAR: Calcula quantos dias faltam para a data
+      const calcularDiasFaltantes = (dia: number, mes: number): number => {
+        const anoAtual = hoje.getFullYear();
+        let dataComemoracao = new Date(anoAtual, mes - 1, dia);
 
-      // Converte a diferença de milissegundos para dias
-      const diffTime = dataComemoracao.getTime() - hoje.getTime();
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    };
-
-    const celebracoesMap = response.value.reduce((acc: any[], user: any) => {
-      const attrs = user.onPremisesExtensionAttributes;
-      
-      // 1. Processa Aniversário de Vida (extensionAttribute1: DD/MM)
-      if (attrs?.extensionAttribute1) {
-        const [diaStr, mesStr] = attrs.extensionAttribute1.split('/');
-        const diasFaltantes = calcularDiasFaltantes(parseInt(diaStr), parseInt(mesStr));
-
-        // Pega se for hoje (0) ou até os próximos 30 dias
-        if (diasFaltantes >= 0 && diasFaltantes <= 30) {
-          acc.push({
-            Title: user.displayName,
-            Dia: diaStr,
-            Mes: mesStr,
-            Setor: user.jobTitle || "Grunner",
-            Email: user.mail,
-            Tipo: 'nascimento',
-            DiasFaltantes: diasFaltantes // <-- Essa é a nossa nova arma secreta
-          });
+        // Se a data já passou este ano, a próxima será só ano que vem
+        if (dataComemoracao < hoje) {
+          dataComemoracao.setFullYear(anoAtual + 1);
         }
-      }
 
-      // 2. Processa Tempo de Empresa (extensionAttribute10: DD/MM/YYYY)
-      if (attrs?.extensionAttribute10) {
-        const [diaStr, mesStr, anoStr] = attrs.extensionAttribute10.split('/');
-        const diasFaltantes = calcularDiasFaltantes(parseInt(diaStr), parseInt(mesStr));
+        // Converte a diferença de milissegundos para dias
+        const diffTime = dataComemoracao.getTime() - hoje.getTime();
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      };
 
-        if (diasFaltantes >= 0 && diasFaltantes <= 30) {
-          // Calcula a idade de empresa baseada no ano em que a comemoração vai cair
-          const anoDaCelebracao = diasFaltantes > 0 && parseInt(mesStr) < hoje.getMonth() + 1 ? hoje.getFullYear() + 1 : hoje.getFullYear();
-          
-          acc.push({
-            Title: user.displayName,
-            Dia: diaStr,
-            Mes: mesStr,
-            Setor: user.jobTitle || "Grunner",
-            Email: user.mail,
-            Tipo: 'empresa',
-            Anos: anoDaCelebracao - parseInt(anoStr),
-            DiasFaltantes: diasFaltantes
-          });
+      const celebracoesMap = response.value.reduce((acc: any[], user: any) => {
+        const attrs = user.onPremisesExtensionAttributes;
+
+        // 1. Processa Aniversário de Vida (extensionAttribute1: DD/MM)
+        if (attrs?.extensionAttribute1) {
+          const [diaStr, mesStr] = attrs.extensionAttribute1.split('/');
+          const diasFaltantes = calcularDiasFaltantes(parseInt(diaStr), parseInt(mesStr));
+
+          // Pega se for hoje (0) ou até os próximos 30 dias
+          if (diasFaltantes >= 0 && diasFaltantes <= 30) {
+            acc.push({
+              Title: user.displayName,
+              Dia: diaStr,
+              Mes: mesStr,
+              Setor: user.jobTitle || "Grunner",
+              Email: user.mail,
+              Tipo: 'nascimento',
+              DiasFaltantes: diasFaltantes // <-- Essa é a nossa nova arma secreta
+            });
+          }
         }
-      }
-      return acc;
-    }, []);
 
-    // Ordena do mais próximo (hoje) para o mais distante (daqui a 30 dias)
-    this.setState({ 
-      aniversariantesReais: celebracoesMap.sort((a: any, b: any) => a.DiasFaltantes - b.DiasFaltantes),
-      loadingCelebracoes: false 
-    });
+        // 2. Processa Tempo de Empresa (extensionAttribute10: DD/MM/YYYY)
+        if (attrs?.extensionAttribute10) {
+          const [diaStr, mesStr, anoStr] = attrs.extensionAttribute10.split('/');
+          const diasFaltantes = calcularDiasFaltantes(parseInt(diaStr), parseInt(mesStr));
 
-  } catch (error) {
-    console.error("Erro ao buscar dados do Entra ID:", error);
-    this.setState({ loadingCelebracoes: false });
+          if (diasFaltantes >= 0 && diasFaltantes <= 30) {
+            // Calcula a idade de empresa baseada no ano em que a comemoração vai cair
+            const anoDaCelebracao = diasFaltantes > 0 && parseInt(mesStr) < hoje.getMonth() + 1 ? hoje.getFullYear() + 1 : hoje.getFullYear();
+
+            acc.push({
+              Title: user.displayName,
+              Dia: diaStr,
+              Mes: mesStr,
+              Setor: user.jobTitle || "Grunner",
+              Email: user.mail,
+              Tipo: 'empresa',
+              Anos: anoDaCelebracao - parseInt(anoStr),
+              DiasFaltantes: diasFaltantes
+            });
+          }
+        }
+        return acc;
+      }, []);
+
+      // Ordena do mais próximo (hoje) para o mais distante (daqui a 30 dias)
+      this.setState({
+        aniversariantesReais: celebracoesMap.sort((a: any, b: any) => a.DiasFaltantes - b.DiasFaltantes),
+        loadingCelebracoes: false
+      });
+
+    } catch (error) {
+      console.error("Erro ao buscar dados do Entra ID:", error);
+      this.setState({ loadingCelebracoes: false });
+    }
   }
-}
 
   // ==== NOVA FUNÇÃO: BUSCAR CHAMADOS SILENCIOSAMENTE PARA O BANNER ====
   private buscarChamadosEmBackground = async () => {
@@ -333,7 +333,7 @@ private buscarCelebracoesDoGraph = async () => {
     try {
       const response = await fetch(apiUrl);
       const data = await response.json();
-      
+
       if (data.sucesso && Array.isArray(data.chamados)) {
         this.setState({ meusChamados: data.chamados }, this.recalcularNotificacoes);
       }
@@ -349,12 +349,12 @@ private buscarCelebracoesDoGraph = async () => {
       const lastSeen = localStorage.getItem(`grunner_visto_${ticket.id}`);
       const isEscondido = localStorage.getItem(`grunner_escondido_${ticket.id}`) === "true";
       const isEncerrado = ticket.status.toLowerCase().includes('encerrado') || ticket.status.toLowerCase().includes('conclu');
-      
+
       if (isEscondido && isEncerrado) return; // Se escondeu e tá fechado, ignora
-      
+
       const dataClickUp = parseInt(ticket.dataAtualizacao || '0');
       const dataLida = parseInt(lastSeen || '0');
-      
+
       if (dataClickUp > dataLida) {
         unreadCount++;
       }
@@ -364,16 +364,16 @@ private buscarCelebracoesDoGraph = async () => {
   }
 
   private abrirModalMeusChamados = async () => {
-    this.setState({ 
-      isMeusChamadosModalOpen: true, 
+    this.setState({
+      isMeusChamadosModalOpen: true,
       isNotificacaoOpen: false,
-      loadingChamados: true, 
+      loadingChamados: true,
       meusChamados: [],
       expandedTicketIndex: null,
       novoComentarioChamado: "",
       comentariosDoChamado: []
     });
-    
+
     const rawEmail = this.props.context.pageContext.user.email || "";
     const userEmail = rawEmail.toLowerCase().trim();
 
@@ -382,10 +382,10 @@ private buscarCelebracoesDoGraph = async () => {
     try {
       const response = await fetch(apiUrl);
       const data = await response.json();
-      
-      this.setState({ 
-        meusChamados: data.sucesso && Array.isArray(data.chamados) ? data.chamados : [], 
-        loadingChamados: false 
+
+      this.setState({
+        meusChamados: data.sucesso && Array.isArray(data.chamados) ? data.chamados : [],
+        loadingChamados: false
       });
     } catch (error) {
       this.setState({ loadingChamados: false, meusChamados: [] });
@@ -395,7 +395,7 @@ private buscarCelebracoesDoGraph = async () => {
   // ==== FUNÇÃO ATUALIZADA: ABRIR DETALHES E MARCAR COMO LIDO ====
   private toggleDetalhesChamado = async (index: number, idChamado: string) => {
     const ticket = this.state.meusChamados[index];
-    
+
     if (this.state.expandedTicketIndex === index) {
       this.setState({ expandedTicketIndex: null, comentariosDoChamado: [] });
       return;
@@ -406,8 +406,8 @@ private buscarCelebracoesDoGraph = async () => {
       localStorage.setItem(`grunner_visto_${idChamado}`, ticket.dataAtualizacao);
     }
 
-    this.setState({ 
-      expandedTicketIndex: index, 
+    this.setState({
+      expandedTicketIndex: index,
       loadingHistorico: true,
       comentariosDoChamado: []
     }, this.recalcularNotificacoes);
@@ -446,7 +446,7 @@ private buscarCelebracoesDoGraph = async () => {
     if (!this.state.novoComentarioChamado.trim()) return;
 
     this.setState({ enviandoComentarioChamado: true });
-    
+
     const rawEmail = this.props.context.pageContext.user.email || "";
     const userEmail = rawEmail.toLowerCase().trim();
     const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentar`;
@@ -491,7 +491,7 @@ private buscarCelebracoesDoGraph = async () => {
   private carregarMaisNoticias = () => {
     this.setState((prevState) => ({
       limiteNoticias: prevState.limiteNoticias + 3
-    }), this.buscarNoticias); 
+    }), this.buscarNoticias);
   }
 
   private buscarEngajamento = async () => {
@@ -541,8 +541,8 @@ private buscarCelebracoesDoGraph = async () => {
     if (isNaN(dia)) return false;
 
     const hoje = new Date();
-    const diasDaSemana: number[] = []; 
-    
+    const diasDaSemana: number[] = [];
+
     const domingo = new Date(hoje);
     domingo.setDate(hoje.getDate() - hoje.getDay());
 
@@ -650,7 +650,7 @@ private buscarCelebracoesDoGraph = async () => {
     const userEmail = this.props.context.pageContext.user.email;
     return this.state.todasCurtidas.some(c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail === userEmail);
   }
-  
+
 
   private noticiaTemConteudo = (noticia: any): boolean => {
     const conteudo = (noticia?.ConteudoNoticia || '').toString().trim();
@@ -752,7 +752,7 @@ private buscarCelebracoesDoGraph = async () => {
     );
   }
 
-public render(): React.ReactElement<IHomeGrunnerProps> {
+  public render(): React.ReactElement<IHomeGrunnerProps> {
     const nomeUsuario = this.props.userDisplayName?.split(' ')[0] || 'Colaborador';
     const noticiaDestaque = this.state.noticiasReais[0];
     const outrasNoticias = this.state.noticiasReais.slice(1);
@@ -795,29 +795,29 @@ public render(): React.ReactElement<IHomeGrunnerProps> {
           </div>
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
-              
-              <div className={styles.accordionGroup}>
-                <button
-                  className={`${styles.accordionToggle} ${this.state.isTiMenuOpen ? styles.open : ''}`}
-                  onClick={() => this.setState({ isTiMenuOpen: !this.state.isTiMenuOpen })}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>💻 Tecnologia (TI)</span>
-                  <span className={styles.chevron}>▼</span>
-                </button>
-                
-                {this.state.isTiMenuOpen && (
-                  <div className={styles.accordionContent}>
-                    <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🖥️ Gestão de Ativos</a>
-                    <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5", "➕ Abrir Novo Chamado", e)}>➕ Abrir Novo Chamado</a>
-                    <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 Meus Chamados</a>
-                  </div>
-                )}
-              </div>
 
-              {/* RESTANTE DOS DEPARTAMENTOS A USAR O MODAL */}
-              <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3&env=Embedded", "📢 Solicitação - Marketing", e)}>📢 Marketing</a>
-              <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi&env=Embedded", "🚗 Solicitação - Frotas", e)}>🚗 Frotas</a>
-              <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.monday.com/forms/embed/2a2a29caa20e7e1517cc397586af97eb?r=use1", "🛠️ Solicitação - Facilities", e)}>🛠️ Facilities</a>
+            <div className={styles.accordionGroup}>
+              <button
+                className={`${styles.accordionToggle} ${this.state.isTiMenuOpen ? styles.open : ''}`}
+                onClick={() => this.setState({ isTiMenuOpen: !this.state.isTiMenuOpen })}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>💻 Tecnologia (TI)</span>
+                <span className={styles.chevron}>▼</span>
+              </button>
+
+              {this.state.isTiMenuOpen && (
+                <div className={styles.accordionContent}>
+                  <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🖥️ Gestão de Ativos</a>
+                  <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5", "➕ Abrir Novo Chamado", e)}>➕ Abrir Novo Chamado</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 Meus Chamados</a>
+                </div>
+              )}
+            </div>
+
+            {/* RESTANTE DOS DEPARTAMENTOS A USAR O MODAL */}
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3&env=Embedded", "📢 Solicitação - Marketing", e)}>📢 Marketing</a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi&env=Embedded", "🚗 Solicitação - Frotas", e)}>🚗 Frotas</a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.monday.com/forms/embed/2a2a29caa20e7e1517cc397586af97eb?r=use1", "🛠️ Solicitação - Facilities", e)}>🛠️ Facilities</a>
           </div>
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
@@ -827,7 +827,7 @@ public render(): React.ReactElement<IHomeGrunnerProps> {
         </aside>
 
         <div className={styles.contentArea}>
-        <header className={styles.header}>
+          <header className={styles.header}>
             <div className={styles.headerLeft}>
               <img
                 src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=L&accountname=${userEmail}`}
@@ -842,19 +842,19 @@ public render(): React.ReactElement<IHomeGrunnerProps> {
               </div>
             </div>
             {/* NOSSO NOVO COMPONENTE COMPARTILHADO */}
-              <MenuChamados 
-                departamento="TI" 
-                emailUsuario={userEmail} 
-              />
+            <MenuChamados
+              departamento="TI"
+              emailUsuario={userEmail}
+            />
             <div className={styles.headerRight}>
-               <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
+              <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
             </div>
           </header>
 
           <main className={styles.grid}>
             <section className={styles.newsSection}>
               {noticiaDestaque && (
-                <div 
+                <div
                   className={styles.heroBanner}
                   style={this.state.expandedNoticiaId === noticiaDestaque.ID ? { marginBottom: 0, borderRadius: '20px 20px 0 0' } : {}}
                 >
@@ -913,9 +913,9 @@ public render(): React.ReactElement<IHomeGrunnerProps> {
                             onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
                           />
 
-<div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
-                            <h3 
-                              style={{ margin: '0 0 10px 0', cursor: 'pointer', lineHeight: 1.4 }} 
+                          <div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
+                            <h3
+                              style={{ margin: '0 0 10px 0', cursor: 'pointer', lineHeight: 1.4 }}
                               onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
                             >
                               {noticia.Title}
@@ -923,10 +923,10 @@ public render(): React.ReactElement<IHomeGrunnerProps> {
 
                             {/* === O RESUMO ENTRA AQUI COM LIMITADOR DE 3 LINHAS === */}
                             {noticia.Resumo && (
-                              <p style={{ 
-                                margin: '0 0 15px 0', 
-                                fontSize: '13px', 
-                                color: '#6B7280', 
+                              <p style={{
+                                margin: '0 0 15px 0',
+                                fontSize: '13px',
+                                color: '#6B7280',
                                 lineHeight: 1.5,
                                 display: '-webkit-box',
                                 WebkitLineClamp: 3,
@@ -946,7 +946,7 @@ public render(): React.ReactElement<IHomeGrunnerProps> {
                                 {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} <small>{this.getLikesCount(noticia.ID)}</small>
                               </span>
 
-                              <span 
+                              <span
                                 style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                                 onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}
                               >
@@ -980,134 +980,134 @@ public render(): React.ReactElement<IHomeGrunnerProps> {
 
             </section>
 
-<aside className={styles.widgetsSection}>
-  <div className={styles.card}>
-    <h2>Datas importantes</h2>
-    <div className={styles.eventList}>
-      {this.state.eventosReais.length > 0 ? this.state.eventosReais.map((evento, i) => {
-        const urlImagem = evento.ImagemTema ? (evento.ImagemTema.Url || evento.ImagemTema) : null;
-        const estiloDoQuadrado = urlImagem
-          ? {
-              backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.40)), url('${urlImagem}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }
-          : {};
+            <aside className={styles.widgetsSection}>
+              <div className={styles.card}>
+                <h2>Datas importantes</h2>
+                <div className={styles.eventList}>
+                  {this.state.eventosReais.length > 0 ? this.state.eventosReais.map((evento, i) => {
+                    const urlImagem = evento.ImagemTema ? (evento.ImagemTema.Url || evento.ImagemTema) : null;
+                    const estiloDoQuadrado = urlImagem
+                      ? {
+                        backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.40)), url('${urlImagem}')`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                      }
+                      : {};
 
-        return (
-          <div key={i} className={styles.eventItem}>
-            <div className={styles.eventDate} style={estiloDoQuadrado}>
-              <span className={styles.eventDay}>{evento.Dia}</span>
-              <span className={styles.eventMonth}>{evento.Mes}</span>
-            </div>
-            <div className={styles.eventInfo}>
-              <div className={styles.eventTitle}>{evento.Title}</div>
-              <div className={styles.eventLocal}>📍 {evento.Local}</div>
-            </div>
-          </div>
-        );
-      }) : <p>Nenhum evento agendado.</p>}
-    </div>
-  </div>
-
-  <div className={`${styles.card} ${styles.celebrationsCard}`}>
-    <div className={styles.celebrationsHeader}>
-      <div className={styles.celebrationsHeading}>
-        <h2 className={styles.celebrationsTitle}>🎉 Celebrações</h2>
-        <p className={styles.celebrationsSubtitle}>Aniversários e tempo de casa</p>
-      </div>
-
-      <div className={styles.celebrationsFilters}>
-        {(['todos', 'nascimento', 'empresa'] as const).map(f => {
-          const ativo = this.state.filtroCelebracao === f;
-
-          return (
-            <button
-              key={f}
-              type="button"
-              onClick={() => this.setState({ filtroCelebracao: f })}
-              title={f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Aniversários' : 'Tempo de empresa'}
-              className={`${styles.celebrationFilterBtn} ${ativo ? styles.celebrationFilterBtnActive : ''}`}
-            >
-              {f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Aniv.' : 'Emp.'}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-
-<div className={styles.celebrationsList}>
-      {this.state.loadingCelebracoes ? (
-        <div className={styles.celebrationEmpty}>
-          Carregando celebrações...
-        </div>
-      ) : celebracoesFiltradas.length > 0 ? (
-        celebracoesFiltradas.map((niver, i) => {
-          
-          // A mágica: Só é hoje se faltam ZERO dias!
-          const isHoje = niver.DiasFaltantes === 0;
-          const isEmpresa = niver.Tipo === 'empresa';
-
-          const badgeClass = isEmpresa
-            ? styles.celebrationBadgeEmpresa
-            : isHoje
-              ? styles.celebrationBadgeToday
-              : styles.celebrationBadgeBirthday;
-
-          const badgeText = isEmpresa
-            ? (niver.Anos === 0 ? 'Novo' : `${niver.Anos} ano${niver.Anos > 1 ? 's' : ''}`)
-            : (isHoje ? 'Hoje' : 'Aniv.');
-
-          const iniciais = String(niver.Title || '?')
-            .split(' ')
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(parte => parte.charAt(0))
-            .join('')
-            .toUpperCase();
-
-          return (
-            <div
-              key={`${niver.Email || niver.Title}-${niver.Tipo}-${i}`}
-              className={`${styles.celebrationItem} ${isHoje ? styles.celebrationItemToday : ''}`}
-            >
-              {niver.Email ? (
-                <img
-                  src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=S&accountname=${niver.Email}`}
-                  alt={niver.Title}
-                  className={styles.celebrationAvatar}
-                />
-              ) : (
-                <div className={styles.celebrationAvatarPlaceholder}>
-                  {iniciais}
-                </div>
-              )}
-
-              <div className={styles.celebrationInfo}>
-                <div className={styles.celebrationName}>{niver.Title}</div>
-                <div className={styles.celebrationDetail}>
-                  <span>{niver.Setor || 'Grunner'}</span>
-                  <span className={styles.celebrationDetailDot}>•</span>
-                  
-                  {/* Adicionando o Mês na exibição visual */}
-                  <span>{isHoje ? 'Hoje' : `Dia ${niver.Dia}/${niver.Mes}`}</span>
+                    return (
+                      <div key={i} className={styles.eventItem}>
+                        <div className={styles.eventDate} style={estiloDoQuadrado}>
+                          <span className={styles.eventDay}>{evento.Dia}</span>
+                          <span className={styles.eventMonth}>{evento.Mes}</span>
+                        </div>
+                        <div className={styles.eventInfo}>
+                          <div className={styles.eventTitle}>{evento.Title}</div>
+                          <div className={styles.eventLocal}>📍 {evento.Local}</div>
+                        </div>
+                      </div>
+                    );
+                  }) : <p>Nenhum evento agendado.</p>}
                 </div>
               </div>
 
-              <div className={`${styles.celebrationBadge} ${badgeClass}`}>
-                {badgeText}
+              <div className={`${styles.card} ${styles.celebrationsCard}`}>
+                <div className={styles.celebrationsHeader}>
+                  <div className={styles.celebrationsHeading}>
+                    <h2 className={styles.celebrationsTitle}>🎉 Celebrações</h2>
+                    <p className={styles.celebrationsSubtitle}>Aniversários e tempo de casa</p>
+                  </div>
+
+                  <div className={styles.celebrationsFilters}>
+                    {(['todos', 'nascimento', 'empresa'] as const).map(f => {
+                      const ativo = this.state.filtroCelebracao === f;
+
+                      return (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => this.setState({ filtroCelebracao: f })}
+                          title={f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Aniversários' : 'Tempo de empresa'}
+                          className={`${styles.celebrationFilterBtn} ${ativo ? styles.celebrationFilterBtnActive : ''}`}
+                        >
+                          {f === 'todos' ? 'Todos' : f === 'nascimento' ? 'Aniv.' : 'Emp.'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className={styles.celebrationsList}>
+                  {this.state.loadingCelebracoes ? (
+                    <div className={styles.celebrationEmpty}>
+                      Carregando celebrações...
+                    </div>
+                  ) : celebracoesFiltradas.length > 0 ? (
+                    celebracoesFiltradas.map((niver, i) => {
+
+                      // A mágica: Só é hoje se faltam ZERO dias!
+                      const isHoje = niver.DiasFaltantes === 0;
+                      const isEmpresa = niver.Tipo === 'empresa';
+
+                      const badgeClass = isEmpresa
+                        ? styles.celebrationBadgeEmpresa
+                        : isHoje
+                          ? styles.celebrationBadgeToday
+                          : styles.celebrationBadgeBirthday;
+
+                      const badgeText = isEmpresa
+                        ? (niver.Anos === 0 ? 'Novo' : `${niver.Anos} ano${niver.Anos > 1 ? 's' : ''}`)
+                        : (isHoje ? 'Hoje' : 'Aniv.');
+
+                      const iniciais = String(niver.Title || '?')
+                        .split(' ')
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map(parte => parte.charAt(0))
+                        .join('')
+                        .toUpperCase();
+
+                      return (
+                        <div
+                          key={`${niver.Email || niver.Title}-${niver.Tipo}-${i}`}
+                          className={`${styles.celebrationItem} ${isHoje ? styles.celebrationItemToday : ''}`}
+                        >
+                          {niver.Email ? (
+                            <img
+                              src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=S&accountname=${niver.Email}`}
+                              alt={niver.Title}
+                              className={styles.celebrationAvatar}
+                            />
+                          ) : (
+                            <div className={styles.celebrationAvatarPlaceholder}>
+                              {iniciais}
+                            </div>
+                          )}
+
+                          <div className={styles.celebrationInfo}>
+                            <div className={styles.celebrationName}>{niver.Title}</div>
+                            <div className={styles.celebrationDetail}>
+                              <span>{niver.Setor || 'Grunner'}</span>
+                              <span className={styles.celebrationDetailDot}>•</span>
+
+                              {/* Adicionando o Mês na exibição visual */}
+                              <span>{isHoje ? 'Hoje' : `Dia ${niver.Dia}/${niver.Mes}`}</span>
+                            </div>
+                          </div>
+
+                          <div className={`${styles.celebrationBadge} ${badgeClass}`}>
+                            {badgeText}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className={styles.celebrationEmpty}>
+                      Nenhuma celebração para este filtro.
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })
-      ) : (
-        <div className={styles.celebrationEmpty}>
-          Nenhuma celebração para este filtro.
-        </div>
-      )}
-    </div>
-  </div>
-</aside>
+            </aside>
           </main>
         </div>
 
@@ -1159,7 +1159,7 @@ public render(): React.ReactElement<IHomeGrunnerProps> {
             </div>
           </div>
         )}
-{/* ==============================================
+        {/* ==============================================
             MODAL UNIVERSAL DE FORMULÁRIOS EXTERNOS
  ============================================== */}
         {this.state.isIframeModalOpen && (
@@ -1169,16 +1169,16 @@ public render(): React.ReactElement<IHomeGrunnerProps> {
                 <h3>{this.state.iframeTitle}</h3>
                 <button className={styles.closeBtn} onClick={() => this.setState({ isIframeModalOpen: false })}>✕</button>
               </header>
-              <iframe 
-                 src={this.state.iframeUrl} 
-                 style={{ flex: 1, width: '100%', border: 'none', background: '#F8FAFC' }}
-                 title={this.state.iframeTitle} 
+              <iframe
+                src={this.state.iframeUrl}
+                style={{ flex: 1, width: '100%', border: 'none', background: '#F8FAFC' }}
+                title={this.state.iframeTitle}
               />
             </div>
           </div>
         )}
 
-      </div> 
+      </div>
     );
   }
 }
