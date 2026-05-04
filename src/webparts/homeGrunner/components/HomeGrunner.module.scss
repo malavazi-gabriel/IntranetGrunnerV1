@@ -1732,14 +1732,19 @@ $text-light: #6B7280;
   min-width: 0;
   overflow: hidden;
 
-  span {
+  /* 1. O Cargo (primeiro span): Pode crescer, mas cede espaço e ganha "..." se precisar */
+  span:first-child {
+    flex: 1; 
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  span:first-child {
-    min-width: 0;
+  /* 2. O Ponto e a Data: NUNCA podem ser espremidos (flex-shrink: 0) */
+  span:not(:first-child) {
+    flex-shrink: 0; 
+    white-space: nowrap;
   }
 }
 

@@ -527,7 +527,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
   private buscarEventos = async () => {
     try {
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local,ImagemTema&$top=3&$orderby=Created desc`;
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local,ImagemTema&$top=20&$orderby=Created desc`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
       if (data?.value) this.setState({ eventosReais: data.value });
@@ -1088,9 +1088,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                             <div className={styles.celebrationDetail}>
                               <span>{niver.Setor || 'Grunner'}</span>
                               <span className={styles.celebrationDetailDot}>•</span>
-
-                              {/* Adicionando o Mês na exibição visual */}
-                              <span>{isHoje ? 'Hoje' : `Dia ${niver.Dia}/${niver.Mes}`}</span>
+                              <span>{`Dia ${niver.Dia}/${niver.Mes}`}</span>
                             </div>
                           </div>
 
