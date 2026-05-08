@@ -38,7 +38,9 @@ interface IHomeGrunnerState {
   comentariosDoChamado: any[];
   loadingHistorico: boolean;
 
-  // === ESTADOS DA NOTIFICAÇÃO (NOVOS) ===
+  isMarketingUser: boolean;
+
+  // === ESTADOS DA NOTIFICAÇÃO ===
   unreadTicketsCount: number;
   isNotificacaoOpen: boolean;
 
@@ -85,6 +87,8 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
       comentariosDoChamado: [],
       loadingHistorico: false,
+
+      isMarketingUser: false,
 
       // INICIALIZANDO AS NOTIFICAÇÕES
       unreadTicketsCount: 0,
@@ -227,15 +231,280 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   private carregarDadosIniciais = async () => {
     await Promise.all([
       this.buscarNoticias(),
-      // this.buscarAniversariantes()
       this.buscarCelebracoesDoGraph(),
       this.buscarEventos(),
       this.buscarEngajamento(),
-      this.buscarChamadosEmBackground()
+      this.buscarChamadosEmBackground(),
+      this.verificarSeMarketing()
     ]);
     this.setState({ loading: false });
   }
 
+  private verificarSeMarketing = async () => {
+  try {
+    const client: MSGraphClientV3 = await this.props.context.msGraphClientFactory.getClient("3");
+    
+    // Busca os detalhes do próprio usuário logado
+    const user = await client.api('/me')
+      .version('v1.0')
+      .select('department,jobTitle')
+      .get();
+
+    // Checa se a palavra "marketing" existe no departamento ou cargo (ignorando maiúsculas/minúsculas)
+    const isMarketing = (user.department && user.department.toLowerCase().includes('marketing')) ||
+                        (user.jobTitle && user.jobTitle.toLowerCase().includes('marketing'));
+
+    this.setState({ isMarketingUser: isMarketing });
+  } catch (error) {
+    console.error("Erro ao verificar departamento do usuário:", error);
+  }
+}
+
+/*   private verificarSeMarketing = async () => {
+  try {
+    const client: MSGraphClientV3 = await this.props.context.msGraphClientFactory.getClient("3");
+    
+    // Busca os detalhes do próprio usuário logado
+    const user = await client.api('/me')
+      .version('v1.0')
+      .select('department,jobTitle')
+      .get();
+
+    // Pega o e-mail do usuário que está acessando a página agora
+    const emailLogado = this.props.context.pageContext.user.email.toLowerCase().trim();
+
+    // 👇 COLOQUE O SEU E-MAIL REAL AQUI DENTRO DAS ASPAS 👇
+    const meuEmailDeTeste = "malavazi.gabriel@grunnertec.com.br"; 
+
+    // Checa se a palavra "marketing" existe no departamento/cargo OU se o e-mail logado é o seu
+    const isMarketing = (user.department && user.department.toLowerCase().includes('marketing')) ||
+                        (user.jobTitle && user.jobTitle.toLowerCase().includes('marketing')) ||
+                        (emailLogado === meuEmailDeTeste.toLowerCase());
+
+    this.setState({ isMarketingUser: isMarketing });
+  } catch (error) {
+    console.error("Erro ao verificar departamento do usuário:", error);
+  }
+} */
+
+private imprimirCartaz = (noticia: any) => {
+    if (!noticia) return;
+
+    const urlImagem = this.getImagemNoticia(noticia);
+    const dataFormatada = new Date(noticia.Created || new Date()).toLocaleDateString('pt-BR');
+
+    // Layout UI/UX Premium Magazine (Colorido, Moderno e Chama a Atenção)
+    const htmlCartaz = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Comunicado Grunner - ${noticia.Title}</title>
+        <style>
+          @media print {
+            /* 1. ROUBANDO ESPAÇO: Reduzi a margem de 10mm para 8mm */
+            @page { margin: 8mm; size: A4 portrait; }
+            body { 
+              -webkit-print-color-adjust: exact !important; 
+              print-color-adjust: exact !important; 
+            }
+            .imagem-destaque, img {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            h1, .meta-data {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+            }
+            
+            /* 2. REGRAS DE VIÚVAS E ÓRFÃS */
+            .conteudo p {
+              orphans: 3 !important; /* Mínimo de 3 linhas no fim da página 1 */
+              widows: 3 !important;  /* Mínimo de 3 linhas no topo da página 2 */
+              page-break-inside: avoid !important; /* Evita rasgar um parágrafo no meio */
+            }
+          }
+          
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            color: #374151;
+          }
+          
+          .folha-a4 {
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
+            background: white;
+            box-sizing: border-box;
+          }
+          
+          .header-magazine {
+            background: linear-gradient(135deg, #171E0D 0%, #2E5C31 100%);
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 5px solid #A6CE39;
+            border-radius: 12px 12px 0 0;
+          }
+          
+          .header-magazine img { height: 48px; }
+
+          .badge {
+            background-color: #A6CE39;
+            color: #171E0D;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+          }
+          
+          .conteudo-wrapper {
+            padding: 20px 30px; /* Reduzi 5px do topo */
+          }
+
+          h1 {
+            color: #2E5C31;
+            font-size: 32px; /* Reduzi 2px */
+            margin-top: 0;
+            margin-bottom: 10px;
+            line-height: 1.2;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+          }
+
+          .meta-data {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 12px;
+            color: #6B7280;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px; /* Reduzi 5px */
+          }
+
+          .meta-linha {
+            flex-grow: 1;
+            height: 2px;
+            background-color: #F3F4F6;
+          }
+          
+          .imagem-destaque {
+            width: 100%;
+            max-height: 260px; /* Reduzi 40px da altura da imagem! É aqui que ganhamos muito espaço */
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid #E5E7EB;
+          }
+          
+          .conteudo {
+            font-size: 14.5px; /* Fonte levemente menor, mas ainda super legível */
+            line-height: 1.6; /* Espaçamento de linha levemente mais apertado */
+            text-align: left;
+            column-count: 2; 
+            column-gap: 35px;
+            column-rule: 1px solid #E5E7EB;
+          }
+
+          .conteudo p {
+            margin-top: 0;
+            margin-bottom: 14px;
+          }
+
+          .conteudo h1, .conteudo h2, .conteudo h3, .conteudo h4 {
+            color: #2E5C31 !important;
+            font-size: 17px !important;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            line-height: 1.3;
+            text-align: left !important;
+            font-weight: 800;
+          }
+
+          .conteudo * { max-width: 100% !important; }
+
+          .conteudo img {
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 8px;
+            margin: 15px 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+          }
+          
+          .footer {
+            margin-top: 25px; /* Puxei o rodapé mais pra cima */
+            background-color: #F8FAFC;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 10px; /* Fonte do rodapé menorzinha */
+            color: #6B7280;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1px;
+            border: 1px solid #E5E7EB;
+            page-break-inside: avoid !important; /* Rodapé nunca quebra no meio */
+          }
+        </style>
+      </head>
+      <body>
+        <div class="folha-a4">
+          
+          <div class="header-magazine">
+            <img src="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo.png" alt="Grunner">
+            <span class="badge">Comunicado Oficial</span>
+          </div>
+
+          <div class="conteudo-wrapper">
+            
+            <h1>${noticia.Title}</h1>
+            <div class="meta-data">
+              <span>Lençóis Paulista, ${dataFormatada}</span>
+              <div class="meta-linha"></div>
+            </div>
+
+            ${urlImagem ? `<img src="${urlImagem}" class="imagem-destaque" />` : ''}
+            
+            <div class="conteudo">
+              ${noticia.ConteudoNoticia ? noticia.ConteudoNoticia : (noticia.Resumo || '')}
+            </div>
+            
+            <div class="footer">
+              Documento de Comunicação Interna • Intranet Grunner
+            </div>
+
+          </div>
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 800);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    const janelaImpressao = window.open('', '_blank');
+    if (janelaImpressao) {
+      janelaImpressao.document.open();
+      janelaImpressao.document.write(htmlCartaz);
+      janelaImpressao.document.close();
+    } else {
+      alert("Por favor, permita pop-ups neste site para gerar o cartaz.");
+    }
+  }
+ 
   // ==== NOVO MOTOR DE BUSCA: ENTRA ID ====
   private buscarCelebracoesDoGraph = async () => {
     try {
@@ -736,9 +1005,23 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                 💬 {this.getCommentsCount(noticia.ID)} Comentários
               </button>
 
+              {/* BOTÃO EXCLUSIVO DO MARKETING */}
+                {this.state.isMarketingUser && (
+                  <button
+                    className={styles.actionBtn}
+                    style={{ backgroundColor: '#2E5C31', color: 'white', border: 'none', marginLeft: 'auto', marginRight: '10px' }}
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      this.imprimirCartaz(noticia,); // <-- MUDANÇA AQUI (se for a destaque, use: noticiaDestaque)
+                    }}
+                  >
+                    🖨️ Imprimir Cartaz
+                  </button>
+                )}
+
               <button
                 className={styles.actionBtn}
-                style={{ marginLeft: 'auto', background: 'rgba(255,0,0,0.2)' }}
+                style={{ background: 'rgba(255,0,0,0.2)', marginLeft: this.state.isMarketingUser ? '0' : 'auto' }}
                 onClick={() => this.handleReadMore(noticia)}
               >
                 ✕ Fechar Matéria
@@ -880,8 +1163,23 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                         💬 {this.getCommentsCount(noticiaDestaque.ID)} Comentários
                       </button>
 
+                      {/* BOTÃO EXCLUSIVO DO MARKETING (NOTÍCIA DESTAQUE) */}
+                      {this.state.isMarketingUser && this.state.expandedNoticiaId === noticiaDestaque.ID && (
+                        <button
+                          className={styles.actionBtn}
+                          style={{ backgroundColor: '#2E5C31', color: 'white', border: 'none', marginLeft: 'auto', marginRight: '10px' }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            this.imprimirCartaz(noticiaDestaque); // <-- Chama a função passando o Destaque
+                          }}
+                        >
+                          🖨️ Imprimir Cartaz
+                        </button>
+                      )}
+
                       <button
                         className={styles.readMoreBtn}
+                        style={{ marginLeft: (this.state.isMarketingUser && this.state.expandedNoticiaId === noticiaDestaque.ID) ? '0' : 'auto' }}
                         onClick={() => this.handleReadMore(noticiaDestaque)}
                       >
                         {this.noticiaTemConteudo(noticiaDestaque)
