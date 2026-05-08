@@ -746,9 +746,10 @@ private imprimirCartaz = (noticia: any) => {
     }
   }
 
-  private buscarNoticias = async () => {
+private buscarNoticias = async () => {
     try {
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,LinkNoticia,ConteudoNoticia,Attachments,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$top=${this.state.limiteNoticias}&$orderby=Created desc`;
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,VideoURL,LinkNoticia,ConteudoNoticia,Attachments,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$top=${this.state.limiteNoticias}&$orderby=Created desc`;
+      
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
       if (data?.value) this.setState({ noticiasReais: data.value });
@@ -756,7 +757,6 @@ private imprimirCartaz = (noticia: any) => {
       console.error("Erro ao buscar notícias:", e);
     }
   }
-
   private carregarMaisNoticias = () => {
     this.setState((prevState) => ({
       limiteNoticias: prevState.limiteNoticias + 3
@@ -948,28 +948,59 @@ private imprimirCartaz = (noticia: any) => {
     return noticia.ImagemURL || '';
   }
 
-  private renderExpandedMainNews = (noticia: any): React.ReactNode => {
-    if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
-      return null;
-    }
-
-    return (
-      <div className={styles.expandedArticleWrapper}>
-        <div dangerouslySetInnerHTML={{ __html: noticia.ConteudoNoticia }} />
-
-        {noticia.LinkNoticia && (
-          <div style={{ marginTop: '35px', display: 'flex', justifyContent: 'flex-start' }}>
-            <button
-              className={styles.btnPrimary}
-              onClick={() => window.open(noticia.LinkNoticia, '_blank')}
-            >
-              Abrir Link Original ➔
-            </button>
-          </div>
-        )}
-      </div>
-    );
+private renderExpandedMainNews = (noticia: any): React.ReactNode => {
+  if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
+    return null;
   }
+
+  return (
+    <div className={styles.expandedArticleWrapper}>
+      
+{/* 🚀 BLOCO INTELIGENTE: Verifica se é YouTube ou Vídeo Direto (MP4) */}
+      {noticia.VideoURL && (
+        <div style={{ marginBottom: '30px' }}>
+          {noticia.VideoURL.includes('youtube.com') || noticia.VideoURL.includes('youtu.be') ? (
+            /* Renderiza iFrame se for YouTube */
+            <iframe 
+              width="100%" 
+              height="450" 
+              src={noticia.VideoURL} 
+              title="Vídeo da Matéria" 
+              frameBorder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowFullScreen
+              style={{ borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+            />
+          ) : (
+            /* Renderiza Player Nativo se for vídeo interno (SharePoint/MP4) */
+            <video 
+              width="100%" 
+              controls 
+              style={{ borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', backgroundColor: '#000' }}
+            >
+              <source src={noticia.VideoURL} type="video/mp4" />
+              Seu navegador não suporta a exibição deste vídeo.
+            </video>
+          )}
+        </div>
+      )}
+
+      {/* Texto original da matéria */}
+      <div dangerouslySetInnerHTML={{ __html: noticia.ConteudoNoticia }} />
+
+      {noticia.LinkNoticia && (
+        <div style={{ marginTop: '35px', display: 'flex', justifyContent: 'flex-start' }}>
+          <button
+            className={styles.btnPrimary}
+            onClick={() => window.open(noticia.LinkNoticia, '_blank')}
+          >
+            Abrir Link Original ➔
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
   private renderExpandedSubNewsCard = (noticia: any): React.ReactNode => {
     if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {

@@ -665,6 +665,12 @@ $text-light: #6B7280;
       font-size: 16px; 
     } 
   }
+
+iframe, video {
+    max-width: 100% !important;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
 }
 
 /* =======================================
@@ -1800,97 +1806,6 @@ $text-light: #6B7280;
   font-weight: 600;
   text-align: center;
   box-sizing: border-box;
-}
-
-/* ==============================================================================
-   MÁGICA DE IMPRESSÃO (CARTAZ MARKETING)
-============================================================================== */
-@media print {
-  /* 1. Esconde tudo que não deve sair no papel */
-  .sidebar,
-  .mobileHeaderBar,
-  .header,
-  .widgetsSection,
-  .subNewsGrid,
-  .interactions,
-  .btnSecondaryOutline {
-    display: none !important;
-  }
-
-  /* 2. Remove o comportamento de tela cheia que trava a rolagem */
-  .container, 
-  .contentArea {
-    height: auto !important;
-    overflow: visible !important;
-    background: white !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    display: block !important;
-  }
-
-  /* 3. Expande o Grid para a folha A4 inteira */
-  .grid {
-    grid-template-columns: 1fr !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    display: block !important;
-  }
-
-  /* 4. Ajustes do Banner/Imagem para impressão */
-  .heroBanner {
-    height: auto !important;
-    min-height: 250px !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    margin-bottom: 20px !important;
-    page-break-inside: avoid;
-    position: relative !important;
-    display: block !important;
-  }
-
-  .heroImage {
-    position: relative !important;
-    height: 300px !important;
-    filter: brightness(0.8); /* Dá um contraste melhor para o papel */
-  }
-
-  .heroOverlay {
-    position: relative !important;
-    background: none !important;
-    padding: 20px 0 !important;
-  }
-
-  .heroTitle {
-    color: black !important;
-    font-size: 28px !important;
-  }
-
-  .heroResumo {
-    color: #333 !important;
-  }
-
-  /* 5. Limpa a formatação da matéria escrita */
-  .expandedArticleWrapper {
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-    background: transparent !important;
-    margin-top: 20px !important;
-    page-break-inside: auto;
-  }
-
-  .expandedArticleWrapper p {
-    color: black !important;
-    font-size: 16px !important;
-    line-height: 1.6 !important;
-    page-break-inside: avoid;
-  }
-
-  /* Oculta o botão de "Abrir Link Original" que fica dentro da matéria */
-  .btnPrimary {
-    display: none !important;
-  }
 }
 
 /* ==============================================================================
