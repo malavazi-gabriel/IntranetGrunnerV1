@@ -21,7 +21,7 @@ interface IPoliticasGrunnerState {
 }
 
 export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerProps, IPoliticasGrunnerState> {
-  private areas = ['Institucional', 'TI', 'Sistemas', 'Marketing', 'RH', 'Operacional'];
+  private areas = ['Institucional', 'TI', 'Sistemas', 'Marketing', 'RH', 'Compras'];
   private footerObserver?: MutationObserver;
 
 constructor(props: IPoliticasGrunnerProps) {
