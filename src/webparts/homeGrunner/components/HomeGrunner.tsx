@@ -1014,7 +1014,7 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
         <div className={styles.heroBanner} style={{ marginBottom: 0, borderRadius: '20px 20px 0 0' }}>
           <div className={styles.heroImage} style={{ backgroundImage: `url('${imagemExibicao}')` }} />
           <div className={styles.heroOverlay}>
-            <span className={styles.badge}>Matéria em Leitura</span>
+            {/* <span className={styles.badge}>Matéria em Leitura</span> */}
             <h2 className={styles.heroTitle}>{noticia.Title}</h2>
             {noticia.Resumo && (
               <p className={styles.heroResumo}>{noticia.Resumo}</p>
@@ -1174,7 +1174,7 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                 >
                   <div className={styles.heroImage} style={{ backgroundImage: `url('${this.getImagemNoticia(noticiaDestaque)}')` }} />
                   <div className={styles.heroOverlay}>
-                    <span className={styles.badge}>Destaque Operacional</span>
+                    {/* <span className={styles.badge}>Destaque Operacional</span> */}
                     <h2 className={styles.heroTitle}>{noticiaDestaque.Title}</h2>
                     <p className={styles.heroResumo}>{noticiaDestaque.Resumo}</p>
 
