@@ -765,8 +765,8 @@ private buscarNoticias = async () => {
 
   private buscarEngajamento = async () => {
     try {
-      const urlCurtidas = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
-      const urlComentarios = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items`;
+      const urlCurtidas = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items?$top=5000`;
+      const urlComentarios = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items?$top=5000`;
       const [respCurtidas, respComentarios] = await Promise.all([
         this.props.context.spHttpClient.get(urlCurtidas, SPHttpClient.configurations.v1),
         this.props.context.spHttpClient.get(urlComentarios, SPHttpClient.configurations.v1)
