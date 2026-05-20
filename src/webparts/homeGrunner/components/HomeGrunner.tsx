@@ -763,25 +763,28 @@ private buscarNoticias = async () => {
     }), this.buscarNoticias);
   }
 
-  private buscarEngajamento = async () => {
-    try {
-      const urlCurtidas = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items?$top=5000`;
-      const urlComentarios = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items?$top=5000`;
-      const [respCurtidas, respComentarios] = await Promise.all([
-        this.props.context.spHttpClient.get(urlCurtidas, SPHttpClient.configurations.v1),
-        this.props.context.spHttpClient.get(urlComentarios, SPHttpClient.configurations.v1)
-      ]);
-      const dataCurtidas = await respCurtidas.json();
-      const dataComentarios = await respComentarios.json();
+private buscarEngajamento = async () => {
+  try {
+    const urlCurtidas = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items?$select=ID,NoticiaID,UsuarioEmail,UsuarioNome&$top=5000`;
+    
+    const urlComentarios = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items?$select=ID,NoticiaID,Autor,Comentario,Created&$top=5000`;
+    
+    const [respCurtidas, respComentarios] = await Promise.all([
+      this.props.context.spHttpClient.get(urlCurtidas, SPHttpClient.configurations.v1),
+      this.props.context.spHttpClient.get(urlComentarios, SPHttpClient.configurations.v1)
+    ]);
+    
+    const dataCurtidas = await respCurtidas.json();
+    const dataComentarios = await respComentarios.json();
 
-      this.setState({
-        todasCurtidas: dataCurtidas?.value || [],
-        todosComentarios: dataComentarios?.value || []
-      });
-    } catch (e) {
-      console.error("Erro ao buscar engajamento:", e);
-    }
+    this.setState({
+      todasCurtidas: dataCurtidas?.value || [],
+      todosComentarios: dataComentarios?.value || []
+    });
+  } catch (e) {
+    console.error("Erro ao buscar engajamento:", e);
   }
+}
 
   private buscarAniversariantes = async () => {
     try {
@@ -824,35 +827,54 @@ private buscarNoticias = async () => {
     return diasDaSemana.indexOf(dia) !== -1;
   }
 
-  private handleLike = async (noticiaId: number) => {
-    const userEmail = this.props.context.pageContext.user.email;
-    const userName = this.props.userDisplayName;
+private handleLike = async (noticiaId: number) => {
+  const userEmail = this.props.context.pageContext.user.email.toLowerCase();
+  const userName = this.props.userDisplayName;
 
-    const likeExistente = this.state.todasCurtidas.find(
-      c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail === userEmail
-    );
+  const likeExistente = this.state.todasCurtidas.find(
+    c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail.toLowerCase() === userEmail
+  );
 
-    try {
-      if (likeExistente) {
-        const urlDelete = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items(${likeExistente.ID})`;
-        await this.props.context.spHttpClient.post(urlDelete, SPHttpClient.configurations.v1, {
-          headers: { 'X-HTTP-Method': 'DELETE', 'IF-MATCH': '*' }
-        });
-      } else {
-        const urlPost = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
-        const body = JSON.stringify({
-          Title: `Like-${noticiaId}`,
-          NoticiaID: noticiaId.toString(),
-          UsuarioEmail: userEmail,
-          UsuarioNome: userName
-        });
-        await this.props.context.spHttpClient.post(urlPost, SPHttpClient.configurations.v1, { body: body });
-      }
-      this.buscarEngajamento();
-    } catch (e) {
-      console.error("Erro ao processar curtida:", e);
+  const totalAtualNaTela = this.getLikesCount(noticiaId);
+  const novoTotalCurtidas = likeExistente ? (totalAtualNaTela - 1) : (totalAtualNaTela + 1);
+
+  try {
+    // 1. Grava no Histórico
+    if (likeExistente) {
+      const urlDelete = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items(${likeExistente.ID})`;
+      await this.props.context.spHttpClient.post(urlDelete, SPHttpClient.configurations.v1, {
+        headers: { 'X-HTTP-Method': 'DELETE', 'IF-MATCH': '*' }
+      });
+    } else {
+      const urlPost = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
+      const body = JSON.stringify({
+        Title: `Like-${noticiaId}`,
+        NoticiaID: noticiaId.toString(),
+        UsuarioEmail: userEmail,
+        UsuarioNome: userName
+      });
+      await this.props.context.spHttpClient.post(urlPost, SPHttpClient.configurations.v1, { body: body });
     }
+
+    // 2. Atualiza a Notícia (MERGE)
+    const urlUpdateNoticia = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items(${noticiaId})`;
+    await this.props.context.spHttpClient.post(urlUpdateNoticia, SPHttpClient.configurations.v1, {
+      headers: {
+        'X-HTTP-Method': 'MERGE',
+        'IF-MATCH': '*'
+      },
+      body: JSON.stringify({
+        TotalCurtidas: novoTotalCurtidas > 0 ? novoTotalCurtidas : 0
+      })
+    });
+
+    // 3. Recarrega os dados na tela
+    this.buscarEngajamento();
+
+  } catch (e) {
+    console.error("Erro ao processar curtida:", e);
   }
+}
 
   private getTextQuemCurtiu = (noticiaId: number) => {
     const curtidas = this.state.todasCurtidas.filter(c => c.NoticiaID === noticiaId.toString());
@@ -884,28 +906,45 @@ private buscarNoticias = async () => {
     }
   }
 
-  private enviarComentario = async () => {
-    if (!this.state.novoComentario || !this.state.currentNoticiaId) return;
+private enviarComentario = async () => {
+  if (!this.state.novoComentario || !this.state.currentNoticiaId) return;
 
-    const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items`;
+  const noticiaId = this.state.currentNoticiaId;
+  const totalAtualNaTela = this.getCommentsCount(noticiaId);
+  const novoTotalComentarios = totalAtualNaTela + 1;
+
+  try {
+    // 1. Grava no Histórico
+    const urlPost = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items`;
     const body = JSON.stringify({
-      Title: `Comentário-${this.state.currentNoticiaId}`,
-      NoticiaID: this.state.currentNoticiaId.toString(),
+      Title: `Comentário-${noticiaId}`,
+      NoticiaID: noticiaId.toString(),
       Comentario: this.state.novoComentario,
       Autor: this.props.userDisplayName
     });
+    await this.props.context.spHttpClient.post(urlPost, SPHttpClient.configurations.v1, { body: body });
 
-    const options: ISPHttpClientOptions = { body: body };
+    // 2. Atualiza a Notícia (MERGE)
+    const urlUpdateNoticia = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items(${noticiaId})`;
+    await this.props.context.spHttpClient.post(urlUpdateNoticia, SPHttpClient.configurations.v1, {
+      headers: {
+        'X-HTTP-Method': 'MERGE',
+        'IF-MATCH': '*'
+      },
+      body: JSON.stringify({
+        TotalComentarios: novoTotalComentarios
+      })
+    });
 
-    try {
-      await this.props.context.spHttpClient.post(url, SPHttpClient.configurations.v1, options);
-      this.setState({ novoComentario: "" });
-      this.buscarComentarios(this.state.currentNoticiaId);
-      this.buscarEngajamento();
-    } catch (e) {
-      console.error("Erro ao enviar comentário:", e);
-    }
+    // 3. Atualiza a tela e limpa o modal
+    this.setState({ novoComentario: "" });
+    this.buscarComentarios(noticiaId);
+    this.buscarEngajamento();
+
+  } catch (e) {
+    console.error("Erro ao enviar comentário:", e);
   }
+}
 
   private getLikesCount = (noticiaId: number) => {
     return this.state.todasCurtidas.filter(c => c.NoticiaID === noticiaId.toString()).length;
@@ -1136,7 +1175,7 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
             <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Historia.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">📖 Políticas da Empresa</a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">📖 Procedimentos</a>
           </div>
         </aside>
 

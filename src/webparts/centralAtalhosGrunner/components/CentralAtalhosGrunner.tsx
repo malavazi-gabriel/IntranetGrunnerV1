@@ -463,7 +463,7 @@ this.state = {
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
             <a href={historiaUrl} target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
-            <a href={politicasUrl} target="_blank" rel="noopener noreferrer">📖 Políticas da Empresa</a>
+            <a href={politicasUrl} target="_blank" rel="noopener noreferrer">📖 Procedimentos</a>
           </div>
         </aside>
 

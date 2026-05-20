@@ -342,7 +342,7 @@ constructor(props: IPoliticasGrunnerProps) {
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
             <a href={historiaUrl} target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
-            <a href={politicasUrl} className={styles.active}>📖 Políticas da Empresa</a>
+            <a href={politicasUrl} className={styles.active}>📖 Procedimentos</a>
           </div>
         </aside>
 
