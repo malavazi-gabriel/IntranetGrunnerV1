@@ -1048,50 +1048,52 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
 
     const imagemExibicao = this.getImagemNoticia(noticia);
 
-    return (
+return (
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
         <div className={styles.heroBanner} style={{ marginBottom: 0, borderRadius: '20px 20px 0 0' }}>
           <div className={styles.heroImage} style={{ backgroundImage: `url('${imagemExibicao}')` }} />
           <div className={styles.heroOverlay}>
             {/* <span className={styles.badge}>Matéria em Leitura</span> */}
             <h2 className={styles.heroTitle}>{noticia.Title}</h2>
-            {noticia.Resumo && (
-              <p className={styles.heroResumo}>{noticia.Resumo}</p>
-            )}
+            
+            {/* RESUMO REMOVIDO DAQUI PARA A ARTE RESPIRAR */}
 
             <div className={styles.interactions}>
+              
+              {/* BOTÕES DE ENGAJAMENTO MINIMALISTAS E SOLTOS */}
               <button
-                className={styles.actionBtn}
+                className={styles.actionIconBtn}
                 onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}
                 title={this.getTextQuemCurtiu(noticia.ID)}
               >
-                {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} {this.getLikesCount(noticia.ID)} Curtidas
+                {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} 
+                <span>{this.getLikesCount(noticia.ID)}</span>
               </button>
 
               <button
-                className={styles.actionBtn}
+                className={styles.actionIconBtn}
                 onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}
+                title="Ver Comentários"
               >
-                💬 {this.getCommentsCount(noticia.ID)} Comentários
+                💬 <span>{this.getCommentsCount(noticia.ID)}</span>
               </button>
 
               {/* BOTÃO EXCLUSIVO DO MARKETING */}
-                {this.state.isMarketingUser && (
-                  <button
-                    className={styles.actionBtn}
-                    style={{ backgroundColor: '#2E5C31', color: 'white', border: 'none', marginLeft: 'auto', marginRight: '10px' }}
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      this.imprimirCartaz(noticia,); // <-- MUDANÇA AQUI (se for a destaque, use: noticiaDestaque)
-                    }}
-                  >
-                    🖨️ Imprimir Cartaz
-                  </button>
-                )}
+              {this.state.isMarketingUser && (
+                <button
+                  className={styles.actionBtnLight}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    this.imprimirCartaz(noticia); 
+                  }}
+                >
+                  🖨️ Imprimir Cartaz
+                </button>
+              )}
 
               <button
-                className={styles.actionBtn}
-                style={{ background: 'rgba(255,0,0,0.2)', marginLeft: this.state.isMarketingUser ? '0' : 'auto' }}
+                className={styles.actionBtnLight}
+                style={{ background: 'rgba(220, 38, 38, 0.8)', borderColor: 'rgba(220, 38, 38, 0.3)', marginLeft: this.state.isMarketingUser ? '0' : 'auto' }}
                 onClick={() => this.handleReadMore(noticia)}
               >
                 ✕ Fechar Matéria
@@ -1215,32 +1217,36 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                   <div className={styles.heroOverlay}>
                     {/* <span className={styles.badge}>Destaque Operacional</span> */}
                     <h2 className={styles.heroTitle}>{noticiaDestaque.Title}</h2>
-                    <p className={styles.heroResumo}>{noticiaDestaque.Resumo}</p>
+                    
+                    {/* RESUMO REMOVIDO DAQUI PARA A ARTE RESPIRAR */}
 
                     <div className={styles.interactions}>
+                      
+                      {/* BOTÕES DE ENGAJAMENTO MINIMALISTAS E SOLTOS */}
                       <button
-                        className={styles.actionBtn}
+                        className={styles.actionIconBtn}
                         onClick={(e) => { e.stopPropagation(); this.handleLike(noticiaDestaque.ID); }}
                         title={this.getTextQuemCurtiu(noticiaDestaque.ID)}
                       >
-                        {this.userAlreadyLiked(noticiaDestaque.ID) ? '❤️' : '🤍'} {this.getLikesCount(noticiaDestaque.ID)} Curtidas
+                        {this.userAlreadyLiked(noticiaDestaque.ID) ? '❤️' : '🤍'} 
+                        <span>{this.getLikesCount(noticiaDestaque.ID)}</span>
                       </button>
 
                       <button
-                        className={styles.actionBtn}
+                        className={styles.actionIconBtn}
                         onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticiaDestaque.ID); }}
+                        title="Ver Comentários"
                       >
-                        💬 {this.getCommentsCount(noticiaDestaque.ID)} Comentários
+                        💬 <span>{this.getCommentsCount(noticiaDestaque.ID)}</span>
                       </button>
 
                       {/* BOTÃO EXCLUSIVO DO MARKETING (NOTÍCIA DESTAQUE) */}
                       {this.state.isMarketingUser && this.state.expandedNoticiaId === noticiaDestaque.ID && (
                         <button
-                          className={styles.actionBtn}
-                          style={{ backgroundColor: '#2E5C31', color: 'white', border: 'none', marginLeft: 'auto', marginRight: '10px' }}
+                          className={styles.actionBtnLight}
                           onClick={(e) => { 
                             e.stopPropagation(); 
-                            this.imprimirCartaz(noticiaDestaque); // <-- Chama a função passando o Destaque
+                            this.imprimirCartaz(noticiaDestaque); 
                           }}
                         >
                           🖨️ Imprimir Cartaz
