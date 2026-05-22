@@ -1059,7 +1059,7 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
 
     const imagemExibicao = this.getImagemNoticia(noticia);
 
-return (
+    return (
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
         <div className={styles.heroBanner} style={{ marginBottom: 0, borderRadius: '20px 20px 0 0' }}>
           <div className={styles.heroImage} style={{ backgroundImage: `url('${imagemExibicao}')` }} />
@@ -1067,19 +1067,19 @@ return (
             
             {/* AVISO DE RASCUNHO EXCLUSIVO DO MARKETING */}
             {noticia.StatusNoticia === 'Rascunho' && (
-              <span className={styles.draftBadge}>
-                👁️ Rascunho (Invisível para a empresa)
+              <span 
+                className={styles.draftBadge}
+                title="Rascunho (Invisível para a empresa)"
+              >
+                👁️
               </span>
             )}
 
-            {/* <span className={styles.badge}>Matéria em Leitura</span> */}
             <h2 className={styles.heroTitle}>{noticia.Title}</h2>
-            
-            {/* RESUMO REMOVIDO DAQUI PARA A ARTE RESPIRAR */}
 
             <div className={styles.interactions}>
               
-              {/* BOTÕES DE ENGAJAMENTO MINIMALISTAS E SOLTOS */}
+              {/* BOTÃO CURTIDA SOLTO (GHOST BUTTON) */}
               <button
                 className={styles.actionIconBtn}
                 onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}
@@ -1089,6 +1089,7 @@ return (
                 <span>{this.getLikesCount(noticia.ID)}</span>
               </button>
 
+              {/* BOTÃO COMENTÁRIO SOLTO (GHOST BUTTON) */}
               <button
                 className={styles.actionIconBtn}
                 onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticia.ID); }}
@@ -1097,7 +1098,6 @@ return (
                 💬 <span>{this.getCommentsCount(noticia.ID)}</span>
               </button>
 
-              {/* BOTÃO EXCLUSIVO DO MARKETING */}
               {this.state.isMarketingUser && (
                 <button
                   className={styles.actionBtnLight}
@@ -1106,13 +1106,13 @@ return (
                     this.imprimirCartaz(noticia); 
                   }}
                 >
-                  🖨️ Imprimir Cartaz
+                  🖨️ Print
                 </button>
               )}
 
               <button
-                className={styles.actionBtnLight}
-                style={{ background: 'rgba(220, 38, 38, 0.8)', borderColor: 'rgba(220, 38, 38, 0.3)', marginLeft: this.state.isMarketingUser ? '0' : 'auto' }}
+                className={styles.readMoreBtn}
+                style={{ backgroundColor: '#DC2626', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.3)' }}
                 onClick={() => this.handleReadMore(noticia)}
               >
                 ✕ Fechar Matéria
@@ -1134,7 +1134,6 @@ return (
     const userEmail = this.props.context.pageContext.user.email;
     const dataAtual = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
-    // A FILTRAGEM LIMPA E DIRETA (A inteligência dos 30 dias já foi feita lá em cima na API)
     const celebracoesFiltradas = this.state.aniversariantesReais
       .filter(c => this.state.filtroCelebracao === 'todos' || c.Tipo === this.state.filtroCelebracao);
 
@@ -1188,7 +1187,6 @@ return (
               )}
             </div>
 
-            {/* RESTANTE DOS DEPARTAMENTOS A USAR O MODAL */}
             <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3&env=Embedded", "📢 Solicitação - Marketing", e)}>📢 Marketing</a>
             <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi&env=Embedded", "🚗 Solicitação - Frotas", e)}>🚗 Frotas</a>
             <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.monday.com/forms/embed/2a2a29caa20e7e1517cc397586af97eb?r=use1", "🛠️ Solicitação - Facilities", e)}>🛠️ Facilities</a>
@@ -1215,7 +1213,6 @@ return (
                 <span className={styles.dateBadge}>📅 {dataAtual.charAt(0).toUpperCase() + dataAtual.slice(1)}</span>
               </div>
             </div>
-            {/* NOSSO NOVO COMPONENTE COMPARTILHADO */}
             <MenuChamados
               departamento="TI"
               emailUsuario={userEmail}
@@ -1235,21 +1232,21 @@ return (
                   <div className={styles.heroImage} style={{ backgroundImage: `url('${this.getImagemNoticia(noticiaDestaque)}')` }} />
                   <div className={styles.heroOverlay}>
                     
-                    {/* AVISO DE RASCUNHO EXCLUSIVO DO MARKETING */}
+                    {/* AVISO DE RASCUNHO */}
                     {noticiaDestaque.StatusNoticia === 'Rascunho' && (
-                      <span className={styles.draftBadge}>
-                        👁️ Rascunho (Invisível para a empresa)
+                      <span 
+                        className={styles.draftBadge}
+                        title="Rascunho (Apenas o Marketing consegue ver. Mude o status para 'Publicado' no SharePoint para liberar para a empresa)."
+                      >
+                        👁️
                       </span>
                     )}
 
-                    {/* <span className={styles.badge}>Destaque Operacional</span> */}
                     <h2 className={styles.heroTitle}>{noticiaDestaque.Title}</h2>
-                    
-                    {/* RESUMO REMOVIDO DAQUI PARA A ARTE RESPIRAR */}
 
                     <div className={styles.interactions}>
                       
-                      {/* BOTÕES DE ENGAJAMENTO MINIMALISTAS E SOLTOS */}
+                      {/* BOTÃO CURTIDA (GHOST BUTTON) NO BANNER PRINCIPAL */}
                       <button
                         className={styles.actionIconBtn}
                         onClick={(e) => { e.stopPropagation(); this.handleLike(noticiaDestaque.ID); }}
@@ -1259,6 +1256,7 @@ return (
                         <span>{this.getLikesCount(noticiaDestaque.ID)}</span>
                       </button>
 
+                      {/* BOTÃO COMENTÁRIO (GHOST BUTTON) NO BANNER PRINCIPAL */}
                       <button
                         className={styles.actionIconBtn}
                         onClick={(e) => { e.stopPropagation(); this.openCommentModal(noticiaDestaque.ID); }}
@@ -1267,7 +1265,6 @@ return (
                         💬 <span>{this.getCommentsCount(noticiaDestaque.ID)}</span>
                       </button>
 
-                      {/* BOTÃO EXCLUSIVO DO MARKETING (NOTÍCIA DESTAQUE) */}
                       {this.state.isMarketingUser && this.state.expandedNoticiaId === noticiaDestaque.ID && (
                         <button
                           className={styles.actionBtnLight}
@@ -1276,13 +1273,12 @@ return (
                             this.imprimirCartaz(noticiaDestaque); 
                           }}
                         >
-                          🖨️ Imprimir Cartaz
+                          🖨️ Print
                         </button>
                       )}
 
                       <button
                         className={styles.readMoreBtn}
-                        style={{ marginLeft: (this.state.isMarketingUser && this.state.expandedNoticiaId === noticiaDestaque.ID) ? '0' : 'auto' }}
                         onClick={() => this.handleReadMore(noticiaDestaque)}
                       >
                         {this.noticiaTemConteudo(noticiaDestaque)
@@ -1314,12 +1310,15 @@ return (
                             onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
                           />
 
-<div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
+                          <div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
                             
-                            {/* AVISO DE RASCUNHO EXCLUSIVO DO MARKETING (CARDS MENORES) */}
                             {noticia.StatusNoticia === 'Rascunho' && (
-                              <span className={styles.draftBadge} style={{ alignSelf: 'flex-start', marginBottom: '10px' }}>
-                                👁️ Rascunho
+                              <span 
+                                className={styles.draftBadge}
+                                title="Rascunho (Invisível para a empresa)"
+                                style={{ alignSelf: 'flex-start', marginBottom: '10px' }}
+                              >
+                                👁️
                               </span>
                             )}
 
@@ -1330,7 +1329,6 @@ return (
                               {noticia.Title}
                             </h3>
 
-                            {/* === O RESUMO ENTRA AQUI COM LIMITADOR DE 3 LINHAS === */}
                             {noticia.Resumo && (
                               <p style={{
                                 margin: '0 0 15px 0',
@@ -1371,6 +1369,7 @@ return (
                                 {this.noticiaTemConteudo(noticia) ? 'Ler Matéria ➔' : 'Abrir Link ➔'}
                               </button>
                             </div>
+
                           </div>
                         </div>
                       )}
@@ -1452,8 +1451,6 @@ return (
                     </div>
                   ) : celebracoesFiltradas.length > 0 ? (
                     celebracoesFiltradas.map((niver, i) => {
-
-                      // A mágica: Só é hoje se faltam ZERO dias!
                       const isHoje = niver.DiasFaltantes === 0;
                       const isEmpresa = niver.Tipo === 'empresa';
 
@@ -1566,9 +1563,8 @@ return (
             </div>
           </div>
         )}
-        {/* ==============================================
-            MODAL UNIVERSAL DE FORMULÁRIOS EXTERNOS
- ============================================== */}
+        
+        {/* MODAL UNIVERSAL DE FORMULÁRIOS EXTERNOS */}
         {this.state.isIframeModalOpen && (
           <div className={styles.modalOverlay}>
             <div className={styles.modalContent} style={{ width: '900px', height: '85vh', maxWidth: '95%', display: 'flex', flexDirection: 'column' }}>
