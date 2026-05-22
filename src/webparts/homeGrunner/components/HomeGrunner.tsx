@@ -228,14 +228,17 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     }
   }
 
-  private carregarDadosIniciais = async () => {
+private carregarDadosIniciais = async () => {
+    // 1º OBRIGATÓRIO: Descobre se é o Marketing antes de buscar as notícias
+    await this.verificarSeMarketing();
+
+    // 2º Busca as informações já sabendo quem é o usuário
     await Promise.all([
       this.buscarNoticias(),
       this.buscarCelebracoesDoGraph(),
       this.buscarEventos(),
       this.buscarEngajamento(),
-      this.buscarChamadosEmBackground(),
-      this.verificarSeMarketing()
+      this.buscarChamadosEmBackground()
     ]);
     this.setState({ loading: false });
   }
@@ -748,10 +751,18 @@ private imprimirCartaz = (noticia: any) => {
 
 private buscarNoticias = async () => {
     try {
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,VideoURL,LinkNoticia,ConteudoNoticia,Attachments,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$top=${this.state.limiteNoticias}&$orderby=Created desc`;
+      // MÁGICA DE PROTEÇÃO: 
+      // Se for marketing: traz TUDO (rascunhos e publicados).
+      // Se não for marketing: traz apenas os 'Publicado' OU os antigos que estão em branco (null).
+      const filtroStatus = this.state.isMarketingUser 
+        ? "" 
+        : "&$filter=(StatusNoticia eq 'Publicado' or StatusNoticia eq null)";
+
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,VideoURL,LinkNoticia,ConteudoNoticia,StatusNoticia,Attachments,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$top=${this.state.limiteNoticias}&$orderby=Created desc${filtroStatus}`;
       
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
+      
       if (data?.value) this.setState({ noticiasReais: data.value });
     } catch (e) {
       console.error("Erro ao buscar notícias:", e);
@@ -1053,6 +1064,14 @@ return (
         <div className={styles.heroBanner} style={{ marginBottom: 0, borderRadius: '20px 20px 0 0' }}>
           <div className={styles.heroImage} style={{ backgroundImage: `url('${imagemExibicao}')` }} />
           <div className={styles.heroOverlay}>
+            
+            {/* AVISO DE RASCUNHO EXCLUSIVO DO MARKETING */}
+            {noticia.StatusNoticia === 'Rascunho' && (
+              <span className={styles.draftBadge}>
+                👁️ Rascunho (Invisível para a empresa)
+              </span>
+            )}
+
             {/* <span className={styles.badge}>Matéria em Leitura</span> */}
             <h2 className={styles.heroTitle}>{noticia.Title}</h2>
             
@@ -1215,6 +1234,14 @@ return (
                 >
                   <div className={styles.heroImage} style={{ backgroundImage: `url('${this.getImagemNoticia(noticiaDestaque)}')` }} />
                   <div className={styles.heroOverlay}>
+                    
+                    {/* AVISO DE RASCUNHO EXCLUSIVO DO MARKETING */}
+                    {noticiaDestaque.StatusNoticia === 'Rascunho' && (
+                      <span className={styles.draftBadge}>
+                        👁️ Rascunho (Invisível para a empresa)
+                      </span>
+                    )}
+
                     {/* <span className={styles.badge}>Destaque Operacional</span> */}
                     <h2 className={styles.heroTitle}>{noticiaDestaque.Title}</h2>
                     
@@ -1287,7 +1314,15 @@ return (
                             onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
                           />
 
-                          <div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
+<div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
+                            
+                            {/* AVISO DE RASCUNHO EXCLUSIVO DO MARKETING (CARDS MENORES) */}
+                            {noticia.StatusNoticia === 'Rascunho' && (
+                              <span className={styles.draftBadge} style={{ alignSelf: 'flex-start', marginBottom: '10px' }}>
+                                👁️ Rascunho
+                              </span>
+                            )}
+
                             <h3
                               style={{ margin: '0 0 10px 0', cursor: 'pointer', lineHeight: 1.4 }}
                               onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
