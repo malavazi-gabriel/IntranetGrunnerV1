@@ -243,269 +243,226 @@ private carregarDadosIniciais = async () => {
     this.setState({ loading: false });
   }
 
+  // TRAVA DE TESTE: Bloqueia para a empresa, libera só para a sua máquina
   private verificarSeMarketing = async () => {
-  try {
-    const client: MSGraphClientV3 = await this.props.context.msGraphClientFactory.getClient("3");
-    
-    // Busca os detalhes do próprio usuário logado
-    const user = await client.api('/me')
-      .version('v1.0')
-      .select('department,jobTitle')
-      .get();
+    try {
+      // Pega o e-mail de quem está acessando a página agora
+      const emailLogado = this.props.context.pageContext.user.email.toLowerCase().trim();
 
-    // Checa se a palavra "marketing" existe no departamento ou cargo (ignorando maiúsculas/minúsculas)
-    const isMarketing = (user.department && user.department.toLowerCase().includes('marketing')) ||
-                        (user.jobTitle && user.jobTitle.toLowerCase().includes('marketing'));
+      // O seu e-mail exato para liberar o teste na produção
+      const meuEmailDeTeste = "malavazi.gabriel@grunnertec.com.br"; 
 
-    this.setState({ isMarketingUser: isMarketing });
-  } catch (error) {
-    console.error("Erro ao verificar departamento do usuário:", error);
+      // TRAVA DE SEGURANÇA: Só libera se o e-mail for exatamente o seu
+      const isMarketing = (emailLogado === meuEmailDeTeste);
+
+      this.setState({ isMarketingUser: isMarketing });
+    } catch (error) {
+      console.error("Erro ao verificar o e-mail do usuário:", error);
+    }
   }
-}
 
-/*   private verificarSeMarketing = async () => {
-  try {
-    const client: MSGraphClientV3 = await this.props.context.msGraphClientFactory.getClient("3");
-    
-    // Busca os detalhes do próprio usuário logado
-    const user = await client.api('/me')
-      .version('v1.0')
-      .select('department,jobTitle')
-      .get();
+// =======================================================================
+  // FUNÇÃO DE IMPRESSÃO - BANNER FULL WIDTH COM MOLDURA (SEM CORTES)
+  // =======================================================================
+  private imprimirCartaz = (noticia: any): void => {
+    if (!noticia) {
+      console.error("Nenhuma notícia selecionada para impressão.");
+      return;
+    }
 
-    // Pega o e-mail do usuário que está acessando a página agora
-    const emailLogado = this.props.context.pageContext.user.email.toLowerCase().trim();
+    const imagemURL = this.getImagemNoticia(noticia);
+    const dataPublicacao = noticia.Created ? new Date(noticia.Created).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
+    const logoPrint = logoCompleta || "";
 
-    // 👇 COLOQUE O SEU E-MAIL REAL AQUI DENTRO DAS ASPAS 👇
-    const meuEmailDeTeste = "malavazi.gabriel@grunnertec.com.br"; 
+    const conteudoCompleto = noticia.ConteudoNoticia || noticia.Resumo || '<p>Conteúdo não disponível.</p>';
 
-    // Checa se a palavra "marketing" existe no departamento/cargo OU se o e-mail logado é o seu
-    const isMarketing = (user.department && user.department.toLowerCase().includes('marketing')) ||
-                        (user.jobTitle && user.jobTitle.toLowerCase().includes('marketing')) ||
-                        (emailLogado === meuEmailDeTeste.toLowerCase());
+    const printWindow = window.open('', '_blank', 'width=900,height=1200');
+    if (!printWindow) {
+      alert("Por favor, permita pop-ups para visualizar o cartaz de impressão.");
+      return;
+    }
 
-    this.setState({ isMarketingUser: isMarketing });
-  } catch (error) {
-    console.error("Erro ao verificar departamento do usuário:", error);
-  }
-} */
-
-private imprimirCartaz = (noticia: any) => {
-    if (!noticia) return;
-
-    const urlImagem = this.getImagemNoticia(noticia);
-    const dataFormatada = new Date(noticia.Created || new Date()).toLocaleDateString('pt-BR');
-
-    // Layout UI/UX Premium Magazine (Colorido, Moderno e Chama a Atenção)
-    const htmlCartaz = `
+    printWindow.document.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="pt-BR">
       <head>
-        <title>Comunicado Grunner - ${noticia.Title}</title>
+        <meta charset="UTF-8">
+        <title>Cartaz Grunner - ${noticia.Title}</title>
         <style>
-          @media print {
-            /* 1. ROUBANDO ESPAÇO: Reduzi a margem de 10mm para 8mm */
-            @page { margin: 8mm; size: A4 portrait; }
-            body { 
-              -webkit-print-color-adjust: exact !important; 
-              print-color-adjust: exact !important; 
-            }
-            .imagem-destaque, img {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-            h1, .meta-data {
-              page-break-after: avoid !important;
-              break-after: avoid !important;
-            }
-            
-            /* 2. REGRAS DE VIÚVAS E ÓRFÃS */
-            .conteudo p {
-              orphans: 3 !important; /* Mínimo de 3 linhas no fim da página 1 */
-              widows: 3 !important;  /* Mínimo de 3 linhas no topo da página 2 */
-              page-break-inside: avoid !important; /* Evita rasgar um parágrafo no meio */
-            }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #fff; 
+            color: #171E0D; 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
           }
           
-          body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #ffffff;
-            color: #374151;
-          }
+          @page { size: A4 portrait; margin: 0; }
           
-          .folha-a4 {
-            width: 100%;
-            max-width: 210mm;
+          .page-container {
+            width: 210mm;
             margin: 0 auto;
-            background: white;
-            box-sizing: border-box;
+            padding: 15mm;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            min-height: 297mm;
           }
-          
-          .header-magazine {
-            background: linear-gradient(135deg, #171E0D 0%, #2E5C31 100%);
-            padding: 25px 30px;
+
+          .top-header {
+            background-color: #2E5C31;
+            border-radius: 12px;
+            padding: 15px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 5px solid #A6CE39;
-            border-radius: 12px 12px 0 0;
+            margin-bottom: 25px;
           }
-          
-          .header-magazine img { height: 48px; }
 
-          .badge {
+          .top-header img { 
+            height: 35px; 
+            width: auto; 
+            filter: brightness(0) invert(1); 
+          }
+
+          .badge-oficial {
             background-color: #A6CE39;
             color: #171E0D;
-            padding: 6px 16px;
-            border-radius: 50px;
+            font-weight: 800;
             font-size: 13px;
+            padding: 8px 18px;
+            border-radius: 30px;
             text-transform: uppercase;
-            font-weight: 900;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
           }
+
+          .title-section { margin-bottom: 20px; }
           
-          .conteudo-wrapper {
-            padding: 20px 30px; /* Reduzi 5px do topo */
-          }
-
-          h1 {
-            color: #2E5C31;
-            font-size: 32px; /* Reduzi 2px */
-            margin-top: 0;
-            margin-bottom: 10px;
-            line-height: 1.2;
+          .title-section h1 {
+            font-size: 22pt;
             font-weight: 900;
-            letter-spacing: -0.5px;
+            color: #2E5C31;
+            text-transform: uppercase;
+            line-height: 1.2;
+            margin-bottom: 12px;
           }
 
-          .meta-data {
+          .date-location {
+            font-size: 10pt;
+            color: #6B7280;
+            font-weight: 700;
+            text-transform: uppercase;
             display: flex;
             align-items: center;
-            gap: 15px;
-            font-size: 12px;
-            color: #6B7280;
-            text-transform: uppercase;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            margin-bottom: 20px; /* Reduzi 5px */
+            gap: 12px;
           }
 
-          .meta-linha {
-            flex-grow: 1;
-            height: 2px;
-            background-color: #F3F4F6;
+          .date-location::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background-color: #E5E7EB;
           }
-          
-          .imagem-destaque {
+
+          /* O CORAÇÃO DO ENQUADRAMENTO (MOLDURA LARGA E ESTICADA) */
+          .image-wrapper {
             width: 100%;
-            max-height: 260px; /* Reduzi 40px da altura da imagem! É aqui que ganhamos muito espaço */
-            object-fit: cover;
+            margin-bottom: 25px;
+          }
+
+          .image-container {
+            background-color: #F8FAFC; 
+            padding: 10px; 
             border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); 
             border: 1px solid #E5E7EB;
+            width: 100%; /* Obriga o quadro cinza a usar 100% da largura da folha */
           }
           
-          .conteudo {
-            font-size: 14.5px; /* Fonte levemente menor, mas ainda super legível */
-            line-height: 1.6; /* Espaçamento de linha levemente mais apertado */
-            text-align: left;
-            column-count: 2; 
-            column-gap: 35px;
-            column-rule: 1px solid #E5E7EB;
+          .image-container img {
+            width: 100%; /* Obriga a imagem a esticar junto com o quadro */
+            height: auto; /* Deixa a altura crescer naturalmente para não distorcer */
+            border-radius: 8px; 
+            display: block;
           }
 
-          .conteudo p {
-            margin-top: 0;
-            margin-bottom: 14px;
+          /* ÁREA DE CONTEÚDO */
+          .content-area {
+            font-size: 11.5pt;
+            line-height: 1.6;
+            color: #374151;
+            margin-bottom: 30px;
           }
 
-          .conteudo h1, .conteudo h2, .conteudo h3, .conteudo h4 {
-            color: #2E5C31 !important;
-            font-size: 17px !important;
-            margin-top: 15px;
-            margin-bottom: 10px;
-            line-height: 1.3;
-            text-align: left !important;
-            font-weight: 800;
-          }
-
-          .conteudo * { max-width: 100% !important; }
-
-          .conteudo img {
-            width: 100% !important;
-            height: auto !important;
-            border-radius: 8px;
-            margin: 15px 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-          }
+          .content-area p { margin-bottom: 15px; }
+          .content-area ul, .content-area ol { margin-bottom: 15px; padding-left: 25px; }
+          .content-area li { margin-bottom: 8px; }
+          .content-area strong { color: #171E0D; }
           
-          .footer {
-            margin-top: 25px; /* Puxei o rodapé mais pra cima */
+          .content-area img { 
+            max-width: 100%; 
+            height: auto; 
+            display: block; 
+            margin: 10px auto; 
+            border-radius: 8px; 
+          }
+
+          .footer-box {
             background-color: #F8FAFC;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 10px; /* Fonte do rodapé menorzinha */
-            color: #6B7280;
-            text-transform: uppercase;
-            font-weight: 800;
-            letter-spacing: 1px;
             border: 1px solid #E5E7EB;
-            page-break-inside: avoid !important; /* Rodapé nunca quebra no meio */
+            border-radius: 8px;
+            padding: 14px;
+            text-align: center;
+            font-size: 9pt;
+            font-weight: 800;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            margin-top: auto; 
           }
         </style>
       </head>
       <body>
-        <div class="folha-a4">
+        <div class="page-container">
           
-          <div class="header-magazine">
-            <img src="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo.png" alt="Grunner">
-            <span class="badge">Comunicado Oficial</span>
+          <div class="top-header">
+            <img src="${logoPrint}" alt="Grunner" />
+            <div class="badge-oficial">Comunicado Oficial</div>
           </div>
 
-          <div class="conteudo-wrapper">
-            
+          <div class="title-section">
             <h1>${noticia.Title}</h1>
-            <div class="meta-data">
-              <span>Lençóis Paulista, ${dataFormatada}</span>
-              <div class="meta-linha"></div>
-            </div>
-
-            ${urlImagem ? `<img src="${urlImagem}" class="imagem-destaque" />` : ''}
-            
-            <div class="conteudo">
-              ${noticia.ConteudoNoticia ? noticia.ConteudoNoticia : (noticia.Resumo || '')}
-            </div>
-            
-            <div class="footer">
-              Documento de Comunicação Interna • Intranet Grunner
-            </div>
-
+            <div class="date-location">Lençóis Paulista, ${dataPublicacao}</div>
           </div>
+          
+          <div class="image-wrapper">
+            <div class="image-container">
+              <img src="${imagemURL}" alt="Arte da Notícia" />
+            </div>
+          </div>
+          
+          <div class="content-area">
+            ${conteudoCompleto}
+          </div>
+
+          <div class="footer-box">
+            Documento de Comunicação Interna - Intranet Grunner
+          </div>
+
         </div>
+
         <script>
           window.onload = function() {
             setTimeout(function() {
               window.print();
-            }, 800);
-          };
+              setTimeout(function() { window.close(); }, 500);
+            }, 300);
+          }
         </script>
       </body>
       </html>
-    `;
+    `);
 
-    const janelaImpressao = window.open('', '_blank');
-    if (janelaImpressao) {
-      janelaImpressao.document.open();
-      janelaImpressao.document.write(htmlCartaz);
-      janelaImpressao.document.close();
-    } else {
-      alert("Por favor, permita pop-ups neste site para gerar o cartaz.");
-    }
+    printWindow.document.close();
   }
  
   // ==== NOVO MOTOR DE BUSCA: ENTRA ID ====
