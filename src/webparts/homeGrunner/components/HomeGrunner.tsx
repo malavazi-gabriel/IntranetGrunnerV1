@@ -243,7 +243,7 @@ private carregarDadosIniciais = async () => {
     this.setState({ loading: false });
   }
 
-  // TRAVA DE TESTE: Bloqueia para a empresa, libera só para a sua máquina
+/*   // TRAVA DE TESTE: Bloqueia para a empresa, libera só para a sua máquina
   private verificarSeMarketing = async () => {
     try {
       // Pega o e-mail de quem está acessando a página agora
@@ -258,6 +258,38 @@ private carregarDadosIniciais = async () => {
       this.setState({ isMarketingUser: isMarketing });
     } catch (error) {
       console.error("Erro ao verificar o e-mail do usuário:", error);
+    }
+  } */
+
+    // TRAVA INTELIGENTE: Libera para você e para qualquer pessoa do Marketing
+  private verificarSeMarketing = async () => {
+    try {
+      // Pega o e-mail de quem está acessando a página agora
+      const emailLogado = this.props.context.pageContext.user.email.toLowerCase().trim();
+      const meuEmailDeTeste = "malavazi.gabriel@grunnertec.com.br"; 
+
+      // 1. Você sempre tem acesso garantido
+      let isMarketing = (emailLogado === meuEmailDeTeste);
+
+      // 2. Se não for você, vamos perguntar pro Entra ID (Azure AD) o departamento da pessoa
+      if (!isMarketing) {
+        const client = await this.props.context.msGraphClientFactory.getClient("3");
+        
+        // Busca os dados do usuário atual (me)
+        const userProfile = await client.api('/me').select('department,jobTitle').get();
+
+        const departamento = userProfile.department ? userProfile.department.toLowerCase() : "";
+        const cargo = userProfile.jobTitle ? userProfile.jobTitle.toLowerCase() : "";
+
+        // 3. Valida se a palavra "marketing" está no departamento ou cargo
+        isMarketing = departamento.includes("marketing") || cargo.includes("marketing");
+      }
+
+      this.setState({ isMarketingUser: isMarketing });
+    } catch (error) {
+      console.error("Erro ao verificar o departamento do usuário:", error);
+      // Fallback: se der qualquer erro na API, por segurança, bloqueia a visualização de rascunhos
+      this.setState({ isMarketingUser: false });
     }
   }
 
@@ -1151,6 +1183,8 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
             <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Historia.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
+            <a href="https://grunnertec.com.br/assets/PDFs/codigoconduta.pdf" target="_blank" rel="noopener noreferrer">⚖️ Código de Conduta</a>
+            <a href="https://grunner.canaldeouvidoria.com.br/" target="_blank" rel="noopener noreferrer">🗣️ Canal de Ética</a>
             <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">📖 Procedimentos</a>
           </div>
         </aside>

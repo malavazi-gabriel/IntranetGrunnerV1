@@ -28,6 +28,7 @@ $text-gray: #6B7280;
   background-color: $grunner-dark;
   padding: 15px 20px;
   width: 100%;
+  box-sizing: border-box;
   border-bottom: 2px solid $grunner-green;
 
   @media (max-width: 850px) {
@@ -56,7 +57,7 @@ $text-gray: #6B7280;
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 90;
+    z-index: 9998;
   }
 }
 
@@ -70,8 +71,11 @@ $text-gray: #6B7280;
   min-height: 100vh;
   padding: 30px 20px;
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  z-index: 9999;
   transition: left 0.3s ease-in-out;
+
+  overflow-y: auto;
+  overflow-x: hidden;
 
   .closeMenuBtn {
     display: none;
@@ -163,7 +167,7 @@ $text-gray: #6B7280;
   @media (max-width: 850px) {
     position: fixed;
     top: 0;
-    left: -300px;
+    left: -100%;
     height: 100vh;
     width: 280px;
 
@@ -193,9 +197,11 @@ $text-gray: #6B7280;
   width: calc(100% - 260px);
   min-width: 0;
   padding: 10px 0;
+  box-sizing: border-box;
 
   @media (max-width: 850px) {
     width: 100%;
+    max-width: 100vw;
   }
 }
 
@@ -213,6 +219,7 @@ $text-gray: #6B7280;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   text-align: center;
   position: relative;
+  box-sizing: border-box;
 
   .headerText {
     h1 { margin: 0 0 10px 0; font-size: 32px; font-weight: 800; color: white;}
@@ -220,7 +227,7 @@ $text-gray: #6B7280;
   }
 
   @media (max-width: 768px) {
-    padding: 30px 20px; border-radius: 12px; margin-top: 10px; width: 90%;
+    padding: 55px 20px 30px 20px; border-radius: 12px; margin-top: 10px; width: 90%;
     .headerText {
       h1 { font-size: 24px; } 
       p { font-size: 14px; }
@@ -234,6 +241,7 @@ $text-gray: #6B7280;
   max-width: 800px;
   margin: 0 auto 20px auto;
   padding: 0 20px;
+  box-sizing: border-box;
 
   .searchInput {
     width: 100%;
@@ -283,7 +291,7 @@ $text-gray: #6B7280;
 .documentsArea { width: 100%; max-width: 1200px; padding: 0 20px; }
 
 .documentGrid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 50px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-bottom: 50px; box-sizing: border-box;
 }
 
 .documentCard {

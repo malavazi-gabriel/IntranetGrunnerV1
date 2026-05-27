@@ -463,6 +463,8 @@ this.state = {
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
             <a href={historiaUrl} target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
+            <a href="https://grunnertec.com.br/assets/PDFs/codigoconduta.pdf" target="_blank" rel="noopener noreferrer">⚖️ Código de Conduta</a>
+            <a href="https://grunner.canaldeouvidoria.com.br/" target="_blank" rel="noopener noreferrer">🗣️ Canal de Ética</a>
             <a href={politicasUrl} target="_blank" rel="noopener noreferrer">📖 Procedimentos</a>
           </div>
         </aside>
