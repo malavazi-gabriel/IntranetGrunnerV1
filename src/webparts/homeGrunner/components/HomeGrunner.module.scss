@@ -82,15 +82,15 @@ $text-light: #6B7280;
   display: flex; 
   flex-direction: column; 
   flex-shrink: 0;
-  padding: 30px 20px; 
+  padding: 30px 20px;
+  box-sizing: border-box;
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.08);
   z-index: 9999;
   transition: left 0.3s ease-in-out;
 
-  /* MÁGICA 2: O MENU CRESCE ATÉ O FUNDO, MAS NÃO ROLA COM A PÁGINA */
   position: relative;
   height: 100%; 
-  overflow-y: auto; /* Se tiver muitos links, só o menu ganha rolagem */
+  overflow-y: auto;
 
   .closeMenuBtn { 
     display: none; 
@@ -172,7 +172,7 @@ $text-light: #6B7280;
   @media (max-width: 850px) {
     position: fixed; 
     top: 0; 
-    left: -300px; 
+    left: 100%;
     height: 100vh; 
     width: 280px;
 
@@ -413,22 +413,26 @@ $text-light: #6B7280;
     line-height: 1.6; 
   }
 
-  @media (max-width: 850px) {
-    height: 450px; 
+@media (max-width: 850px) {
+    height: 280px;
     border-radius: 16px;
 
+    .heroImage { 
+      background-position: center; 
+    }
+
     .heroOverlay { 
-      padding: 30px 20px 20px 20px; 
+      padding: 20px;
+      background: linear-gradient(to top, rgba(23, 30, 13, 0.98) 0%, rgba(23, 30, 13, 0.6) 65%, transparent 100%); 
     }
 
     .heroTitle { 
-      font-size: 24px; 
+      font-size: 20px; 
+      margin: 0 0 8px 0;
     }
 
     .heroResumo { 
-      font-size: 14px; 
-      max-width: 100%; 
-      margin-bottom: 20px; 
+      display: none;
     }
   }
 }
@@ -1557,6 +1561,16 @@ iframe, video {
   min-width: 0;
   margin-bottom: 18px;
   flex: 0 0 auto;
+
+  @media (max-width: 850px) {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    
+    height: auto !important; 
+    max-height: none !important;
+    overflow: visible !important;
+  }
 }
 
 .celebrationsHeading {
@@ -1675,23 +1689,22 @@ iframe, video {
 
 .celebrationItem {
   width: 100%;
-  height: 68px;
   min-height: 68px;
-  max-height: 68px;
+  height: auto;     
+  max-height: none; 
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) 78px;
   align-items: center;
   column-gap: 12px;
-  padding: 8px 0 10px 0;
+  padding: 12px 0;
   margin: 0;
   border-bottom: 1px dashed #e5e7eb;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 .celebrationItemToday {
   grid-template-columns: 42px minmax(0, 1fr) 78px;
-  padding: 8px 8px 10px 10px;
+  padding: 12px 8px 12px 10px;
   border-left: 4px solid $grunner-green;
   border-bottom: 1px solid rgba(46, 92, 49, 0.12);
   border-radius: 14px;
@@ -1736,42 +1749,38 @@ iframe, video {
 }
 
 .celebrationName {
-  height: 18px;
-  line-height: 18px;
+  height: auto;
+  line-height: 1.2;
   color: #1e293b;
   font-size: 14px;
   font-weight: 900;
   letter-spacing: -0.15px;
-  white-space: nowrap;
+  margin-bottom: 4px;
+  white-space: normal; 
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .celebrationDetail {
-  height: 17px;
-  line-height: 17px;
-  margin-top: 3px;
+  height: auto;
+  line-height: 1.4;
   color: #64748b;
   font-size: 12px;
   font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  display: block;
   min-width: 0;
-  overflow: hidden;
 
-  /* 1. O Cargo (primeiro span): Pode crescer, mas cede espaço e ganha "..." se precisar */
   span:first-child {
-    flex: 1; 
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
   }
 
-  /* 2. O Ponto e a Data: NUNCA podem ser espremidos (flex-shrink: 0) */
-  span:not(:first-child) {
-    flex-shrink: 0; 
+  .celebrationDetailDot {
+    margin: 0 4px;
+  }
+
+  span:last-child {
     white-space: nowrap;
   }
 }

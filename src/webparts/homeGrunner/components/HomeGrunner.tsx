@@ -355,7 +355,6 @@ private carregarDadosIniciais = async () => {
           .top-header img { 
             height: 35px; 
             width: auto; 
-            filter: brightness(0) invert(1); 
           }
 
           .badge-oficial {
