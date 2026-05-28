@@ -1539,34 +1539,25 @@ iframe, video {
    WIDGET CELEBRAÇÕES - UX PREMIUM
 ======================================= */
 
-.celebrationsCard {
-  height: 390px;
-  min-height: 390px;
-  max-height: 390px;
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  border-top: 4px solid $grunner-green;
-}
-
 .celebrationsHeader {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px;
-  align-items: start;
-  column-gap: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
   width: 100%;
   min-width: 0;
   margin-bottom: 18px;
   flex: 0 0 auto;
 
+  height: auto !important; 
+  max-height: none !important;
+  overflow: visible !important;
+
   @media (max-width: 850px) {
-    display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
-    
     height: auto !important; 
     max-height: none !important;
     overflow: visible !important;
@@ -1574,8 +1565,8 @@ iframe, video {
 }
 
 .celebrationsHeading {
-  min-width: 0;
-  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 140px;
 }
 
 .celebrationsTitle {
@@ -1586,9 +1577,7 @@ iframe, video {
   font-weight: 900;
   line-height: 22px;
   letter-spacing: -0.2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
 }
 
 .celebrationsSubtitle {
