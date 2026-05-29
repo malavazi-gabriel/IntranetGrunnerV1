@@ -52,7 +52,7 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
   // === FUNÇÕES ===
   const buscarChamadosEmBackground = async () => {
     // Adicionado quebrador de cache
-    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${userEmail}&t=${Date.now()}`;
+    const apiUrl = `https://admin.grunnertec.com.br/api/clickup/meus-chamados?email=${userEmail}&t=${Date.now()}`;
     try {
       const response = await fetch(apiUrl, { cache: 'no-store' });
       const data = await response.json();
@@ -93,7 +93,7 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
     setComentariosDoChamado([]);
     
     // Adicionado quebrador de cache
-    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${userEmail}&t=${Date.now()}`;
+    const apiUrl = `https://admin.grunnertec.com.br/api/clickup/meus-chamados?email=${userEmail}&t=${Date.now()}`;
     try {
       const response = await fetch(apiUrl, { cache: 'no-store' });
       const data = await response.json();
@@ -127,7 +127,7 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
 
     try {
       // Adicionado quebrador de cache
-      const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentarios?idChamado=${idChamado}&t=${Date.now()}`;
+      const apiUrl = `https://admin.grunnertec.com.br/api/clickup/comentarios?idChamado=${idChamado}&t=${Date.now()}`;
       const response = await fetch(apiUrl, { cache: 'no-store' });
       const data = await response.json();
       if (data.sucesso) {
@@ -172,7 +172,7 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
       nomeArquivo = arquivoAnexo.name;
     }
 
-    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentar`;
+    const apiUrl = `https://admin.grunnertec.com.br/api/clickup/comentar`;
 
     try {
       const response = await fetch(apiUrl, {
@@ -193,7 +193,7 @@ export const MenuChamados: React.FC<IMenuChamadosProps> = (props) => {
         setArquivoAnexo(null); // Limpa o clipe de papel após o envio
         
         // Recarrega o chat com quebrador de cache
-        const chatResp = await fetch(`https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentarios?idChamado=${idChamado}&t=${Date.now()}`, { cache: 'no-store' });
+        const chatResp = await fetch(`https://admin.grunnertec.com.br/api/clickup/comentarios?idChamado=${idChamado}&t=${Date.now()}`, { cache: 'no-store' });
         const chatData = await chatResp.json();
         if (chatData.sucesso) setComentariosDoChamado(chatData.comentarios);
       } else {

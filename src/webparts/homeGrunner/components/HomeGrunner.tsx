@@ -588,7 +588,7 @@ private carregarDadosIniciais = async () => {
   // ==== NOVA FUNÇÃO: BUSCAR CHAMADOS SILENCIOSAMENTE PARA O BANNER ====
   private buscarChamadosEmBackground = async () => {
     const rawEmail = this.props.context.pageContext.user.email || "";
-    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${rawEmail.toLowerCase().trim()}`;
+    const apiUrl = `https://admin.grunnertec.com.br/api/clickup/meus-chamados?email=${rawEmail.toLowerCase().trim()}`;
 
     try {
       const response = await fetch(apiUrl);
@@ -637,7 +637,7 @@ private carregarDadosIniciais = async () => {
     const rawEmail = this.props.context.pageContext.user.email || "";
     const userEmail = rawEmail.toLowerCase().trim();
 
-    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/meus-chamados?email=${userEmail}`;
+    const apiUrl = `https://admin.grunnertec.com.br/api/clickup/meus-chamados?email=${userEmail}`;
 
     try {
       const response = await fetch(apiUrl);
@@ -687,7 +687,7 @@ private carregarDadosIniciais = async () => {
 
   private carregarHistoricoDoChamado = async (idChamado: string) => {
     try {
-      const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentarios?idChamado=${idChamado}`;
+      const apiUrl = `https://admin.grunnertec.com.br/api/clickup/comentarios?idChamado=${idChamado}`;
       const response = await fetch(apiUrl);
       const data = await response.json();
 
@@ -709,7 +709,7 @@ private carregarDadosIniciais = async () => {
 
     const rawEmail = this.props.context.pageContext.user.email || "";
     const userEmail = rawEmail.toLowerCase().trim();
-    const apiUrl = `https://bw4oogog00scckw0wgo08cww.82.25.70.48.sslip.io/api/clickup/comentar`;
+    const apiUrl = `https://admin.grunnertec.com.br/api/clickup/comentar`;
 
     try {
       const response = await fetch(apiUrl, {
@@ -1177,7 +1177,7 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
 
             <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3&env=Embedded", "📢 Solicitação - Marketing", e)}>📢 Marketing</a>
             <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi&env=Embedded", "🚗 Solicitação - Frotas", e)}>🚗 Frotas</a>
-            <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.monday.com/forms/embed/2a2a29caa20e7e1517cc397586af97eb?r=use1", "🛠️ Solicitação - Facilities", e)}>🛠️ Facilities</a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/:l:/s/Facilities/JADJeN1a-IAVRIrzsns79wBEAS_s9zB21POwKXunqjUuK5Y?nav=MDk0ODE1N2QtZWE0Ny00ZDhjLWFhYjItMGVlNmIwMWIzNTY4", "🛠️ Solicitação - Facilities", e)}>🛠️ Facilities</a>
           </div>
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
