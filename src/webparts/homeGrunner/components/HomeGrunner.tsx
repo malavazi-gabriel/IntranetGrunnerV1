@@ -797,15 +797,19 @@ private buscarEngajamento = async () => {
   }
 
   private buscarEventos = async () => {
-    try {
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local,ImagemTema&$top=20&$orderby=Created desc`;
-      const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
-      const data = await response.json();
-      if (data?.value) this.setState({ eventosReais: data.value });
-    } catch (e) {
-      console.error("Erro ao buscar eventos:", e);
+      try {
+        const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local,ImagemTema&$top=20`;
+        const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
+        const data = await response.json();
+        
+        if (data?.value) {
+          const eventosOrdenados = data.value.sort((a: any, b: any) => Number(a.Dia) - Number(b.Dia));
+          this.setState({ eventosReais: eventosOrdenados });
+        }
+      } catch (e) {
+        console.error("Erro ao buscar eventos:", e);
+      }
     }
-  }
 
   private isAniversarianteDaSemana = (diaStr: string): boolean => {
     const dia = parseInt(diaStr, 10);
