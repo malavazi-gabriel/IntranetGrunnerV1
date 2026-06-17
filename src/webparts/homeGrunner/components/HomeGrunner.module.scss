@@ -1748,6 +1748,7 @@ iframe, video {
   white-space: normal; 
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2; /* <-- ADICIONE ESTA LINHA */
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1852,6 +1853,46 @@ iframe, video {
       background-color: darken(#F59E0B, 5%);
   }
 }
+
+/* =======================================
+   MODAL DE IMAGEM (LIGHTBOX)
+======================================= */
+.imageModalContent {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInDown 0.3s ease-out;
+
+  .expandedImage {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    object-fit: contain; /* Garante que a imagem não distorça */
+  }
+
+  .closeImageBtn {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 30px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: bold;
+
+    &:hover {
+      transform: scale(1.15);
+      color: $grunner-accent;
+    }
+  }
+}
+
 
 /* ==============================================================================
    HACK DEFINITIVO PARA TELA CHEIA

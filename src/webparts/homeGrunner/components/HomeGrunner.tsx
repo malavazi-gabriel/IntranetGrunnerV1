@@ -40,14 +40,17 @@ interface IHomeGrunnerState {
 
   isMarketingUser: boolean;
 
-  // === ESTADOS DA NOTIFICAÇÃO ===
+  //ESTADOS DA NOTIFICAÇÃO
   unreadTicketsCount: number;
   isNotificacaoOpen: boolean;
 
-  // AS 3 VARIÁVEIS NOVAS DO IFRAME 
+  //VARIÁVEIS NOVAS De IFRAME 
   isIframeModalOpen: boolean;
   iframeUrl: string;
   iframeTitle: string;
+
+  isImageModalOpen: boolean;
+  currentImageUrl: string;
 
   filtroCelebracao: 'todos' | 'nascimento' | 'empresa';
   loadingCelebracoes: boolean;
@@ -100,7 +103,10 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       iframeTitle: '',
 
       filtroCelebracao: 'todos',
-      loadingCelebracoes: true
+      loadingCelebracoes: true,
+
+      isImageModalOpen: false,
+      currentImageUrl: ''
     };
   }
 
@@ -189,6 +195,21 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       isIframeModalOpen: true,
       iframeUrl: url,
       iframeTitle: titulo
+    });
+  }
+
+  private abrirModalImagem = (url: string, e?: React.MouseEvent) => {
+  if (e) e.stopPropagation(); // Evita que clique na imagem dispare o botão do card
+  this.setState({
+    isImageModalOpen: true,
+    currentImageUrl: url
+  });
+}
+
+  private fecharModalImagem = () => {
+    this.setState({
+      isImageModalOpen: false,
+      currentImageUrl: ''
     });
   }
 
@@ -1053,9 +1074,13 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
 
     return (
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
-        <div className={styles.heroBanner} style={{ marginBottom: 0, borderRadius: '20px 20px 0 0' }}>
-          <div className={styles.heroImage} style={{ backgroundImage: `url('${imagemExibicao}')` }} />
-          <div className={styles.heroOverlay}>
+          <div className={styles.heroBanner} style={{ marginBottom: 0, borderRadius: '20px 20px 0 0' }}>
+            <div 
+              className={styles.heroImage} 
+              style={{ backgroundImage: `url('${imagemExibicao}')`, cursor: 'pointer' }} 
+              onClick={(e) => this.abrirModalImagem(imagemExibicao, e)}
+            />
+            <div className={styles.heroOverlay}>
             
             {/* AVISO DE RASCUNHO EXCLUSIVO DO MARKETING */}
             {noticia.StatusNoticia === 'Rascunho' && (
@@ -1223,7 +1248,11 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                   className={styles.heroBanner}
                   style={this.state.expandedNoticiaId === noticiaDestaque.ID ? { marginBottom: 0, borderRadius: '20px 20px 0 0' } : {}}
                 >
-                  <div className={styles.heroImage} style={{ backgroundImage: `url('${this.getImagemNoticia(noticiaDestaque)}')` }} />
+                  <div 
+                    className={styles.heroImage} 
+                    style={{ backgroundImage: `url('${this.getImagemNoticia(noticiaDestaque)}')`, cursor: 'pointer' }} 
+                    onClick={(e) => this.abrirModalImagem(this.getImagemNoticia(noticiaDestaque), e)}
+                  />
                   <div className={styles.heroOverlay}>
                     
                     {/* AVISO DE RASCUNHO */}
@@ -1300,10 +1329,9 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                         <div className={styles.cardNewsSmall} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                           <div
                             className={styles.smallNewsImg}
-                            style={{ backgroundImage: `url('${this.getImagemNoticia(noticia)}')` }}
-                            onClick={() => this.noticiaTemConteudo(noticia) ? this.handleReadMore(noticia) : window.open(noticia.LinkNoticia, '_blank')}
+                            style={{ backgroundImage: `url('${this.getImagemNoticia(noticia)}')`, cursor: 'pointer' }}
+                            onClick={(e) => this.abrirModalImagem(this.getImagemNoticia(noticia), e)}
                           />
-
                           <div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
                             
                             {noticia.StatusNoticia === 'Rascunho' && (
@@ -1574,6 +1602,16 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
             </div>
           </div>
         )}
+
+        {/* MODAL DE IMAGEM (LIGHTBOX) */}
+          {this.state.isImageModalOpen && (
+            <div className={styles.modalOverlay} onClick={this.fecharModalImagem}>
+              <div className={styles.imageModalContent} onClick={(e) => e.stopPropagation()}>
+                <button className={styles.closeImageBtn} onClick={this.fecharModalImagem}>✕</button>
+                <img src={this.state.currentImageUrl} alt="Imagem Ampliada" className={styles.expandedImage} />
+              </div>
+            </div>
+          )}
 
       </div>
     );
