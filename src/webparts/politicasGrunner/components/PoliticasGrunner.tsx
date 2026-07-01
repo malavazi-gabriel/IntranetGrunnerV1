@@ -424,4 +424,4 @@ constructor(props: IPoliticasGrunnerProps) {
       </div>
     );
   }
-}
+} 
