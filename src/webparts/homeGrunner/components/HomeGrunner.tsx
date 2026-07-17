@@ -578,17 +578,21 @@ private carregarDadosIniciais = async () => {
           if (diasFaltantes >= 0 && diasFaltantes <= 30) {
             // Calcula a idade de empresa baseada no ano em que a comemoração vai cair
             const anoDaCelebracao = diasFaltantes > 0 && parseInt(mesStr) < hoje.getMonth() + 1 ? hoje.getFullYear() + 1 : hoje.getFullYear();
+            const anosDeEmpresa = anoDaCelebracao - parseInt(anoStr);
 
-            acc.push({
-              Title: user.displayName,
-              Dia: diaStr,
-              Mes: mesStr,
-              Setor: user.jobTitle || "Grunner",
-              Email: user.mail,
-              Tipo: 'empresa',
-              Anos: anoDaCelebracao - parseInt(anoStr),
-              DiasFaltantes: diasFaltantes
-            });
+            // Regra adicionada: Ignora quem está fazendo 0 anos (recém-admitidos)
+            if (anosDeEmpresa > 0) {
+              acc.push({
+                Title: user.displayName,
+                Dia: diaStr,
+                Mes: mesStr,
+                Setor: user.jobTitle || "Grunner",
+                Email: user.mail,
+                Tipo: 'empresa',
+                Anos: anosDeEmpresa,
+                DiasFaltantes: diasFaltantes
+              });
+            }
           }
         }
         return acc;
