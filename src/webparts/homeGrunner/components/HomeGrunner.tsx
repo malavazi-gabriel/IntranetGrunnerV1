@@ -55,6 +55,9 @@ interface IHomeGrunnerState {
   filtroCelebracao: 'todos' | 'nascimento' | 'empresa';
   loadingCelebracoes: boolean;
 
+  isQualidadeUser: boolean;
+  isMenuProcedimentosOpen: boolean;
+
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -106,7 +109,10 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
       loadingCelebracoes: true,
 
       isImageModalOpen: false,
-      currentImageUrl: ''
+      currentImageUrl: '',
+
+      isQualidadeUser: false,
+      isMenuProcedimentosOpen: false,
     };
   }
 
@@ -259,7 +265,8 @@ private carregarDadosIniciais = async () => {
       this.buscarCelebracoesDoGraph(),
       this.buscarEventos(),
       this.buscarEngajamento(),
-      this.buscarChamadosEmBackground()
+      this.buscarChamadosEmBackground(),
+      this.verificarAcessoQualidade()
     ]);
     this.setState({ loading: false });
   }
@@ -762,6 +769,19 @@ private carregarDadosIniciais = async () => {
     }
   }
 
+  private verificarAcessoQualidade = async (): Promise<void> => {
+    try {
+      const emailUsuario = this.props.context.pageContext.user.email;
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/sitegroups/getbyname('Qualidade - Gestão de Documentos')/users?$select=Email`;
+      const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
+      const data = await response.json();
+      const isQualidadeUser = data.value?.some((user: any) => user.Email?.toLowerCase() === emailUsuario.toLowerCase());
+      this.setState({ isQualidadeUser });
+    } catch (error) {
+      console.warn('Usuário não pertence ao grupo de Qualidade ou grupo não existe.');
+    }
+  }
+
 private buscarNoticias = async () => {
     try {
       // MÁGICA DE PROTEÇÃO: 
@@ -1217,7 +1237,30 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
             <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Historia.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
             <a href="https://grunnertec.com.br/assets/PDFs/codigoconduta.pdf" target="_blank" rel="noopener noreferrer">⚖️ Código de Conduta</a>
             <a href="https://grunner.canaldeouvidoria.com.br/" target="_blank" rel="noopener noreferrer">🗣️ Canal de Ética</a>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">📖 Procedimentos</a>
+            
+            {/* =========================================================
+                LÓGICA DO MENU PROCEDIMENTOS (QUALIDADE VS NORMAL)
+            ========================================================= */}
+            {this.state.isQualidadeUser ? (
+              <div className={styles.accordionGroup}>
+                <button
+                  className={`${styles.accordionToggle} ${this.state.isMenuProcedimentosOpen ? styles.open : ''}`}
+                  onClick={() => this.setState({ isMenuProcedimentosOpen: !this.state.isMenuProcedimentosOpen })}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>📖 Procedimentos</span>
+                  <span className={styles.chevron}>▼</span>
+                </button>
+
+                {this.state.isMenuProcedimentosOpen && (
+                  <div className={styles.accordionContent}>
+                    <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded">📖 Todos os Documentos</a>
+                    <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded">⚙️ Gestão da Qualidade</a>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">📖 Procedimentos</a>
+            )}
           </div>
         </aside>
 

@@ -399,34 +399,42 @@ private formatDate = (dateStr?: string): string => {
             <a href="https://grunnertec.com.br/assets/PDFs/codigoconduta.pdf" target="_blank" rel="noopener noreferrer">⚖️ Código de Conduta</a>
             <a href="https://grunner.canaldeouvidoria.com.br/" target="_blank" rel="noopener noreferrer">🗣️ Canal de Ética</a>
             
-            {/* BOTÃO PRINCIPAL DE PROCEDIMENTOS (ACORDEÃO) */}
-            <a
-              href="#"
-              className={`${styles.menuToggle} ${this.state.isMenuProcedimentosOpen ? styles.active : ''}`}
-              onClick={(e) => { e.preventDefault(); this.setState({ isMenuProcedimentosOpen: !this.state.isMenuProcedimentosOpen }); }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>📖 Procedimentos</span>
-              <span style={{ fontSize: '10px', opacity: 0.8 }}>{this.state.isMenuProcedimentosOpen ? '▲' : '▼'}</span>
-            </a>
-
-            {/* SUB-ITENS DE PROCEDIMENTOS */}
-            {this.state.isMenuProcedimentosOpen && (
-              <div className={styles.navSubGroup}>
-                <a href={politicasUrl} className={!this.state.modoGestaoQualidade ? styles.active : ''}>
-                  📖 Todos os Documentos
+            {/* =========================================================
+                LÓGICA DO MENU PROCEDIMENTOS (QUALIDADE VS NORMAL)
+            ========================================================= */}
+            {this.state.isQualidadeUser ? (
+              <>
+                {/* MENU ACORDEÃO (Apenas para quem tem acesso à Qualidade) */}
+                <a
+                  href="#"
+                  className={`${styles.menuToggle} ${this.state.isMenuProcedimentosOpen ? styles.active : ''}`}
+                  onClick={(e) => { e.preventDefault(); this.setState({ isMenuProcedimentosOpen: !this.state.isMenuProcedimentosOpen }); }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>📖 Procedimentos</span>
+                  <span style={{ fontSize: '10px', opacity: 0.8 }}>{this.state.isMenuProcedimentosOpen ? '▲' : '▼'}</span>
                 </a>
-                
-                {/* BOTÃO DA GESTÃO DE QUALIDADE (Aparece só para quem tem acesso) */}
-                {this.state.isQualidadeUser && (
-                  <a 
-                    href="#" 
-                    className={this.state.modoGestaoQualidade ? styles.active : ''} 
-                    onClick={(e) => { e.preventDefault(); this.setState({ modoGestaoQualidade: !this.state.modoGestaoQualidade }); }}
-                  >
-                    ⚙️ Gestão da Qualidade
-                  </a>
+
+                {/* SUB-ITENS DE PROCEDIMENTOS */}
+                {this.state.isMenuProcedimentosOpen && (
+                  <div className={styles.navSubGroup}>
+                    <a href={politicasUrl} className={!this.state.modoGestaoQualidade ? styles.active : ''}>
+                      📖 Todos os Documentos
+                    </a>
+                    <a 
+                      href="#" 
+                      className={this.state.modoGestaoQualidade ? styles.active : ''} 
+                      onClick={(e) => { e.preventDefault(); this.setState({ modoGestaoQualidade: !this.state.modoGestaoQualidade }); }}
+                    >
+                      ⚙️ Gestão da Qualidade
+                    </a>
+                  </div>
                 )}
-              </div>
+              </>
+            ) : (
+              /* LINK DIRETO (Para colaborador normal - Sem setinha e sem submenu) */
+              <a href={politicasUrl} className={!this.state.modoGestaoQualidade ? styles.active : ''}>
+                📖 Procedimentos
+              </a>
             )}
           </div>
           
