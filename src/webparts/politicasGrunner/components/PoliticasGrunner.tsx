@@ -370,7 +370,6 @@ private formatDate = (dateStr?: string): string => {
 
             {/* BOTÃO PRINCIPAL DE TI (ACORDEÃO) */}
             <a
-              href="#"
               className={`${styles.menuToggle} ${this.state.isMenuTIOpen ? styles.active : ''}`}
               onClick={(e) => { e.preventDefault(); this.setState({ isMenuTIOpen: !this.state.isMenuTIOpen }); }}
             >
@@ -406,7 +405,6 @@ private formatDate = (dateStr?: string): string => {
               <>
                 {/* MENU ACORDEÃO (Apenas para quem tem acesso à Qualidade) */}
                 <a
-                  href="#"
                   className={`${styles.menuToggle} ${this.state.isMenuProcedimentosOpen ? styles.active : ''}`}
                   onClick={(e) => { e.preventDefault(); this.setState({ isMenuProcedimentosOpen: !this.state.isMenuProcedimentosOpen }); }}
                 >
