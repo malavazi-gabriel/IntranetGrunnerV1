@@ -351,7 +351,7 @@ $text-gray: #6B7280;
   .iconPdf { background-color: #EF4444; } 
   .iconDoc { background-color: #3B82F6; } 
 
-  .docTitle {
+.docTitle {
     margin: 0; 
     color: $grunner-dark; 
     font-size: 15px; 
@@ -360,6 +360,7 @@ $text-gray: #6B7280;
     /* Limita nomes gigantes a 3 linhas para não quebrar o alinhamento */
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -674,5 +675,74 @@ $text-gray: #6B7280;
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(166, 206, 57, 0.4);
     background-color: #95ba32; /* Um tom levemente mais escuro no hover */
+  }
+}
+
+/* ==============================================================================
+   HACK DEFINITIVO PARA TELA CHEIA (OCULTANDO BARRAS DO SHAREPOINT)
+============================================================================== */
+:global {
+
+  /* TOPO DO SHAREPOINT (A BARRA AZUL QUE ESTÁ APARECENDO) */
+  #SuiteNavWrapper, 
+  #spSiteHeader, 
+  #spCommandBar, 
+  div[data-automation-id="pageHeader"], 
+  div[class^="commandBarWrapper_"] { 
+    display: none !important; 
+    visibility: hidden !important; 
+    height: 0 !important; 
+    min-height: 0 !important; 
+    max-height: 0 !important; 
+    width: 0 !important; 
+    min-width: 0 !important; 
+    max-width: 0 !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    overflow: hidden !important; 
+    opacity: 0 !important; 
+    pointer-events: none !important; 
+  }
+
+  /* APP BAR LATERAL ESQUERDA */
+  #sp-appBar, 
+  div[data-automation-id="sp-appBar"], 
+  div[class*="sp-appBar"], 
+  div[class^="appBar_"] { 
+    display: none !important; 
+    visibility: hidden !important; 
+    height: 0 !important; 
+    min-height: 0 !important; 
+    max-height: 0 !important; 
+    width: 0 !important; 
+    min-width: 0 !important; 
+    max-width: 0 !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    overflow: hidden !important; 
+    opacity: 0 !important; 
+    pointer-events: none !important; 
+  }
+
+  /* FAZ O CANVAS PREENCHER A TELA */
+  body { 
+    overflow-x: hidden !important; 
+  }
+
+  #workbenchPageContent, 
+  #spPageCanvasContent, 
+  .SPCanvas-canvas, 
+  .CanvasZone, 
+  .CanvasSection, 
+  .ControlZone, 
+  div[data-automation-id="CanvasZone"] > div, 
+  div[data-automation-id="contentScrollRegion"] { 
+    left: 0 !important; 
+    margin: 0 !important; 
+    margin-left: 0 !important; 
+    padding: 0 !important; 
+    padding-left: 0 !important; 
+    max-width: 100% !important; 
+    width: 100% !important; 
   }
 }
