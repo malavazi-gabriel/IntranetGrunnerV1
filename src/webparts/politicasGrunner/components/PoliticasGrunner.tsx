@@ -13,16 +13,19 @@ const atalhosUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner
 
 export interface IPoliticaDocumento {
   Id: number;
+  UniqueId?: string;
   FileLeafRef: string;
   FileRef: string;
   Area?: string;
   CodigoDocumento?: string;
   TipoDocumento?: string;
+  TipoProcessoDocumento?: string;
+  DocumentoControlado?: boolean;
   NumeroRevisao?: string;
   DataUltimaRevisao?: string;
   DataProximaRevisao?: string;
   StatusDocumento?: string;
-  StatusCalculado?: string; // Usado no frontend
+  StatusCalculado?: string; 
   ObservacaoRevisao?: string;
   PeriodicidadeRevisaoMeses?: number;
   UltimoAvisoRevisao?: string;
@@ -38,11 +41,13 @@ interface IPoliticasGrunnerState {
   todosDocumentos: IPoliticaDocumento[];
   loading: boolean;
   termoBusca: string;
+  filtroTipoProcesso: string;
   isMobileMenuOpen: boolean;
   isMenuTIOpen: boolean;
   isQualidadeUser: boolean;
   modoGestaoQualidade: boolean;
   documentoSelecionado?: IPoliticaDocumento | null;
+  iframeDocumentoUrl: string | null;
   salvandoDocumento: boolean;
   filtroStatusAdmin: string;
   editFormData: Partial<IPoliticaDocumento>;
@@ -68,7 +73,9 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       documentoSelecionado: null,
       salvandoDocumento: false,
       filtroStatusAdmin: 'Todos',
-      editFormData: {}
+      editFormData: {},
+      iframeDocumentoUrl: null,
+      filtroTipoProcesso: ''
     };
   }
 
@@ -120,9 +127,25 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
     document.querySelectorAll('.CanvasZone, .CanvasSection, #spPageCanvasContent').forEach(node => applyFullBleed(node as HTMLElement));
   }
 
+  private bloquearAtalhos = (e: KeyboardEvent): void => {
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'p' || e.key.toLowerCase() === 's')) {
+      e.preventDefault();
+      e.stopPropagation();
+      alert('Ação bloqueada: A impressão e o download não são permitidos para documentos controlados.');
+    }
+  }
+
+  // Governança: Bloqueio do botão direito (menu de contexto)
+  private bloquearBotaoDireito = (e: MouseEvent): void => {
+    e.preventDefault();
+  }
+
   public componentDidMount(): void {
     this.verificarAcessoQualidade();
     this.buscarTodosDocumentos();
+
+    window.addEventListener('keydown', this.bloquearAtalhos, true);
+    window.addEventListener('contextmenu', this.bloquearBotaoDireito, true);
 
     if (this.shouldHideSharePointChrome()) {
       const applyFixes = (): void => {
@@ -141,6 +164,9 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
 
   public componentWillUnmount(): void {
     if (this.footerObserver) this.footerObserver.disconnect();
+
+    window.removeEventListener('keydown', this.bloquearAtalhos, true);
+    window.removeEventListener('contextmenu', this.bloquearBotaoDireito, true);
   }
 
   // Governança: Verificação de Permissão
@@ -161,7 +187,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
   private buscarTodosDocumentos = async (): Promise<void> => {
     this.setState({ loading: true });
     try {
-      const select = 'Id,FileLeafRef,FileRef,Area,CodigoDocumento,TipoDocumento,NumeroRevisao,DataUltimaRevisao,DataProximaRevisao,StatusDocumento,ObservacaoRevisao,PeriodicidadeRevisaoMeses,UltimoAvisoRevisao,DiasAvisoRevisao,PermiteImpressaoControlada,ExibirNaIntranet,ResponsavelRevisao/Title,ResponsavelRevisao/EMail,AprovadorQualidade/Title,AprovadorQualidade/EMail';
+      const select = 'Id,UniqueId,FileLeafRef,FileRef,Area,CodigoDocumento,TipoDocumento,NumeroRevisao,DataUltimaRevisao,DataProximaRevisao,StatusDocumento,ObservacaoRevisao,PeriodicidadeRevisaoMeses,UltimoAvisoRevisao,DiasAvisoRevisao,PermiteImpressaoControlada,ExibirNaIntranet,ResponsavelRevisao/Title,ResponsavelRevisao/EMail,AprovadorQualidade/Title,AprovadorQualidade/EMail,TipoProcessoDocumento,DocumentoControlado';
       const expand = 'ResponsavelRevisao,AprovadorQualidade';
       const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('PoliticasGrunner')/items?$select=${select}&$expand=${expand}&$top=5000`;
 
@@ -187,6 +213,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
 
   // Governança: Lógica de Status
   private calcularStatusDocumento = (doc: any): string => {
+    if (doc.StatusDocumento === 'Obsoleto') return 'Obsoleto';
     if (doc.StatusDocumento === 'Arquivado') return 'Arquivado';
     if (doc.StatusDocumento === 'Em revisão') return 'Em revisão';
     
@@ -226,6 +253,8 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
     try {
       const payload: any = {
         CodigoDocumento: editFormData.CodigoDocumento,
+        TipoProcessoDocumento: editFormData.TipoProcessoDocumento,
+        DocumentoControlado: editFormData.DocumentoControlado,
         TipoDocumento: editFormData.TipoDocumento,
         NumeroRevisao: editFormData.NumeroRevisao,
         DataUltimaRevisao: editFormData.DataUltimaRevisao,
@@ -291,6 +320,30 @@ private formatDate = (dateStr?: string): string => {
     }
   }
 
+  private exportarParaCSV = (documentos: IPoliticaDocumento[]): void => {
+  const cabecalho = ['Código', 'Nome', 'Área', 'Tipo', 'Controlado', 'Revisão', 'Vencimento', 'Status'];
+  const linhas = documentos.map(doc => [
+    doc.CodigoDocumento || '-',
+    doc.FileLeafRef || '-',
+    doc.Area || '-',
+    doc.TipoProcessoDocumento || '-',
+    doc.DocumentoControlado ? 'Sim' : 'Não',
+    doc.NumeroRevisao || '-',
+    this.formatDate(doc.DataProximaRevisao),
+    doc.StatusCalculado || '-'
+  ]);
+
+  const conteudoCSV = [cabecalho, ...linhas].map(e => e.join(';')).join('\n');
+  const blob = new Blob(["\ufeff", conteudoCSV], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'Relatorio_Documentos.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
   public render(): React.ReactElement<IPoliticasGrunnerProps> {
     const { areaAtiva, todosDocumentos, termoBusca, loading, isQualidadeUser, modoGestaoQualidade } = this.state;
 
@@ -301,15 +354,16 @@ private formatDate = (dateStr?: string): string => {
     const vencidos = todosDocumentos.filter(d => d.StatusCalculado === 'Vencido').length;
     const revisao = todosDocumentos.filter(d => d.StatusCalculado === 'Em revisão').length;
 
-    // Filtros de exibição
+// Filtros de exibição
     let documentosExibidos = todosDocumentos;
 
     if (!modoGestaoQualidade) {
-      // Regra Pública: Não exibir arquivados nem VENCIDOS, e exibir apenas marcados para Intranet
+      // Regra Pública: Não exibir arquivados, VENCIDOS, Em revisão, nem OBSOLETOS, e exibir apenas marcados para Intranet
       documentosExibidos = documentosExibidos.filter(d => 
         d.StatusCalculado !== 'Arquivado' && 
         d.StatusCalculado !== 'Vencido' &&
         d.StatusCalculado !== 'Em revisão' && 
+        d.StatusCalculado !== 'Obsoleto' && // <-- NOVA REGRA AQUI
         (d.ExibirNaIntranet !== false)
       );
       
@@ -332,6 +386,11 @@ private formatDate = (dateStr?: string): string => {
           doc.CodigoDocumento?.toLowerCase().includes(termoBusca.toLowerCase())
         );
       }
+    }
+
+    // NOVO: Aplica o filtro de Tipo de Processo para ambas as visões (Pública e Qualidade)
+    if (this.state.filtroTipoProcesso) {
+      documentosExibidos = documentosExibidos.filter(doc => doc.TipoProcessoDocumento === this.state.filtroTipoProcesso);
     }
 
     return (
@@ -474,6 +533,28 @@ private formatDate = (dateStr?: string): string => {
             <input type="text" placeholder="🔍 Buscar por nome ou código..." value={termoBusca} onChange={(e) => this.setState({ termoBusca: e.target.value })} className={styles.searchInput} />
           </div>
 
+          <div className={styles.filtersRow}>
+            <select 
+              value={this.state.filtroTipoProcesso} 
+              onChange={(e) => this.setState({ filtroTipoProcesso: e.target.value })}
+            >
+              <option value="">Todos os Tipos de Documento</option>
+              <option value="MAPEAMENTO DE PROCESSO">Mapeamento de Processo</option>
+              <option value="PROCEDIMENTO">Procedimento</option>
+              <option value="PROCEDIMENTO OPERACIONAL PADRÃO">Procedimento Operacional Padrão (POP)</option>
+              <option value="INSTRUÇÃO DE TRABALHO">Instrução de Trabalho</option>
+              <option value="FORMULÁRIO">Formulário</option>
+              <option value="MANUAL">Manual</option>
+              <option value="POLÍTICA">Política</option>
+            </select>
+            
+            {modoGestaoQualidade && (
+              <button className={styles.exportButton} onClick={() => this.exportarParaCSV(documentosExibidos)}>
+                📊 Exportar Excel/CSV
+              </button>
+            )}
+          </div>
+
           {!modoGestaoQualidade && (
             <nav className={`${styles.tabsContainer} ${termoBusca.length > 0 ? styles.tabsDisabled : ''}`}>
               {this.areas.map((area) => (
@@ -509,6 +590,7 @@ private formatDate = (dateStr?: string): string => {
             {loading ? (
               <div className={styles.loadingState}><div className={styles.spinner}></div><p>Carregando documentos...</p></div>
             ) : !modoGestaoQualidade ? (
+
               // VISÃO PÚBLICA (Cards)
               <div className={styles.documentGrid}>
                 {documentosExibidos.map((doc, index) => {
@@ -529,23 +611,41 @@ private formatDate = (dateStr?: string): string => {
                         </h3>
                       </div>
 
-                      {/* CORPO DO CARD (Área, Tipo e Código) */}
+                      {/* CORPO DO CARD (Área, Tipo, Controle e Código) */}
                       <div className={styles.cardBody}>
+                        {/* NOVO: Badge de Documento Controlado */}
+                        <span className={`${styles.badgeControlado} ${doc.DocumentoControlado ? styles.isControlado : styles.isNaoControlado}`}>
+                          {doc.DocumentoControlado ? '🛡️ Controlado' : '📄 Não Controlado'}
+                        </span>
+                        
                         <span className={styles.areaBadge}>
-                          {doc.Area || 'Geral'} {doc.TipoDocumento ? `• ${doc.TipoDocumento}` : ''}
+                          {doc.Area || 'Geral'} {doc.TipoProcessoDocumento ? `• ${doc.TipoProcessoDocumento}` : (doc.TipoDocumento ? `• ${doc.TipoDocumento}` : '')}
                         </span>
                         <span className={styles.docCode}>
                           {doc.CodigoDocumento ? `Código: ${doc.CodigoDocumento}` : <span className={styles.emptyCode}>Sem código</span>}
                         </span>
                       </div>
 
-                      {/* RODAPÉ DO CARD (Revisão, Vencimento e Botão) */}
+                      {/* RODAPÉ DO CARD (Revisão, Vencimento e Botão Iframe) */}
                       <div className={styles.cardFooter}>
                         <div className={styles.revisionInfo}>
                           <span className={styles.revText}>Rev. {doc.NumeroRevisao || '00'}</span>
                           <span className={styles.venceText}>Vence: {this.formatDate(doc.DataProximaRevisao)}</span>
                         </div>
-                        <a href={`${doc.FileRef}?web=1`} target="_blank" rel="noopener noreferrer" className={styles.openButton}>
+                        {/* NOVO: Usa o visualizador universal e seguro da Microsoft */}
+                        <a 
+                          onClick={(e) => { 
+                            e.preventDefault(); 
+                            
+                            const siteUrl = this.props.context.pageContext.web.absoluteUrl;
+                            
+                           // Usa o visualizador universal da Microsoft e força a ocultação de barras do Office
+                          const urlIframe = `${siteUrl}/_layouts/15/embed.aspx?UniqueId=${doc.UniqueId}&wdHideRibbon=True&wdHideHeaders=True`;
+                                                        
+                            this.setState({ iframeDocumentoUrl: urlIframe }); 
+                          }} 
+                          className={styles.openButton}
+                        >
                           Abrir documento
                         </a>
                       </div>
@@ -553,6 +653,7 @@ private formatDate = (dateStr?: string): string => {
                   );
                 })}
               </div>
+
             ) : (
               // VISÃO ADMINISTRATIVA (Tabela)
               <div className={styles.adminTableWrapper}>
@@ -622,12 +723,39 @@ private formatDate = (dateStr?: string): string => {
                     />
                   </div>
 
+                  {/* NOVOS CAMPOS: TIPO DE PROCESSO E CONTROLE */}
+                  <div className={styles.formGroup}>
+                    <label>Tipo de Processo/Documento</label>
+                    <select value={this.state.editFormData.TipoProcessoDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, TipoProcessoDocumento: e.target.value } })}>
+                      <option value="">Selecione...</option>
+                      <option value="MAPEAMENTO DE PROCESSO">MAPEAMENTO DE PROCESSO</option>
+                      <option value="PROCEDIMENTO">PROCEDIMENTO</option>
+                      <option value="PROCEDIMENTO OPERACIONAL PADRÃO">PROCEDIMENTO OPERACIONAL PADRÃO (POP)</option>
+                      <option value="INSTRUÇÃO DE TRABALHO">INSTRUÇÃO DE TRABALHO</option>
+                      <option value="FORMULÁRIO">FORMULÁRIO</option>
+                      <option value="MANUAL">MANUAL</option>
+                      <option value="POLÍTICA">POLÍTICA</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label>Documento Controlado?</label>
+                    <select 
+                      value={this.state.editFormData.DocumentoControlado ? 'true' : 'false'} 
+                      onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DocumentoControlado: e.target.value === 'true' } })}
+                    >
+                      <option value="true">Sim - Controlado</option>
+                      <option value="false">Não - Não Controlado</option>
+                    </select>
+                  </div>
+
                   <div className={styles.formGroup}>
                     <label>Status (Sobrescreve regra de data se Arquivado/Em revisão)</label>
                     <select value={this.state.editFormData.StatusDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, StatusDocumento: e.target.value } })}>
                       <option value="">Automático (Pela Data)</option>
                       <option value="Em revisão">Em revisão</option>
                       <option value="Arquivado">Arquivado</option>
+                      <option value="Obsoleto">Obsoleto</option>
                     </select>
                   </div>
                   <div className={styles.formGroup}>
@@ -642,6 +770,22 @@ private formatDate = (dateStr?: string): string => {
                   {this.state.salvandoDocumento ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DO IFRAME */}
+        {this.state.iframeDocumentoUrl && (
+          <div className={(styles as any).iframeModalBackdrop} onClick={() => this.setState({ iframeDocumentoUrl: null })}>
+            <div className={(styles as any).iframeModalHeader}>
+              <button className={(styles as any).closeIframeBtn} onClick={() => this.setState({ iframeDocumentoUrl: null })}>✕ Fechar Documento</button>
+            </div>
+            <div 
+              className={(styles as any).iframeContainer} 
+              onClick={(e) => e.stopPropagation()}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <iframe src={this.state.iframeDocumentoUrl} title="Document Viewer" />
             </div>
           </div>
         )}

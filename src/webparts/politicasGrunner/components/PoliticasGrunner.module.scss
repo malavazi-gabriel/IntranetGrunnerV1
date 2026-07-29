@@ -678,6 +678,159 @@ $text-gray: #6B7280;
   }
 }
 
+/* =======================================
+      (IFRAME, OBSOLETO E BADGES)
+======================================= */
+
+/* Status Obsoleto (Estilo Arquivo Morto) */
+.statusObsoleto { 
+  background-color: #374151; /* Cinza bem escuro */
+  color: #F9FAFB; 
+  border-color: #1F2937; 
+  opacity: 0.8;
+}
+
+/* Badge Controlado/Não Controlado */
+/* Badge Controlado/Não Controlado */
+.badgeControlado {
+  align-self: flex-start;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.isControlado {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #2563EB;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.isNaoControlado {
+  background-color: rgba(107, 114, 128, 0.1);
+  color: #4B5563;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* Container de Filtros Adicionais */
+.filtersRow {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  width: 100%;
+  max-width: 800px;
+  margin: -10px auto 20px auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+
+  select {
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #D1D5DB;
+    font-size: 14px;
+    color: $grunner-dark;
+    background-color: white;
+    outline: none;
+    cursor: pointer;
+  }
+}
+
+.exportButton {
+  background-color: #10B981;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #059669;
+  }
+}
+
+/* Modal do Iframe */
+.iframeModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 100000; /* Z-index altíssimo para sobrepor tudo */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.iframeModalHeader {
+  width: 90%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 10px;
+
+  .closeIframeBtn {
+    background: #EF4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 14px;
+    
+    &:hover { background: #DC2626; }
+  }
+}
+
+.iframeContainer {
+  width: 90%;
+  max-width: 1200px;
+  height: 85vh;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+}
+
+:global {
+  @media print {
+    /* Oculta tudo que é padrão do SharePoint e do seu app */
+    body {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    
+    /* Cria uma tela branca com a mensagem de bloqueio */
+    html {
+      background-color: white !important;
+    }
+    
+    html::before {
+      content: "Impressão não permitida pelas políticas de segurança da Qualidade.";
+      display: flex !important;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-size: 20px;
+      font-weight: bold;
+      color: #991B1B;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+  }
+}
 /* ==============================================================================
    HACK DEFINITIVO PARA TELA CHEIA (OCULTANDO BARRAS DO SHAREPOINT)
 ============================================================================== */
