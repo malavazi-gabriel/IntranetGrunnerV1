@@ -528,6 +528,22 @@ $text-gray: #6B7280;
   &.metricRevisao { border-top-color: #3B82F6; }
 }
 
+.clickableCard {
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.metricActive {
+  background-color: #F9FAFB;
+  box-shadow: 0 0 0 2px $grunner-dark; /* Borda escura para indicar seleção */
+  transform: translateY(-2px);
+}
+
 /* =======================================
    GOVERNANÇA: BADGES E CARDS
 ======================================= */
@@ -755,6 +771,27 @@ $text-gray: #6B7280;
   }
 }
 
+.createButton {
+  background-color: $grunner-dark;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    background-color: #2A3618;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+  }
+}
+
 /* Modal do Iframe */
 .iframeModalBackdrop {
   position: fixed;
@@ -831,6 +868,109 @@ $text-gray: #6B7280;
     }
   }
 }
+
+/* =======================================
+   GOVERNANÇA: TABS DO MODAL E TIMELINE
+======================================= */
+.modalTabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 2px solid #F3F4F6;
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.modalTab {
+  background: none;
+  border: none;
+  padding: 10px 5px;
+  cursor: pointer;
+  font-weight: 600;
+  color: $text-gray;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-size: 14px;
+  transition: all 0.2s;
+  
+  &:hover {
+    color: $grunner-dark;
+  }
+}
+
+.modalTabActive {
+  color: $grunner-dark;
+  border-bottom-color: $grunner-green;
+}
+
+.timelineContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 20px 20px 30px;
+  border-left: 2px solid #E5E7EB;
+  margin-left: 30px; /* Afasta da borda esquerda do modal */
+}
+
+.timelineItem {
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: -37px; /* Centraliza a bolinha na linha */
+    top: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: $grunner-green;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #E5E7EB;
+    transition: all 0.3s ease;
+  }
+
+  &:hover::before {
+    background: $grunner-dark;
+    box-shadow: 0 0 0 2px $grunner-green;
+  }
+
+  .timelineHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    
+    .timelineVersion {
+      font-weight: 800;
+      color: $grunner-dark;
+      font-size: 14px;
+    }
+    
+    .timelineDate {
+      font-size: 12px;
+      color: #6B7280;
+      font-weight: 500;
+    }
+  }
+
+  .timelineUser {
+    font-size: 13px;
+    color: $text-gray;
+    margin-bottom: 8px;
+    
+    strong { color: $grunner-dark; }
+  }
+
+  .timelineComment {
+    font-size: 13px;
+    color: #4B5563;
+    background: #F9FAFB;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px dashed #D1D5DB;
+    line-height: 1.4;
+  }
+}
+
 /* ==============================================================================
    HACK DEFINITIVO PARA TELA CHEIA (OCULTANDO BARRAS DO SHAREPOINT)
 ============================================================================== */

@@ -277,6 +277,26 @@ $text-light: #6B7280;
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* =======================================
+   CARDS CLICÁVEIS (DASHBOARD)
+======================================= */
+.clickableCard {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
+.metricActive {
+  background-color: #F8FAFC !important;
+  box-shadow: 0 0 0 2px $grunner-green !important; 
+  transform: translateY(-2px);
+}
+
 /* ==============================================================================
    HACK DEFINITIVO PARA TELA CHEIA
 ============================================================================== */

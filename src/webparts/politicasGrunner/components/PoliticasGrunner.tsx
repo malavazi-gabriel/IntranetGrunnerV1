@@ -3,6 +3,7 @@ import styles from './PoliticasGrunner.module.scss';
 import type { IPoliticasGrunnerProps } from './IPoliticasGrunnerProps';
 import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 import { MenuChamados } from '../../../shared/components/MenuChamado/MenuChamados';
+import FormularioSGQ from './FormularioSGQ';
 
 // URLs de navegação
 const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo-grunner.png";
@@ -25,7 +26,7 @@ export interface IPoliticaDocumento {
   DataUltimaRevisao?: string;
   DataProximaRevisao?: string;
   StatusDocumento?: string;
-  StatusCalculado?: string; 
+  StatusCalculado?: string;
   ObservacaoRevisao?: string;
   PeriodicidadeRevisaoMeses?: number;
   UltimoAvisoRevisao?: string;
@@ -52,6 +53,18 @@ interface IPoliticasGrunnerState {
   filtroStatusAdmin: string;
   editFormData: Partial<IPoliticaDocumento>;
   isMenuProcedimentosOpen: boolean;
+  activeModalTab: 'metadados' | 'historico';
+  documentHistory: IDocumentVersion[];
+  isLoadingHistory: boolean;
+  isCreateModalOpen: boolean;
+  selectedNewDocType: string;
+}
+
+export interface IDocumentVersion {
+  VersionLabel: string;
+  Modified: string;
+  Editor: string;
+  CheckInComment?: string;
 }
 
 export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerProps, IPoliticasGrunnerState> {
@@ -60,6 +73,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
 
   constructor(props: IPoliticasGrunnerProps) {
     super(props);
+
     this.state = {
       areaAtiva: 'Institucional',
       todosDocumentos: [],
@@ -75,9 +89,25 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       filtroStatusAdmin: 'Todos',
       editFormData: {},
       iframeDocumentoUrl: null,
-      filtroTipoProcesso: ''
+      filtroTipoProcesso: '',
+      activeModalTab: 'metadados',
+      documentHistory: [],
+      isLoadingHistory: false,
+      isCreateModalOpen: false,
+      selectedNewDocType: ''
     };
   }
+
+  // Dicionário Estático: Mapeamento de Tipos de Documento para URLs de Formulários
+  private formUrls: { [key: string]: string } = {
+    'MAPEAMENTO DE PROCESSO': 'https://forms.office.com/r/exemplo-mapeamento',
+    'PROCEDIMENTO': 'https://forms.office.com/r/exemplo-procedimento',
+    'PROCEDIMENTO OPERACIONAL PADRÃO': 'https://forms.office.com/r/exemplo-pop',
+    'INSTRUÇÃO DE TRABALHO': 'https://forms.office.com/r/exemplo-instrucao',
+    'FORMULÁRIO': 'https://forms.office.com/r/exemplo-formulario',
+    'MANUAL': 'https://forms.office.com/r/exemplo-manual',
+    'POLÍTICA': 'https://forms.office.com/r/exemplo-politica'
+  };
 
   // Ocultação padrão do SharePoint (Mantido)
   private shouldHideSharePointChrome = (): boolean => {
@@ -156,7 +186,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       applyFixes();
       window.setTimeout(applyFixes, 500);
       window.setTimeout(applyFixes, 1500);
-      
+
       this.footerObserver = new MutationObserver(() => applyFixes());
       if (document.body) this.footerObserver.observe(document.body, { childList: true, subtree: true });
     }
@@ -211,17 +241,57 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
     }
   }
 
+  // Governança: Busca de Histórico de Versões do Documento
+  private buscarHistoricoDocumento = async (itemId: number): Promise<void> => {
+    this.setState({ isLoadingHistory: true, documentHistory: [] });
+
+    try {
+      // O SharePoint guarda a data de modificação da versão no campo 'Created' do endpoint /versions
+      const select = 'VersionLabel,Created,CheckInComment,Editor/Title';
+      const expand = 'Editor';
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('PoliticasGrunner')/items(${itemId})/versions?$select=${select}&$expand=${expand}`;
+
+      const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
+
+      if (!response.ok) {
+        throw new Error(`Erro na requisição: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data && data.value) {
+        // Mapeia o retorno sujo da API para a nossa interface limpa
+        const historicoFormatado: IDocumentVersion[] = data.value.map((versao: any) => ({
+          VersionLabel: versao.VersionLabel,
+          Modified: versao.Created,
+          Editor: versao.Editor ? versao.Editor.Title : 'Sistema',
+          CheckInComment: versao.CheckInComment || ''
+        }));
+
+        this.setState({
+          documentHistory: historicoFormatado,
+          isLoadingHistory: false
+        });
+      } else {
+        this.setState({ isLoadingHistory: false });
+      }
+    } catch (error) {
+      console.error("Erro ao buscar o histórico de versões:", error);
+      this.setState({ isLoadingHistory: false });
+    }
+  }
+
   // Governança: Lógica de Status
   private calcularStatusDocumento = (doc: any): string => {
     if (doc.StatusDocumento === 'Obsoleto') return 'Obsoleto';
     if (doc.StatusDocumento === 'Arquivado') return 'Arquivado';
     if (doc.StatusDocumento === 'Em revisão') return 'Em revisão';
-    
+
     if (doc.DataProximaRevisao) {
       const dataVencimento = new Date(doc.DataProximaRevisao);
       const hoje = new Date();
       const diasRestantes = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 3600 * 24));
-      
+
       if (diasRestantes < 0) return 'Vencido';
       if (diasRestantes <= 30) return 'Vence em breve';
     }
@@ -252,33 +322,33 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
 
     try {
       const payload: any = {
-        CodigoDocumento: editFormData.CodigoDocumento,
-        TipoProcessoDocumento: editFormData.TipoProcessoDocumento,
+        CodigoDocumento: editFormData.CodigoDocumento || null,
+        TipoProcessoDocumento: editFormData.TipoProcessoDocumento || null,
         DocumentoControlado: editFormData.DocumentoControlado,
-        TipoDocumento: editFormData.TipoDocumento,
-        NumeroRevisao: editFormData.NumeroRevisao,
-        DataUltimaRevisao: editFormData.DataUltimaRevisao,
-        DataProximaRevisao: editFormData.DataProximaRevisao,
-        StatusDocumento: editFormData.StatusDocumento,
-        ObservacaoRevisao: editFormData.ObservacaoRevisao,
-        PeriodicidadeRevisaoMeses: editFormData.PeriodicidadeRevisaoMeses,
+        TipoDocumento: editFormData.TipoDocumento || null,
+        NumeroRevisao: editFormData.NumeroRevisao || null,
+        DataUltimaRevisao: editFormData.DataUltimaRevisao || null,
+        DataProximaRevisao: editFormData.DataProximaRevisao || null,
+        StatusDocumento: editFormData.StatusDocumento || null,
+        ObservacaoRevisao: editFormData.ObservacaoRevisao || null,
+        PeriodicidadeRevisaoMeses: editFormData.PeriodicidadeRevisaoMeses || null,
         PermiteImpressaoControlada: editFormData.PermiteImpressaoControlada,
         ExibirNaIntranet: editFormData.ExibirNaIntranet,
-        Area: editFormData.Area
+        Area: editFormData.Area || null
       };
 
- // Resolução de usuários (Pessoa ou Grupo)
+      // Resolução de usuários (Pessoa ou Grupo)
       if (editFormData.ResponsavelRevisao?.EMail) {
         payload.ResponsavelRevisaoId = await this.getUserIdByEmail(editFormData.ResponsavelRevisao.EMail);
       } else if (editFormData.ResponsavelRevisao?.EMail === '') {
-        // Se o campo for limpo no React, força o valor nulo no SharePoint
-        payload.ResponsavelRevisaoId = null; 
+        // Enviar -1 força a API do SharePoint a limpar um campo de Lookup/Pessoa
+        payload.ResponsavelRevisaoId = -1;
       }
 
       if (editFormData.AprovadorQualidade?.EMail) {
         payload.AprovadorQualidadeId = await this.getUserIdByEmail(editFormData.AprovadorQualidade.EMail);
       } else if (editFormData.AprovadorQualidade?.EMail === '') {
-        payload.AprovadorQualidadeId = null; 
+        payload.AprovadorQualidadeId = -1;
       }
 
       const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('PoliticasGrunner')/items(${documentoSelecionado.Id})`;
@@ -292,23 +362,28 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
         body: JSON.stringify(payload)
       });
 
-      this.setState({ documentoSelecionado: null, salvandoDocumento: false });
-      this.buscarTodosDocumentos(); // Recarrega os dados
+      this.setState({
+        documentoSelecionado: null,
+        salvandoDocumento: false,
+        activeModalTab: 'metadados',
+        documentHistory: []
+      });
+      this.buscarTodosDocumentos();
     } catch (error) {
       console.error("Erro ao salvar:", error);
       this.setState({ salvandoDocumento: false });
     }
   }
 
-private formatDate = (dateStr?: string): string => {
-  if (!dateStr) return 'Não cadastrado';
-  
-  const apenasData = dateStr.split('T')[0];
-  const [ano, mes, dia] = apenasData.split('-');
-  
-  return `${dia}/${mes}/${ano}`;
-}
-  
+  private formatDate = (dateStr?: string): string => {
+    if (!dateStr) return 'Não cadastrado';
+
+    const apenasData = dateStr.split('T')[0];
+    const [ano, mes, dia] = apenasData.split('-');
+
+    return `${dia}/${mes}/${ano}`;
+  }
+
   private getStatusClass = (status?: string): string => {
     switch (status) {
       case 'Vigente': return styles.statusVigente;
@@ -321,28 +396,28 @@ private formatDate = (dateStr?: string): string => {
   }
 
   private exportarParaCSV = (documentos: IPoliticaDocumento[]): void => {
-  const cabecalho = ['Código', 'Nome', 'Área', 'Tipo', 'Controlado', 'Revisão', 'Vencimento', 'Status'];
-  const linhas = documentos.map(doc => [
-    doc.CodigoDocumento || '-',
-    doc.FileLeafRef || '-',
-    doc.Area || '-',
-    doc.TipoProcessoDocumento || '-',
-    doc.DocumentoControlado ? 'Sim' : 'Não',
-    doc.NumeroRevisao || '-',
-    this.formatDate(doc.DataProximaRevisao),
-    doc.StatusCalculado || '-'
-  ]);
+    const cabecalho = ['Código', 'Nome', 'Área', 'Tipo', 'Controlado', 'Revisão', 'Vencimento', 'Status'];
+    const linhas = documentos.map(doc => [
+      doc.CodigoDocumento || '-',
+      doc.FileLeafRef || '-',
+      doc.Area || '-',
+      doc.TipoProcessoDocumento || '-',
+      doc.DocumentoControlado ? 'Sim' : 'Não',
+      doc.NumeroRevisao || '-',
+      this.formatDate(doc.DataProximaRevisao),
+      doc.StatusCalculado || '-'
+    ]);
 
-  const conteudoCSV = [cabecalho, ...linhas].map(e => e.join(';')).join('\n');
-  const blob = new Blob(["\ufeff", conteudoCSV], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', 'Relatorio_Documentos.csv');
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+    const conteudoCSV = [cabecalho, ...linhas].map(e => e.join(';')).join('\n');
+    const blob = new Blob(["\ufeff", conteudoCSV], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Relatorio_Documentos.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 
   public render(): React.ReactElement<IPoliticasGrunnerProps> {
     const { areaAtiva, todosDocumentos, termoBusca, loading, isQualidadeUser, modoGestaoQualidade } = this.state;
@@ -354,19 +429,19 @@ private formatDate = (dateStr?: string): string => {
     const vencidos = todosDocumentos.filter(d => d.StatusCalculado === 'Vencido').length;
     const revisao = todosDocumentos.filter(d => d.StatusCalculado === 'Em revisão').length;
 
-// Filtros de exibição
+    // Filtros de exibição
     let documentosExibidos = todosDocumentos;
 
     if (!modoGestaoQualidade) {
       // Regra Pública: Não exibir arquivados, VENCIDOS, Em revisão, nem OBSOLETOS, e exibir apenas marcados para Intranet
-      documentosExibidos = documentosExibidos.filter(d => 
-        d.StatusCalculado !== 'Arquivado' && 
+      documentosExibidos = documentosExibidos.filter(d =>
+        d.StatusCalculado !== 'Arquivado' &&
         d.StatusCalculado !== 'Vencido' &&
-        d.StatusCalculado !== 'Em revisão' && 
+        d.StatusCalculado !== 'Em revisão' &&
         d.StatusCalculado !== 'Obsoleto' && // <-- NOVA REGRA AQUI
         (d.ExibirNaIntranet !== false)
       );
-      
+
       if (termoBusca.trim().length > 0) {
         documentosExibidos = documentosExibidos.filter(doc =>
           doc.FileLeafRef?.toLowerCase().includes(termoBusca.toLowerCase()) ||
@@ -396,7 +471,7 @@ private formatDate = (dateStr?: string): string => {
     return (
       <div className={styles.container}>
         {this.shouldHideSharePointChrome() && (
-          <style dangerouslySetInnerHTML={{__html: `... ocultações do sharepoint originais mantidas no seu código ...`}} />
+          <style dangerouslySetInnerHTML={{ __html: `... ocultações do sharepoint originais mantidas no seu código ...` }} />
         )}
 
         <div className={styles.mobileHeaderBar}>
@@ -456,7 +531,7 @@ private formatDate = (dateStr?: string): string => {
             <a href={historiaUrl} target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
             <a href="https://grunnertec.com.br/assets/PDFs/codigoconduta.pdf" target="_blank" rel="noopener noreferrer">⚖️ Código de Conduta</a>
             <a href="https://grunner.canaldeouvidoria.com.br/" target="_blank" rel="noopener noreferrer">🗣️ Canal de Ética</a>
-            
+
             {/* =========================================================
                 LÓGICA DO MENU PROCEDIMENTOS (QUALIDADE VS NORMAL)
             ========================================================= */}
@@ -477,9 +552,9 @@ private formatDate = (dateStr?: string): string => {
                     <a href={politicasUrl} className={!this.state.modoGestaoQualidade ? styles.active : ''}>
                       📖 Todos os Documentos
                     </a>
-                    <a 
-                      href="#" 
-                      className={this.state.modoGestaoQualidade ? styles.active : ''} 
+                    <a
+                      href="#"
+                      className={this.state.modoGestaoQualidade ? styles.active : ''}
                       onClick={(e) => { e.preventDefault(); this.setState({ modoGestaoQualidade: !this.state.modoGestaoQualidade }); }}
                     >
                       ⚙️ Gestão da Qualidade
@@ -494,7 +569,7 @@ private formatDate = (dateStr?: string): string => {
               </a>
             )}
           </div>
-          
+
         </aside>
         <div className={styles.contentArea}>
           <header className={styles.pageHeader}>
@@ -507,23 +582,42 @@ private formatDate = (dateStr?: string): string => {
 
           {/* PAINEL DE MÉTRICAS */}
           <div className={styles.metricsPanel}>
-            <div className={styles.metricCard}>
+            <div
+              className={`${styles.metricCard} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Todos' ? styles.metricActive : ''}`}
+              onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Todos' })}
+            >
               <div className={styles.metricLabel}>Total</div>
               <div className={styles.metricValue}>{total}</div>
             </div>
-            <div className={`${styles.metricCard} ${styles.metricVigente}`}>
+
+            <div
+              className={`${styles.metricCard} ${styles.metricVigente} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Vigente' ? styles.metricActive : ''}`}
+              onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Vigente' })}
+            >
               <div className={styles.metricLabel}>Vigentes</div>
               <div className={styles.metricValue}>{vigentes}</div>
             </div>
-            <div className={`${styles.metricCard} ${styles.metricAtencao}`}>
+
+            <div
+              className={`${styles.metricCard} ${styles.metricAtencao} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Vence em breve' ? styles.metricActive : ''}`}
+              onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Vence em breve' })}
+            >
               <div className={styles.metricLabel}>Vence em breve</div>
               <div className={styles.metricValue}>{atencao}</div>
             </div>
-            <div className={`${styles.metricCard} ${styles.metricVencido}`}>
+
+            <div
+              className={`${styles.metricCard} ${styles.metricVencido} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Vencido' ? styles.metricActive : ''}`}
+              onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Vencido' })}
+            >
               <div className={styles.metricLabel}>Vencidos</div>
               <div className={styles.metricValue}>{vencidos}</div>
             </div>
-            <div className={`${styles.metricCard} ${styles.metricRevisao}`}>
+
+            <div
+              className={`${styles.metricCard} ${styles.metricRevisao} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Em revisão' ? styles.metricActive : ''}`}
+              onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Em revisão' })}
+            >
               <div className={styles.metricLabel}>Em Revisão</div>
               <div className={styles.metricValue}>{revisao}</div>
             </div>
@@ -534,8 +628,8 @@ private formatDate = (dateStr?: string): string => {
           </div>
 
           <div className={styles.filtersRow}>
-            <select 
-              value={this.state.filtroTipoProcesso} 
+            <select
+              value={this.state.filtroTipoProcesso}
               onChange={(e) => this.setState({ filtroTipoProcesso: e.target.value })}
             >
               <option value="">Todos os Tipos de Documento</option>
@@ -547,10 +641,20 @@ private formatDate = (dateStr?: string): string => {
               <option value="MANUAL">Manual</option>
               <option value="POLÍTICA">Política</option>
             </select>
-            
+
             {modoGestaoQualidade && (
               <button className={styles.exportButton} onClick={() => this.exportarParaCSV(documentosExibidos)}>
                 📊 Exportar Excel/CSV
+              </button>
+            )}
+
+            {/*BOTÃO CRIAR DOCUMENTO (Apenas Visão Pública) */}
+            {!modoGestaoQualidade && (
+              <button
+                className={styles.createButton}
+                onClick={() => this.setState({ isCreateModalOpen: true })}
+              >
+                ➕ Solicitar Novo Documento
               </button>
             )}
           </div>
@@ -574,11 +678,11 @@ private formatDate = (dateStr?: string): string => {
                   </button>
                 ))}
               </div>
-              
-              <a 
-                href={`${this.props.context.pageContext.web.absoluteUrl}/PoliticasGrunner/Forms/AllItems.aspx`} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+
+              <a
+                href={`${this.props.context.pageContext.web.absoluteUrl}/PoliticasGrunner/Forms/AllItems.aspx`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={styles.uploadButton}
               >
                 ➕ Carregar Novos Documentos
@@ -597,7 +701,7 @@ private formatDate = (dateStr?: string): string => {
                   const extensao = doc.FileLeafRef ? doc.FileLeafRef.split('.').pop()?.toLowerCase() : '';
                   const isPdf = extensao === 'pdf';
                   return (
-                  <div key={index} className={styles.documentCard}>
+                    <div key={index} className={styles.documentCard}>
                       {/* CABEÇALHO DO CARD (Ícone e Status) */}
                       <div className={styles.cardHeader}>
                         <div className={styles.headerTop}>
@@ -617,7 +721,7 @@ private formatDate = (dateStr?: string): string => {
                         <span className={`${styles.badgeControlado} ${doc.DocumentoControlado ? styles.isControlado : styles.isNaoControlado}`}>
                           {doc.DocumentoControlado ? '🛡️ Controlado' : '📄 Não Controlado'}
                         </span>
-                        
+
                         <span className={styles.areaBadge}>
                           {doc.Area || 'Geral'} {doc.TipoProcessoDocumento ? `• ${doc.TipoProcessoDocumento}` : (doc.TipoDocumento ? `• ${doc.TipoDocumento}` : '')}
                         </span>
@@ -633,17 +737,17 @@ private formatDate = (dateStr?: string): string => {
                           <span className={styles.venceText}>Vence: {this.formatDate(doc.DataProximaRevisao)}</span>
                         </div>
                         {/* NOVO: Usa o visualizador universal e seguro da Microsoft */}
-                        <a 
-                          onClick={(e) => { 
-                            e.preventDefault(); 
-                            
+                        <a
+                          onClick={(e) => {
+                            e.preventDefault();
+
                             const siteUrl = this.props.context.pageContext.web.absoluteUrl;
-                            
-                           // Usa o visualizador universal da Microsoft e força a ocultação de barras do Office
-                          const urlIframe = `${siteUrl}/_layouts/15/embed.aspx?UniqueId=${doc.UniqueId}&wdHideRibbon=True&wdHideHeaders=True`;
-                                                        
-                            this.setState({ iframeDocumentoUrl: urlIframe }); 
-                          }} 
+
+                            // Usa o visualizador universal da Microsoft e força a ocultação de barras do Office
+                            const urlIframe = `${siteUrl}/_layouts/15/embed.aspx?UniqueId=${doc.UniqueId}&wdHideRibbon=True&wdHideHeaders=True`;
+
+                            this.setState({ iframeDocumentoUrl: urlIframe });
+                          }}
                           className={styles.openButton}
                         >
                           Abrir documento
@@ -689,87 +793,139 @@ private formatDate = (dateStr?: string): string => {
         {this.state.documentoSelecionado && (
           <div className={styles.editModalBackdrop}>
             <div className={styles.editModal}>
+
               <div className={styles.editModalHeader}>
-                <h2>Editar Metadados: {this.state.documentoSelecionado.FileLeafRef}</h2>
-                <button onClick={() => this.setState({ documentoSelecionado: null })} className={styles.closeModal}>✕</button>
+                <h2>{this.state.documentoSelecionado.FileLeafRef}</h2>
+                <button onClick={() => this.setState({ documentoSelecionado: null, activeModalTab: 'metadados', documentHistory: [] })} className={styles.closeModal}>✕</button>
               </div>
-              <div className={styles.editModalBody}>
-              <div className={styles.formGrid}>
-                  <div className={styles.formGroup}>
-                    <label>Código do Documento</label>
-                    <input type="text" value={this.state.editFormData.CodigoDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, CodigoDocumento: e.target.value } })} />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Número da Revisão</label>
-                    <input type="text" value={this.state.editFormData.NumeroRevisao || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, NumeroRevisao: e.target.value } })} />
-                  </div>
-                  
-                  {/* BLOCOS DE DATA CORRIGIDOS */}
-                  <div className={styles.formGroup}>
-                    <label>Data Última Revisão</label>
-                    <input 
-                      type="date" 
-                      value={this.state.editFormData.DataUltimaRevisao ? this.state.editFormData.DataUltimaRevisao.split('T')[0] : ''} 
-                      onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DataUltimaRevisao: e.target.value ? `${e.target.value}T12:00:00Z` : null as any } })} 
-                    />
-                  </div>
 
-                  <div className={styles.formGroup}>
-                    <label>Data Próxima Revisão</label>
-                    <input 
-                      type="date" 
-                      value={this.state.editFormData.DataProximaRevisao ? this.state.editFormData.DataProximaRevisao.split('T')[0] : ''} 
-                      onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DataProximaRevisao: e.target.value ? `${e.target.value}T12:00:00Z` : null as any } })} 
-                    />
-                  </div>
+              {/* NOVAS ABAS DE NAVEGAÇÃO INTERNA */}
+              <div className={styles.modalTabs}>
+                <button
+                  className={`${styles.modalTab} ${this.state.activeModalTab === 'metadados' ? styles.modalTabActive : ''}`}
+                  onClick={() => this.setState({ activeModalTab: 'metadados' })}
+                >
+                  📝 Editar Metadados
+                </button>
+                <button
+                  className={`${styles.modalTab} ${this.state.activeModalTab === 'historico' ? styles.modalTabActive : ''}`}
+                  onClick={() => {
+                    this.setState({ activeModalTab: 'historico' });
 
-                  {/* NOVOS CAMPOS: TIPO DE PROCESSO E CONTROLE */}
-                  <div className={styles.formGroup}>
-                    <label>Tipo de Processo/Documento</label>
-                    <select value={this.state.editFormData.TipoProcessoDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, TipoProcessoDocumento: e.target.value } })}>
-                      <option value="">Selecione...</option>
-                      <option value="MAPEAMENTO DE PROCESSO">MAPEAMENTO DE PROCESSO</option>
-                      <option value="PROCEDIMENTO">PROCEDIMENTO</option>
-                      <option value="PROCEDIMENTO OPERACIONAL PADRÃO">PROCEDIMENTO OPERACIONAL PADRÃO (POP)</option>
-                      <option value="INSTRUÇÃO DE TRABALHO">INSTRUÇÃO DE TRABALHO</option>
-                      <option value="FORMULÁRIO">FORMULÁRIO</option>
-                      <option value="MANUAL">MANUAL</option>
-                      <option value="POLÍTICA">POLÍTICA</option>
-                    </select>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label>Documento Controlado?</label>
-                    <select 
-                      value={this.state.editFormData.DocumentoControlado ? 'true' : 'false'} 
-                      onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DocumentoControlado: e.target.value === 'true' } })}
-                    >
-                      <option value="true">Sim - Controlado</option>
-                      <option value="false">Não - Não Controlado</option>
-                    </select>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label>Status (Sobrescreve regra de data se Arquivado/Em revisão)</label>
-                    <select value={this.state.editFormData.StatusDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, StatusDocumento: e.target.value } })}>
-                      <option value="">Automático (Pela Data)</option>
-                      <option value="Em revisão">Em revisão</option>
-                      <option value="Arquivado">Arquivado</option>
-                      <option value="Obsoleto">Obsoleto</option>
-                    </select>
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>E-mail do Responsável</label>
-                    <input type="email" placeholder="email@grunner.com.br" value={this.state.editFormData.ResponsavelRevisao?.EMail || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, ResponsavelRevisao: { EMail: e.target.value } } })} />
-                  </div>
-                </div>
-              </div>
-              <div className={styles.editModalFooter}>
-                <button className={styles.cancelBtn} onClick={() => this.setState({ documentoSelecionado: null })}>Cancelar</button>
-                <button className={styles.saveBtn} onClick={this.salvarEdicaoDocumento} disabled={this.state.salvandoDocumento}>
-                  {this.state.salvandoDocumento ? 'Salvando...' : 'Salvar Alterações'}
+                    // O "this.state.documentoSelecionado &&" acalma o TypeScript
+                    if (this.state.documentoSelecionado && (!this.state.documentHistory || this.state.documentHistory.length === 0)) {
+                      this.buscarHistoricoDocumento(this.state.documentoSelecionado.Id);
+                    }
+                  }}
+                >
+                  🕒 Histórico de Revisões
                 </button>
               </div>
+
+              <div className={styles.editModalBody}>
+
+                {/* CONTEÚDO DA ABA 1: METADADOS */}
+                {this.state.activeModalTab === 'metadados' && (
+                  <div className={styles.formGrid}>
+
+                    <div className={styles.formGroup}>
+                      <label>Código do Documento</label>
+                      <input type="text" value={this.state.editFormData.CodigoDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, CodigoDocumento: e.target.value } })} />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Número da Revisão</label>
+                      <input type="text" value={this.state.editFormData.NumeroRevisao || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, NumeroRevisao: e.target.value } })} />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Data Última Revisão</label>
+                      <input type="date" value={this.state.editFormData.DataUltimaRevisao ? this.state.editFormData.DataUltimaRevisao.split('T')[0] : ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DataUltimaRevisao: e.target.value } })} />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Data Próxima Revisão</label>
+                      <input type="date" value={this.state.editFormData.DataProximaRevisao ? this.state.editFormData.DataProximaRevisao.split('T')[0] : ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DataProximaRevisao: e.target.value } })} />
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Tipo de Processo/Documento</label>
+                      <select value={this.state.editFormData.TipoProcessoDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, TipoProcessoDocumento: e.target.value } })}>
+                        <option value="">Selecione...</option>
+                        <option value="MAPEAMENTO DE PROCESSO">Mapeamento de Processo</option>
+                        <option value="PROCEDIMENTO">Procedimento</option>
+                        <option value="PROCEDIMENTO OPERACIONAL PADRÃO">Procedimento Operacional Padrão (POP)</option>
+                        <option value="INSTRUÇÃO DE TRABALHO">Instrução de Trabalho</option>
+                        <option value="FORMULÁRIO">Formulário</option>
+                        <option value="MANUAL">Manual</option>
+                        <option value="POLÍTICA">Política</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Documento Controlado?</label>
+                      <select value={this.state.editFormData.DocumentoControlado ? 'sim' : 'nao'} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DocumentoControlado: e.target.value === 'sim' } })}>
+                        <option value="nao">Não - Não Controlado</option>
+                        <option value="sim">Sim - Controlado</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>Status (Sobrescreve regra de data se Arquivado/Em revisão)</label>
+                      <select value={this.state.editFormData.StatusDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, StatusDocumento: e.target.value } })}>
+                        <option value="">Automático (Pela Data)</option>
+                        <option value="Em revisão">Em revisão</option>
+                        <option value="Arquivado">Arquivado</option>
+                        <option value="Obsoleto">Obsoleto</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label>E-mail do Responsável</label>
+                      <input type="email" placeholder="email@grunner.com.br" value={this.state.editFormData.ResponsavelRevisao?.EMail || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, ResponsavelRevisao: { EMail: e.target.value } } })} />
+                    </div>
+
+                  </div>
+                )}
+
+                {/* CONTEÚDO DA ABA 2: HISTÓRICO */}
+                {this.state.activeModalTab === 'historico' && (
+                  <div className={styles.timelineContainer}>
+                    {this.state.isLoadingHistory ? (
+                      <div className={styles.loadingState}><div className={styles.spinner}></div><p>Buscando histórico...</p></div>
+                    ) : this.state.documentHistory && this.state.documentHistory.length > 0 ? (
+                      this.state.documentHistory.map((versao, idx) => (
+                        <div key={idx} className={styles.timelineItem}>
+                          <div className={styles.timelineHeader}>
+                            <span className={styles.timelineVersion}>Versão {versao.VersionLabel}</span>
+                            <span className={styles.timelineDate}>{this.formatDate(versao.Modified)}</span>
+                          </div>
+                          <div className={styles.timelineUser}>
+                            Modificado por <strong>{versao.Editor}</strong>
+                          </div>
+                          <div className={styles.timelineComment}>
+                            {versao.CheckInComment || 'Revisão aprovada sem comentários adicionais.'}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={styles.emptyState}><p>Nenhum histórico de versão encontrado para este documento.</p></div>
+                    )}
+                  </div>
+                )}
+
+              </div>
+
+              {/* FOOTER DO MODAL */}
+              <div className={styles.editModalFooter}>
+                <button className={styles.cancelBtn} onClick={() => this.setState({ documentoSelecionado: null, activeModalTab: 'metadados', documentHistory: [] })}>Cancelar</button>
+                {this.state.activeModalTab === 'metadados' && (
+                  <button className={styles.saveBtn} onClick={this.salvarEdicaoDocumento} disabled={this.state.salvandoDocumento}>
+                    {this.state.salvandoDocumento ? 'Salvando...' : 'Salvar Alterações'}
+                  </button>
+                )}
+              </div>
+
             </div>
           </div>
         )}
@@ -780,14 +936,86 @@ private formatDate = (dateStr?: string): string => {
             <div className={(styles as any).iframeModalHeader}>
               <button className={(styles as any).closeIframeBtn} onClick={() => this.setState({ iframeDocumentoUrl: null })}>✕ Fechar Documento</button>
             </div>
-            <div 
-              className={(styles as any).iframeContainer} 
+            <div
+              className={(styles as any).iframeContainer}
               onClick={(e) => e.stopPropagation()}
               onContextMenu={(e) => e.preventDefault()}
             >
               <iframe src={this.state.iframeDocumentoUrl} title="Document Viewer" />
             </div>
           </div>
+        )}
+
+        {/* =========================================================
+        PASSO 1: MODAL DE ESCOLHA DO TIPO DE DOCUMENTO
+    ========================================================= */}
+        {this.state.isCreateModalOpen && (
+          <div className={styles.editModalBackdrop}>
+            <div className={styles.editModal}>
+
+              <div className={styles.editModalHeader}>
+                <h2>Criar Novo Documento</h2>
+                <button onClick={() => this.setState({ isCreateModalOpen: false, selectedNewDocType: '' })} className={styles.closeModal}>✕</button>
+              </div>
+
+              <div className={styles.editModalBody}>
+                <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '20px' }}>
+                  Selecione o tipo de documento que deseja criar.
+                </p>
+                <div className={styles.formGroup}>
+                  <label>Tipo de Processo/Documento</label>
+                  <select
+                    value={this.state.selectedNewDocType}
+                    onChange={(e) => this.setState({ selectedNewDocType: e.target.value })}
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="MAPEAMENTO DE PROCESSO">Mapeamento de Processo</option>
+                    <option value="PROCEDIMENTO">Procedimento</option>
+                    <option value="PROCEDIMENTO OPERACIONAL PADRÃO">Procedimento Operacional Padrão (POP)</option>
+                    <option value="INSTRUÇÃO DE TRABALHO">Instrução de Trabalho</option>
+                    <option value="FORMULÁRIO">Formulário</option>
+                    <option value="MANUAL">Manual</option>
+                    <option value="POLÍTICA">Política</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.editModalFooter}>
+                <button className={styles.cancelBtn} onClick={() => this.setState({ isCreateModalOpen: false, selectedNewDocType: '' })}>Cancelar</button>
+                <button
+                  className={styles.saveBtn}
+                  disabled={!this.state.selectedNewDocType}
+                  onClick={() => {
+                    // Removemos o redirecionamento antigo do Forms.
+                    // Agora apenas fechamos este modal, mantendo o tipo selecionado no estado.
+                    this.setState({ isCreateModalOpen: false });
+                  }}
+                  style={{ opacity: !this.state.selectedNewDocType ? 0.5 : 1, cursor: !this.state.selectedNewDocType ? 'not-allowed' : 'pointer' }}
+                >
+                  Continuar para o Formulário ➔
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================
+        PASSO 2: O SEU NOVO COMPONENTE DE FORMULÁRIO ISOLADO
+    ========================================================= */}
+        {!this.state.isCreateModalOpen && this.state.selectedNewDocType && (
+          <FormularioSGQ
+            tipoDocumento={this.state.selectedNewDocType}
+            usuarioEmail={this.props.context.pageContext.user.email}
+
+            spContext={this.props.context}
+
+            onFechar={() => this.setState({ selectedNewDocType: '' })}
+            onSucesso={() => {
+              this.setState({ selectedNewDocType: '' });
+              this.buscarTodosDocumentos();
+            }}
+          />
         )}
       </div>
     );

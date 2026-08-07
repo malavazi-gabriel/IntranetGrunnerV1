@@ -17,21 +17,21 @@ const atalhosUrl = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner
 interface IEquipamentoCarrinho {
   tipo: string; fabricante: string; modelo: string; serie: string;
   imei: string; patrimonioFin: string; especificacoes: string;
-  observacoes: string; codigoGerado?: string; 
+  observacoes: string; codigoGerado?: string;
 }
 
 interface IPainelState {
-  abaAtiva: 'consulta' | 'cadastro' | 'acessos'; 
+  abaAtiva: 'consulta' | 'cadastro' | 'acessos';
   isMobileMenuOpen: boolean;
   isMenuTIOpen: boolean;
   isSalvando: boolean;
-  
-  novoNome: string; 
-  novoEmailResponsavel: string; 
+
+  novoNome: string;
+  novoEmailResponsavel: string;
   novoDepartamento: string;
   novoTipo: string; novoFabricante: string; novoModelo: string;
   novoSerie: string; novoImei: string; novoPatrimonioFin: string;
-  novaEspecificacao: string; novaObservacao: string; 
+  novaEspecificacao: string; novaObservacao: string;
   carrinho: IEquipamentoCarrinho[];
 
   usuariosSugeridos: any[];
@@ -79,9 +79,9 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
   constructor(props: IPainelAtivosGrunnerProps) {
     super(props);
     this._service = new SharePointService(this.props.context);
-    this.state = { 
-      abaAtiva: 'consulta', 
-      isMobileMenuOpen: false, 
+    this.state = {
+      abaAtiva: 'consulta',
+      isMobileMenuOpen: false,
       isMenuTIOpen: false,
       isSalvando: false,
       novoNome: '', novoEmailResponsavel: '', novoDepartamento: '', novoTipo: 'Notebook', novoFabricante: '', novoModelo: '', novoSerie: '', novoImei: '', novoPatrimonioFin: '', novaEspecificacao: '', novaObservacao: '', carrinho: [],
@@ -90,7 +90,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
       ativoSendoEditado: null, editNome: '', editEmail: '', editDepartamento: '', editTipo: '', editFabricante: '', editModelo: '', editSerie: '', editImei: '', editPatrimonioFin: '', editEspecificacao: '', editObservacao: '',
       itensSelecionados: [], mostrarModalTransferenciaLote: false,
       filtroTipo: '', filtroDepartamento: '', ativoAuditoria: null, dadosAuditoria: [], carregandoAuditoria: false,
-      
+
       verificandoAcessos: true,
       isTI: false,
       isVisualizador: false,
@@ -123,23 +123,23 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
       this.footerObserver = new MutationObserver(() => this.applyChromeFixes());
       if (document.body) this.footerObserver.observe(document.body, { childList: true, subtree: true });
     }
-    
+
     this.inicializarAplicacao();
   }
 
   private abrirModalFormulario = (url: string, titulo: string, e: React.MouseEvent) => {
-    e.preventDefault(); 
-    this.setState({ 
-      isIframeModalOpen: true, 
-      iframeUrl: url, 
-      iframeTitle: titulo 
+    e.preventDefault();
+    this.setState({
+      isIframeModalOpen: true,
+      iframeUrl: url,
+      iframeTitle: titulo
     });
   }
 
   private inicializarAplicacao = async () => {
     const userEmailLogado = this.props.context.pageContext.user.email;
     const acessos = await this._service.verificarAcessoUsuario(userEmailLogado);
-    
+
     this.setState({
       isTI: acessos.isTI,
       isVisualizador: acessos.isVisualizador,
@@ -213,15 +213,15 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
       const tip = ativo.tipo ? ativo.tipo.toLowerCase() : "";
 
       const passaBusca = res.includes(termo) || pat.includes(termo) || ser.includes(termo) || mod.includes(termo);
-      
+
       let passaTipo = true;
       if (this.state.filtroTipo) {
-        const filtroNormalizado = this.state.filtroTipo.split('/')[0].trim().toLowerCase(); 
+        const filtroNormalizado = this.state.filtroTipo.split('/')[0].trim().toLowerCase();
         passaTipo = tip.includes(filtroNormalizado);
       }
 
       const passaDepto = this.state.filtroDepartamento ? ativo.departamento === this.state.filtroDepartamento : true;
-      
+
       return passaBusca && passaTipo && passaDepto;
     });
   }
@@ -247,8 +247,8 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
     const worksheet = XLSX.utils.json_to_sheet(dadosMapeados);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Inventário Grunnertec");
-    
-    const wscols = [{wch:15}, {wch:15}, {wch:30}, {wch:20}, {wch:15}, {wch:15}, {wch:25}, {wch:25}, {wch:35}, {wch:30}, {wch:15}];
+
+    const wscols = [{ wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 35 }, { wch: 30 }, { wch: 15 }];
     worksheet['!cols'] = wscols;
 
     XLSX.writeFile(workbook, `Inventario_Grunnertec_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
@@ -277,9 +277,9 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
   private salvarTransferenciaLote = async (gerarTermo: boolean) => {
     if (!this.state.editNome) { alert("O Responsável não pode estar vazio."); return; }
-    
+
     this.setState({ isSalvando: true });
-    
+
     try {
       const ativosSelecionadosCompletos = this.state.ativosSalvos.filter(a => this.state.itensSelecionados.includes(a.id));
 
@@ -289,30 +289,30 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
       if (gerarTermo) {
         const itensParaWord = ativosSelecionadosCompletos.filter(a => a.tipo !== 'Periférico');
-        
+
         if (itensParaWord.length > 0) {
           const content = await this._service.getTemplateTermo();
           const zip = new PizZip(content);
           const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
           const equipamentosParaWord = itensParaWord.map((item, index) => {
-            const letraItem = String.fromCharCode(97 + index); 
+            const letraItem = String.fromCharCode(97 + index);
             return {
-                letra: letraItem,
-                quantidade_tipo: `1 (um) ${item.tipo}`,
-                fabricante_modelo: `${item.fabricante} ${item.modelo}`,
-                especificacoes: item.especificacoes ? ` - ${item.especificacoes}` : '',
-                numero_serie: item.serie || item.imei || "N/A",
-                patrimonio: item.patrimonio, 
-                patrimonio_fin: item.patrimonioFin || "N/A",
-                observacoes: this.state.editObservacao ? this.state.editObservacao : "Sem observações adicionais"
+              letra: letraItem,
+              quantidade_tipo: `1 (um) ${item.tipo}`,
+              fabricante_modelo: `${item.fabricante} ${item.modelo}`,
+              especificacoes: item.especificacoes ? ` - ${item.especificacoes}` : '',
+              numero_serie: item.serie || item.imei || "N/A",
+              patrimonio: item.patrimonio,
+              patrimonio_fin: item.patrimonioFin || "N/A",
+              observacoes: this.state.editObservacao ? this.state.editObservacao : "Sem observações adicionais"
             };
           });
 
           doc.render({ nome: this.state.editNome, mês: new Date().toLocaleDateString('pt-BR', { month: 'long' }), equipamentos: equipamentosParaWord });
           const blob = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
           saveAs(blob, `Termo_Transferencia_${this.state.editNome.split(' ')[0]}.docx`);
-          
+
           alert(`Sucesso! ${ativosSelecionadosCompletos.length} iten(s) transferido(s) e Termo gerado com os equipamentos principais!`);
         } else {
           alert(`Transferência guardada! Nenhum Termo foi gerado, pois selecionou apenas periféricos.`);
@@ -322,7 +322,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
       }
 
       this.setState({ mostrarModalTransferenciaLote: false, itensSelecionados: [], isSalvando: false });
-      this.carregarAtivosParaConsulta(); 
+      this.carregarAtivosParaConsulta();
     } catch (error) {
       console.error(error);
       alert("Erro ao transferir equipamentos.");
@@ -342,7 +342,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
   private salvarEdicaoIndividual = async (gerarTermo: boolean) => {
     if (!this.state.editNome) { alert("O Responsável não pode estar vazio."); return; }
     this.setState({ isSalvando: true });
-    
+
     const dadosAtualizados = {
       nome: this.state.editNome, departamento: this.state.editDepartamento, tipo: this.state.editTipo,
       fabricante: this.state.editFabricante, modelo: this.state.editModelo, serie: this.state.editSerie,
@@ -351,29 +351,29 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
     try {
       await this._service.atualizarAtivo(this.state.ativoSendoEditado.id, dadosAtualizados, this.state.editEmail);
-      
+
       if (gerarTermo && this.state.editTipo !== 'Periférico') {
         const content = await this._service.getTemplateTermo();
         const zip = new PizZip(content);
         const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
         const equipamentosParaWord = [{
-            letra: 'a', quantidade_tipo: `1 (um) ${this.state.editTipo}`, fabricante_modelo: `${this.state.editFabricante} ${this.state.editModelo}`,
-            especificacoes: this.state.editEspecificacao ? ` - ${this.state.editEspecificacao}` : '', numero_serie: this.state.editSerie || this.state.editImei || "N/A",
-            patrimonio: this.state.ativoSendoEditado.patrimonio, patrimonio_fin: this.state.editPatrimonioFin || "N/A", observacoes: this.state.editObservacao ? this.state.editObservacao : "Sem observações adicionais"
+          letra: 'a', quantidade_tipo: `1 (um) ${this.state.editTipo}`, fabricante_modelo: `${this.state.editFabricante} ${this.state.editModelo}`,
+          especificacoes: this.state.editEspecificacao ? ` - ${this.state.editEspecificacao}` : '', numero_serie: this.state.editSerie || this.state.editImei || "N/A",
+          patrimonio: this.state.ativoSendoEditado.patrimonio, patrimonio_fin: this.state.editPatrimonioFin || "N/A", observacoes: this.state.editObservacao ? this.state.editObservacao : "Sem observações adicionais"
         }];
 
         doc.render({ nome: this.state.editNome, mês: new Date().toLocaleDateString('pt-BR', { month: 'long' }), equipamentos: equipamentosParaWord });
         const blob = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
         saveAs(blob, `Termo_Responsabilidade_${this.state.editNome.split(' ')[0]}.docx`);
-        
+
         alert("Transferência guardada e Termo gerado com sucesso!");
       } else {
         alert("Equipamento atualizado com sucesso!");
       }
 
       this.setState({ ativoSendoEditado: null, isSalvando: false });
-      this.carregarAtivosParaConsulta(); 
+      this.carregarAtivosParaConsulta();
     } catch (error) {
       console.error(error); alert("Erro ao atualizar o equipamento."); this.setState({ isSalvando: false });
     }
@@ -400,9 +400,9 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
       const carrinhoProcessado = [...this.state.carrinho];
       for (let i = 0; i < carrinhoProcessado.length; i++) {
         const resultado = await this._service.salvarNovoAtivo(carrinhoProcessado[i], this.state.novoNome, this.state.novoDepartamento, this.state.novoEmailResponsavel);
-        carrinhoProcessado[i].codigoGerado = resultado.codigo; 
+        carrinhoProcessado[i].codigoGerado = resultado.codigo;
       }
-      
+
       if (gerarTermo) {
         const itensParaWord = carrinhoProcessado.filter(item => item.tipo !== 'Periférico');
 
@@ -412,18 +412,18 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
           const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
           const equipamentosParaWord = itensParaWord.map((item, index) => {
-            const letraItem = String.fromCharCode(97 + index); 
+            const letraItem = String.fromCharCode(97 + index);
             return {
-                letra: letraItem, quantidade_tipo: `1 (um) ${item.tipo}`, fabricante_modelo: `${item.fabricante} ${item.modelo}`,
-                especificacoes: item.especificacoes ? ` - ${item.especificacoes}` : '', numero_serie: item.serie || item.imei || "N/A",
-                patrimonio: item.codigoGerado, patrimonio_fin: item.patrimonioFin || "N/A", observacoes: item.observacoes ? item.observacoes : "Sem observações adicionais"
+              letra: letraItem, quantidade_tipo: `1 (um) ${item.tipo}`, fabricante_modelo: `${item.fabricante} ${item.modelo}`,
+              especificacoes: item.especificacoes ? ` - ${item.especificacoes}` : '', numero_serie: item.serie || item.imei || "N/A",
+              patrimonio: item.codigoGerado, patrimonio_fin: item.patrimonioFin || "N/A", observacoes: item.observacoes ? item.observacoes : "Sem observações adicionais"
             };
           });
 
           doc.render({ nome: this.state.novoNome, mês: new Date().toLocaleDateString('pt-BR', { month: 'long' }), equipamentos: equipamentosParaWord });
           const blob = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
           saveAs(blob, `Termo_Responsabilidade_${this.state.novoNome.split(' ')[0]}.docx`);
-          
+
           alert(`Sucesso! ${carrinhoProcessado.length} equipamento(s) guardado(s) e Termo gerado!`);
         } else {
           alert(`Sucesso! ${carrinhoProcessado.length} equipamento(s) guardado(s). "Sucesso! Nenhum termo foi gerado (apenas Periféricos selecionados).`);
@@ -431,7 +431,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
       } else {
         alert(`Sucesso! ${carrinhoProcessado.length} equipamento(s) cadastrado(s) diretamente no sistema.`);
       }
-      
+
       this.setState({ isSalvando: false, carrinho: [], novoNome: '', novoEmailResponsavel: '', novoDepartamento: '', abaAtiva: 'consulta' });
       this.carregarAtivosParaConsulta();
     } catch (error) {
@@ -463,15 +463,15 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
     const nomeUsuario = this.props.userDisplayName?.split(' ')[0] || 'Colaborador';
     const dataAtual = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
-    const ativosParaExibir = isAdminView 
-      ? this.getAtivosFiltrados() 
+    const ativosParaExibir = isAdminView
+      ? this.getAtivosFiltrados()
       : this.state.ativosSalvos.filter(a => a.emailResponsavel && a.emailResponsavel.toLowerCase() === userEmailLogado);
-      
+
     // DASHBOARD MATEMÁTICA
     const totalEquipamentos = this.state.ativosSalvos.length;
     const qtdEstoque = this.state.ativosSalvos.filter(a => a.responsavel && a.responsavel.toLowerCase().includes('estoque')).length;
     const qtdManutencao = this.state.ativosSalvos.filter(a => a.responsavel && (a.responsavel.toLowerCase().includes('manuten') || a.responsavel.toLowerCase().includes('conserto') || a.responsavel.toLowerCase().includes('bancada'))).length;
-    
+
     const qtdAtivos = totalEquipamentos - qtdEstoque - qtdManutencao;
 
     const qtdNotebooks = this.state.ativosSalvos.filter(a => a.tipo && a.tipo.toLowerCase().includes('notebook')).length;
@@ -491,7 +491,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
           <button className={styles.hamburgerBtn} onClick={() => this.setState({ isMobileMenuOpen: true })}>☰ Menu grunnertec</button>
         </div>
 
-<aside className={`${styles.sidebar} ${this.state.isMobileMenuOpen ? styles.open : ''}`}>
+        <aside className={`${styles.sidebar} ${this.state.isMobileMenuOpen ? styles.open : ''}`}>
           <div className={styles.logoArea}>
             <img src={logoGrunner} alt="Logo Semente" className={styles.logoSemente} />
             <h2>Intranet Grunner</h2>
@@ -502,13 +502,13 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
             <a href={homeUrl}>🏠 Painel Inicial</a>
             <a href={atalhosUrl}>🖥️ Central de Atalhos</a>
           </div>
-          
+
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
-            
+
             {/* BOTÃO PRINCIPAL DE TI (ACORDEÃO) */}
-            <a 
-              href="#" 
+            <a
+              href="#"
               className={`${styles.menuToggle} ${this.state.isMenuTIOpen ? styles.active : ''}`}
               onClick={(e) => { e.preventDefault(); this.setState({ isMenuTIOpen: !this.state.isMenuTIOpen }); }}
             >
@@ -541,28 +541,28 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
         <div className={styles.contentArea}>
           <header className={styles.header}>
-          <MenuChamados 
-             departamento="TI" 
-             emailUsuario={this.props.context.pageContext.user.email} 
+            <MenuChamados
+              departamento="TI"
+              emailUsuario={this.props.context.pageContext.user.email}
+            />
+            <div className={styles.headerLeft}>
+              <img
+                src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=L&accountname=${userEmailLogado}`}
+                className={styles.userAvatar}
+                alt="Perfil"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
-                      <div className={styles.headerLeft}>
-                        <img 
-                          src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=L&accountname=${userEmailLogado}`} 
-                          className={styles.userAvatar} 
-                          alt="Perfil"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                        <div className={styles.headerText}>
-                          <h1>{isAdminView ? 'Painel de Ativos' : 'Meus Equipamentos'}, {nomeUsuario}!</h1>
-                          <p>{isAdminView ? 'Gestão centralizada do inventário de TI Grunner.' : 'Confira os equipamentos registrados sob sua responsabilidade.'}</p>
-                          <span className={styles.dateBadge}>📅 {dataAtual.charAt(0).toUpperCase() + dataAtual.slice(1)}</span>
-                        </div>
-                      </div>
-                      <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
-              </header>
+              <div className={styles.headerText}>
+                <h1>{isAdminView ? 'Painel de Ativos' : 'Meus Equipamentos'}, {nomeUsuario}!</h1>
+                <p>{isAdminView ? 'Gestão centralizada do inventário de TI Grunner.' : 'Confira os equipamentos registrados sob sua responsabilidade.'}</p>
+                <span className={styles.dateBadge}>📅 {dataAtual.charAt(0).toUpperCase() + dataAtual.slice(1)}</span>
+              </div>
+            </div>
+            <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
+          </header>
           <main className={styles.grid}>
             <div className={styles.card}>
-              
+
               {isAdminView && (
                 <div className={styles.tabsContainer}>
                   <button className={this.state.abaAtiva === 'consulta' ? styles.tabActive : styles.tab} onClick={this.carregarAtivosParaConsulta}>🔍 Consulta de Ativos</button>
@@ -624,13 +624,13 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
               {this.state.abaAtiva === 'cadastro' && isTI && (
                 <div>
-                   <div style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', marginBottom: '25px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', marginBottom: '25px', border: '1px solid #e2e8f0' }}>
                     <h3 style={{ marginTop: 0, fontSize: '16px', color: '#2E5C31' }}>👤 Dados do Responsável</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                      
+
                       <div className={styles.inputGroup} style={{ position: 'relative' }}>
                         <label>Responsável (Busca no AD)</label>
-                        <input 
+                        <input
                           type="text" value={this.state.novoNome} placeholder="Digite o nome..." autoComplete="off"
                           onChange={async (e) => {
                             const texto = e.target.value;
@@ -655,13 +655,13 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                                   }
                                 }}
                               >
-                                <strong>{user.nome}</strong> <br/><span style={{ fontSize: '11px', color: '#64748b' }}>{user.email}</span>
+                                <strong>{user.nome}</strong> <br /><span style={{ fontSize: '11px', color: '#64748b' }}>{user.email}</span>
                               </li>
                             ))}
                           </ul>
                         )}
                       </div>
-                      
+
                       <div className={styles.inputGroup}><label>Departamento</label><input value={this.state.novoDepartamento} onChange={(e) => this.setState({ novoDepartamento: e.target.value })} placeholder="Auto-preenchido ou digite manualmente" /></div>
                     </div>
                   </div>
@@ -676,7 +676,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                     <div className={styles.inputGroup}><label>Patrimônio Financeiro</label><input value={this.state.novoPatrimonioFin} onChange={(e) => this.setState({ novoPatrimonioFin: e.target.value })} placeholder="Cód. Financeiro (opcional)" /></div>
                     <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}><label>Especificações Técnicas</label><input value={this.state.novaEspecificacao} onChange={(e) => this.setState({ novaEspecificacao: e.target.value })} placeholder="Ex: i5, 8GB RAM, 256GB SSD" /></div>
                     <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}><label>Observações / Acessórios Adicionais</label><input value={this.state.novaObservacao} onChange={(e) => this.setState({ novaObservacao: e.target.value })} placeholder="Ex: Acompanha carregador e mouse. Tela riscada." /></div>
-                    
+
                     <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-start' }}>
                       <button onClick={this.adicionarAoCarrinho} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#334155' }}>➕ Adicionar este equipamento à lista</button>
                     </div>
@@ -697,11 +697,11 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                           </div>
                         ))}
                       </div>
-                      
+
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px' }}>
-                        <button 
-                          onClick={() => this.salvarEGerarTermo(false)} 
-                          disabled={this.state.isSalvando} 
+                        <button
+                          onClick={() => this.salvarEGerarTermo(false)}
+                          disabled={this.state.isSalvando}
                           style={{ padding: '12px 25px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#475569', transition: 'all 0.2s' }}
                           onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
@@ -709,9 +709,9 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                           {this.state.isSalvando ? 'Aguarde...' : `💾 Apenas Salvar no Banco (${this.state.carrinho.length})`}
                         </button>
 
-                        <button 
-                          className={styles.btnPrimary} 
-                          disabled={this.state.isSalvando} 
+                        <button
+                          className={styles.btnPrimary}
+                          disabled={this.state.isSalvando}
                           onClick={() => this.salvarEGerarTermo(true)}
                         >
                           {this.state.isSalvando ? '🚀 Processando...' : `📄 Salvar Tudo e Gerar Termo (${this.state.carrinho.length})`}
@@ -724,28 +724,40 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
               {this.state.abaAtiva === 'consulta' && (
                 <div>
-                  
+
                   {/* DASHBOARD DIVIDIDO EM DUAS LINHAS (Apenas para TI) */}
                   {isTI && this.state.ativosSalvos.length > 0 && (
                     <div style={{ marginBottom: '30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      
+
                       {/* LINHA 1: SAÚDE DO INVENTÁRIO */}
                       <div>
-                        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📊 Saúde do Inventário</h3>
+                        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📊 Saúde do Inventário (Clique para filtrar)</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px' }}>
-                          <div style={{ background: '#f8fafc', padding: '15px 20px', borderRadius: '12px', borderLeft: '4px solid #3b82f6', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
-                            <h4 style={{ margin: 0, color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Total Geral</h4>
+                          <div
+                            className={styles.clickableCard}
+                            onClick={() => this.setState({ filtroTipo: '', termoBusca: '', filtroDepartamento: '' })}
+                            style={{ background: '#f8fafc', padding: '15px 20px', borderRadius: '12px', borderLeft: '4px solid #3b82f6', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
+                            <h4 style={{ margin: 0, color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Limpar Filtros</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '28px', fontWeight: 'bold', color: '#0f172a' }}>{totalEquipamentos}</p>
                           </div>
+
                           <div style={{ background: '#f8fafc', padding: '15px 20px', borderRadius: '12px', borderLeft: '4px solid #10b981', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>✅ Equipamentos em Uso</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '28px', fontWeight: 'bold', color: '#0f172a' }}>{qtdAtivos}</p>
                           </div>
-                          <div style={{ background: '#f8fafc', padding: '15px 20px', borderRadius: '12px', borderLeft: '4px solid #f59e0b', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
+
+                          <div
+                            className={`${styles.clickableCard} ${this.state.termoBusca === 'Estoque' ? styles.metricActive : ''}`}
+                            onClick={() => this.setState({ termoBusca: this.state.termoBusca === 'Estoque' ? '' : 'Estoque' })}
+                            style={{ background: '#f8fafc', padding: '15px 20px', borderRadius: '12px', borderLeft: '4px solid #f59e0b', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🏢 No Estoque</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '28px', fontWeight: 'bold', color: '#0f172a' }}>{qtdEstoque}</p>
                           </div>
-                          <div style={{ background: '#f8fafc', padding: '15px 20px', borderRadius: '12px', borderLeft: '4px solid #ef4444', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
+
+                          <div
+                            className={`${styles.clickableCard} ${this.state.termoBusca === 'Manutenção' ? styles.metricActive : ''}`}
+                            onClick={() => this.setState({ termoBusca: this.state.termoBusca === 'Manutenção' ? '' : 'Manutenção' })}
+                            style={{ background: '#f8fafc', padding: '15px 20px', borderRadius: '12px', borderLeft: '4px solid #ef4444', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🛠️ Em Manutenção</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '28px', fontWeight: 'bold', color: '#0f172a' }}>{qtdManutencao}</p>
                           </div>
@@ -754,34 +766,57 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
                       {/* LINHA 2: PRINCIPAIS CATEGORIAS */}
                       <div>
-                        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>💻 Equipamentos</h3>
+                        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>💻 Equipamentos (Clique para filtrar)</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px' }}>
-                          <div style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                          <div
+                            className={`${styles.clickableCard} ${this.state.filtroTipo === 'Notebook' ? styles.metricActive : ''}`}
+                            onClick={() => this.setState({ filtroTipo: this.state.filtroTipo === 'Notebook' ? '' : 'Notebook' })}
+                            style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>💻 Notebooks</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '24px', fontWeight: 'bold', color: '#334155' }}>{qtdNotebooks}</p>
                           </div>
-                          <div style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+
+                          <div
+                            className={`${styles.clickableCard} ${this.state.filtroTipo === 'Desktop' ? styles.metricActive : ''}`}
+                            onClick={() => this.setState({ filtroTipo: this.state.filtroTipo === 'Desktop' ? '' : 'Desktop' })}
+                            style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>🖥️ Desktops</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '24px', fontWeight: 'bold', color: '#334155' }}>{qtdDesktops}</p>
                           </div>
-                          <div style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+
+                          <div
+                            className={`${styles.clickableCard} ${this.state.filtroTipo === 'Celular / Smartphone' ? styles.metricActive : ''}`}
+                            onClick={() => this.setState({ filtroTipo: this.state.filtroTipo === 'Celular / Smartphone' ? '' : 'Celular / Smartphone' })}
+                            style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>📱 Celulares</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '24px', fontWeight: 'bold', color: '#334155' }}>{qtdCelulares}</p>
                           </div>
-                          <div style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+
+                          <div
+                            className={`${styles.clickableCard} ${this.state.filtroTipo === 'Tablet' ? styles.metricActive : ''}`}
+                            onClick={() => this.setState({ filtroTipo: this.state.filtroTipo === 'Tablet' ? '' : 'Tablet' })}
+                            style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>📋 Tablets</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '24px', fontWeight: 'bold', color: '#334155' }}>{qtdTablets}</p>
                           </div>
-                          <div style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+
+                          <div
+                            className={`${styles.clickableCard} ${this.state.filtroTipo === 'Monitor' ? styles.metricActive : ''}`}
+                            onClick={() => this.setState({ filtroTipo: this.state.filtroTipo === 'Monitor' ? '' : 'Monitor' })}
+                            style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>📺 Monitores</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '24px', fontWeight: 'bold', color: '#334155' }}>{qtdMonitores}</p>
                           </div>
-                          <div style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+
+                          <div
+                            className={`${styles.clickableCard} ${this.state.filtroTipo === 'Periférico' ? styles.metricActive : ''}`}
+                            onClick={() => this.setState({ filtroTipo: this.state.filtroTipo === 'Periférico' ? '' : 'Periférico' })}
+                            style={{ background: '#ffffff', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                             <h4 style={{ margin: 0, color: '#64748b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>🖱️ Periféricos</h4>
                             <p style={{ margin: '5px 0 0 0', fontSize: '24px', fontWeight: 'bold', color: '#334155' }}>{qtdPerifericos}</p>
                           </div>
-                          
-                          {/* NOVA CAIXINHA: OUTROS (Só aparece se tiver algum perdido) */}
+
+                          {/* NOVA CAIXINHA: OUTROS */}
                           {qtdOutros > 0 && (
                             <div style={{ background: '#fffbeb', padding: '15px', borderRadius: '12px', border: '1px solid #fde68a', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                               <h4 style={{ margin: 0, color: '#92400e', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>❓ Outros / Sem Tipo</h4>
@@ -798,8 +833,8 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                   {isTI && this.state.itensSelecionados.length > 0 && (
                     <div style={{ background: '#e0f2fe', border: '1px solid #7dd3fc', padding: '15px 20px', borderRadius: '10px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 15px rgba(2, 132, 199, 0.1)' }}>
                       <span style={{ fontWeight: 'bold', color: '#0369a1', fontSize: '15px' }}>📦 {this.state.itensSelecionados.length} equipamento(s) selecionado(s) para transferência</span>
-                      <button 
-                        onClick={() => this.setState({ mostrarModalTransferenciaLote: true, editNome: '', editEmail: '', editDepartamento: '', editObservacao: '' })} 
+                      <button
+                        onClick={() => this.setState({ mostrarModalTransferenciaLote: true, editNome: '', editEmail: '', editDepartamento: '', editObservacao: '' })}
                         style={{ background: '#0284c7', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)', transition: 'background 0.2s' }}
                         onMouseEnter={(e) => e.currentTarget.style.background = '#0369a1'}
                         onMouseLeave={(e) => e.currentTarget.style.background = '#0284c7'}
@@ -812,11 +847,11 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                   {/* BARRA DE FILTROS AVANÇADOS (TI e Visualizadores) */}
                   {isAdminView && (
                     <div style={{ marginBottom: '25px', display: 'flex', gap: '10px', flexWrap: 'wrap', background: '#f1f5f9', padding: '15px', borderRadius: '12px', alignItems: 'center' }}>
-                      <input 
+                      <input
                         type="text" placeholder="Pesquise (Nome, TI, Série...)" value={this.state.termoBusca} onChange={(e) => this.setState({ termoBusca: e.target.value })}
                         style={{ flex: '1 1 250px', padding: '12px 15px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px' }}
                       />
-                      
+
                       <select value={this.state.filtroTipo} onChange={(e) => this.setState({ filtroTipo: e.target.value })} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', background: 'white', flex: '1 1 150px' }}>
                         <option value="">Todos os Tipos</option>
                         <option value="Notebook">Notebooks</option>
@@ -846,14 +881,14 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                       {ativosParaExibir.length > 0 ? (
                         ativosParaExibir.map(ativo => (
                           <div key={ativo.id} style={{ background: this.state.itensSelecionados.includes(ativo.id) ? '#f0fdf4' : '#ffffff', border: '1px solid', borderColor: this.state.itensSelecionados.includes(ativo.id) ? '#86efac' : '#e2e8f0', borderRadius: '12px', padding: '20px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', transition: 'all 0.2s', cursor: 'default' }}>
-                            
+
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 {isTI && (
-                                  <input 
-                                    type="checkbox" 
-                                    checked={this.state.itensSelecionados.includes(ativo.id)} 
-                                    onChange={() => this.toggleSelecao(ativo.id)} 
+                                  <input
+                                    type="checkbox"
+                                    checked={this.state.itensSelecionados.includes(ativo.id)}
+                                    onChange={() => this.toggleSelecao(ativo.id)}
                                     style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#2E5C31' }}
                                   />
                                 )}
@@ -883,8 +918,8 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px', opacity: ativo.responsavel.includes('Estoque') ? 0.6 : 1 }}>
                               {ativo.emailResponsavel ? (
-                                <img 
-                                  src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${ativo.emailResponsavel}`} 
+                                <img
+                                  src={`${this.props.context.pageContext.web.absoluteUrl}/_layouts/15/userphoto.aspx?size=M&accountname=${ativo.emailResponsavel}`}
                                   alt={ativo.responsavel}
                                   style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #e2e8f0' }}
                                   onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling && ((e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex'); }}
@@ -898,19 +933,19 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                                 <p style={{ margin: '0', color: '#64748b', fontSize: '12px' }}>🏢 {ativo.departamento || "Sem departamento"}</p>
                               </div>
                             </div>
-                            
-                            <hr style={{ border: '0', borderTop: '1px dashed #e2e8f0', margin: '15px 0' }}/>
+
+                            <hr style={{ border: '0', borderTop: '1px dashed #e2e8f0', margin: '15px 0' }} />
 
                             <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.6' }}>
                               <p style={{ margin: '0' }}><strong>Equipamento:</strong> {ativo.tipo} {ativo.fabricante} {ativo.modelo}</p>
                               <p style={{ margin: '0' }}><strong>SN/IMEI:</strong> {ativo.serie}</p>
                               {ativo.especificacoes && <p style={{ margin: '0' }}><strong>Spec:</strong> {ativo.especificacoes}</p>}
                               <p style={{ margin: '0', color: '#94a3b8', fontSize: '11px', marginTop: '8px' }}>Cadastrado em {ativo.dataCriacao}</p>
-                              
+
                               {ativo.observacoes && ativo.observacoes !== "Sem observações adicionais" && ativo.observacoes !== "Sem observações" && (
-                                 <div style={{ marginTop: '12px', padding: '10px', background: '#fffbeb', borderLeft: '3px solid #f59e0b', borderRadius: '4px', color: '#92400e', fontSize: '12px', fontStyle: 'italic' }}>
-                                   ⚠️ {ativo.observacoes}
-                                 </div>
+                                <div style={{ marginTop: '12px', padding: '10px', background: '#fffbeb', borderLeft: '3px solid #f59e0b', borderRadius: '4px', color: '#92400e', fontSize: '12px', fontStyle: 'italic' }}>
+                                  ⚠️ {ativo.observacoes}
+                                </div>
                               )}
                             </div>
 
@@ -964,14 +999,14 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
         {this.state.ativoSendoEditado && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(3px)' }}>
             <div style={{ background: 'white', padding: '35px', borderRadius: '12px', width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-              
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', borderBottom: '1px solid #e2e8f0', paddingBottom: '15px' }}>
                 <h2 style={{ margin: 0, color: '#2E5C31', fontSize: '20px' }}>✏️ Editando Transferência: {this.state.ativoSendoEditado.patrimonio}</h2>
                 <button onClick={this.fecharModal} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>❌</button>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                
+
                 {/* 1. RESPONSÁVEL (Ocupa as duas colunas - span 2) */}
                 <div className={styles.inputGroup} style={{ position: 'relative', gridColumn: 'span 2' }}>
                   <label style={{ color: '#2E5C31', fontWeight: '900', fontSize: '14px' }}>👤 Novo Responsável / Status (Busca ou clique nas tags)</label>
@@ -983,7 +1018,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                         const resultados = await this._service.buscarUsuariosAD(texto);
                         this.setState({ usuariosSugeridos: resultados, mostrarSugestoes: true });
                       } else {
-                        this.setState({ mostrarSugestoes: false, editEmail: '' }); 
+                        this.setState({ mostrarSugestoes: false, editEmail: '' });
                       }
                     }}
                     style={{ border: '2px solid #A6CE39' }} /* Destaque sutil na borda */
@@ -1000,7 +1035,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                             }
                           }}
                         >
-                          <strong>{user.nome}</strong> <br/><span style={{ fontSize: '11px', color: '#64748b' }}>{user.email}</span>
+                          <strong>{user.nome}</strong> <br /><span style={{ fontSize: '11px', color: '#64748b' }}>{user.email}</span>
                         </li>
                       ))}
                     </ul>
@@ -1012,23 +1047,23 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                     <button type="button" onClick={() => this.setState({ editNome: 'Sucata / Descarte', editEmail: '', editDepartamento: 'TI', mostrarSugestoes: false })} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: '16px', fontSize: '12px', cursor: 'pointer', color: '#64748b', fontWeight: 'bold', transition: '0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>🗑️ Sucata/Descarte</button>
                   </div>
                 </div>
-                
+
                 {/* 2. DADOS ADMINISTRATIVOS */}
                 <div className={styles.inputGroup}><label>Departamento</label><input value={this.state.editDepartamento} onChange={(e) => this.setState({ editDepartamento: e.target.value })} /></div>
                 <div className={styles.inputGroup}><label>Patrimônio Fin.</label><input value={this.state.editPatrimonioFin} onChange={(e) => this.setState({ editPatrimonioFin: e.target.value })} /></div>
-                
+
                 {/* 3. CLASSIFICAÇÃO */}
                 <div className={styles.inputGroup}><label>Tipo de Ativo</label><select value={this.state.editTipo} onChange={(e) => this.setState({ editTipo: e.target.value })}><option value="Notebook">Notebook</option><option value="Desktop">Desktop</option><option value="Celular / Smartphone">Celular / Smartphone</option><option value="Tablet">Tablet</option><option value="Monitor">Monitor</option><option value="Periférico">Periférico</option></select></div>
                 <div className={styles.inputGroup}><label>Fabricante</label><input value={this.state.editFabricante} onChange={(e) => this.setState({ editFabricante: e.target.value })} /></div>
-                
+
                 {/* 4. ESPECIFICAÇÕES */}
                 <div className={styles.inputGroup}><label>Modelo Exato</label><input value={this.state.editModelo} onChange={(e) => this.setState({ editModelo: e.target.value })} /></div>
                 <div className={styles.inputGroup}><label>Especificações</label><input value={this.state.editEspecificacao} onChange={(e) => this.setState({ editEspecificacao: e.target.value })} /></div>
-                
+
                 {/* 5. IDENTIFICADORES (Com bloqueio inteligente do IMEI) */}
                 <div className={styles.inputGroup}><label>Número de Série</label><input value={this.state.editSerie} onChange={(e) => this.setState({ editSerie: e.target.value })} /></div>
                 <div className={styles.inputGroup}><label>IMEI (Celulares)</label><input value={this.state.editImei} onChange={(e) => this.setState({ editImei: e.target.value })} disabled={this.state.editTipo !== 'Celular / Smartphone'} placeholder={this.state.editTipo === 'Celular / Smartphone' ? "" : "Bloqueado"} /></div>
-                
+
                 {/* 6. OBSERVAÇÕES GERAIS */}
                 <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}>
                   <label>Observações / Status atual</label>
@@ -1038,7 +1073,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', marginTop: '30px' }}>
                 <button onClick={this.fecharModal} style={{ padding: '12px 25px', background: 'transparent', border: '1px solid #94a3b8', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#475569' }}>Cancelar</button>
-                
+
                 {(this.state.editTipo === 'Notebook' || this.state.editTipo === 'Celular / Smartphone') && (
                   <button onClick={() => this.salvarEdicaoIndividual(true)} disabled={this.state.isSalvando} style={{ padding: '12px 20px', background: '#0284c7', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: 'white', boxShadow: '0 4px 10px rgba(2, 132, 199, 0.3)' }}>
                     {this.state.isSalvando ? 'Aguarde...' : '📄 Salvar e Gerar Termo'}
@@ -1053,11 +1088,11 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
           </div>
         )}
 
-       {/* MODAL DE TRANSFERÊNCIA EM LOTE */}
+        {/* MODAL DE TRANSFERÊNCIA EM LOTE */}
         {this.state.mostrarModalTransferenciaLote && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(3px)' }}>
             <div style={{ background: 'white', padding: '35px', borderRadius: '12px', width: '90%', maxWidth: '600px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-              
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', borderBottom: '1px solid #e2e8f0', paddingBottom: '15px' }}>
                 <h2 style={{ margin: 0, color: '#0369a1', fontSize: '20px' }}>🔄 Transferir {this.state.itensSelecionados.length} Itens</h2>
                 <button onClick={this.fecharModal} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>❌</button>
@@ -1074,7 +1109,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                         const resultados = await this._service.buscarUsuariosAD(texto);
                         this.setState({ usuariosSugeridos: resultados, mostrarSugestoes: true });
                       } else {
-                        this.setState({ mostrarSugestoes: false, editEmail: '' }); 
+                        this.setState({ mostrarSugestoes: false, editEmail: '' });
                       }
                     }}
                   />
@@ -1090,15 +1125,15 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                             }
                           }}
                         >
-                          <strong>{user.nome}</strong> <br/><span style={{ fontSize: '11px', color: '#64748b' }}>{user.email}</span>
+                          <strong>{user.nome}</strong> <br /><span style={{ fontSize: '11px', color: '#64748b' }}>{user.email}</span>
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
-                
+
                 <div className={styles.inputGroup}><label>Departamento</label><input value={this.state.editDepartamento} onChange={(e) => this.setState({ editDepartamento: e.target.value })} /></div>
-                
+
                 <div className={styles.inputGroup}>
                   <label>Observação da Transferência (aplicada a todos os itens)</label>
                   <input value={this.state.editObservacao} onChange={(e) => this.setState({ editObservacao: e.target.value })} placeholder="Ex: Equipamentos entregues ao novo funcionário." />
@@ -1107,7 +1142,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', marginTop: '30px' }}>
                 <button onClick={this.fecharModal} style={{ padding: '12px 25px', background: 'transparent', border: '1px solid #94a3b8', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#475569' }}>Cancelar</button>
-                
+
                 <button onClick={() => this.salvarTransferenciaLote(true)} disabled={this.state.isSalvando} style={{ padding: '12px 20px', background: '#0284c7', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: 'white', boxShadow: '0 4px 10px rgba(2, 132, 199, 0.3)' }}>
                   {this.state.isSalvando ? 'Aguarde...' : '📄 Transferir e Gerar Termo'}
                 </button>
@@ -1130,10 +1165,10 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
                 <h3 style={{ margin: 0, color: '#171E0D', fontSize: '20px' }}>{this.state.iframeTitle}</h3>
                 <button className={styles.closeBtn} onClick={() => this.setState({ isIframeModalOpen: false })}>✕</button>
               </header>
-              <iframe 
-                 src={this.state.iframeUrl} 
-                 style={{ flex: 1, width: '100%', border: 'none', background: '#F8FAFC' }}
-                 title={this.state.iframeTitle} 
+              <iframe
+                src={this.state.iframeUrl}
+                style={{ flex: 1, width: '100%', border: 'none', background: '#F8FAFC' }}
+                title={this.state.iframeTitle}
               />
             </div>
           </div>
