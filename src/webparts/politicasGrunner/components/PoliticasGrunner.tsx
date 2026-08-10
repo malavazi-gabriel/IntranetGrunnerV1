@@ -4,6 +4,7 @@ import type { IPoliticasGrunnerProps } from './IPoliticasGrunnerProps';
 import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 import { MenuChamados } from '../../../shared/components/MenuChamado/MenuChamados';
 import FormularioSGQ from './FormularioSGQ';
+import FormularioMapeamento from './FormularioMapeamento';
 
 // URLs de navegação
 const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo-grunner.png";
@@ -1001,15 +1002,29 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
         )}
 
         {/* =========================================================
-        PASSO 2: O SEU NOVO COMPONENTE DE FORMULÁRIO ISOLADO
-    ========================================================= */}
-        {!this.state.isCreateModalOpen && this.state.selectedNewDocType && (
+            PASSO 2: ROTEAMENTO DOS FORMULÁRIOS
+        ========================================================= */}
+
+        {/* Renderiza o formulário de MAPEAMENTO */}
+        {!this.state.isCreateModalOpen && this.state.selectedNewDocType === 'MAPEAMENTO DE PROCESSO' && (
+          <FormularioMapeamento
+            tipoDocumento={this.state.selectedNewDocType}
+            usuarioEmail={this.props.context.pageContext.user.email}
+            spContext={this.props.context}
+            onFechar={() => this.setState({ selectedNewDocType: '' })}
+            onSucesso={() => {
+              this.setState({ selectedNewDocType: '' });
+              this.buscarTodosDocumentos();
+            }}
+          />
+        )}
+
+        {/* Renderiza o formulário PADRÃO para os demais (POP, IT, etc) */}
+        {!this.state.isCreateModalOpen && this.state.selectedNewDocType && this.state.selectedNewDocType !== 'MAPEAMENTO DE PROCESSO' && (
           <FormularioSGQ
             tipoDocumento={this.state.selectedNewDocType}
             usuarioEmail={this.props.context.pageContext.user.email}
-
             spContext={this.props.context}
-
             onFechar={() => this.setState({ selectedNewDocType: '' })}
             onSucesso={() => {
               this.setState({ selectedNewDocType: '' });
