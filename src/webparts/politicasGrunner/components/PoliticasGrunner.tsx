@@ -5,6 +5,7 @@ import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
 import { MenuChamados } from '../../../shared/components/MenuChamado/MenuChamados';
 import FormularioSGQ from './FormularioSGQ';
 import FormularioMapeamento from './FormularioMapeamento';
+import FormularioProcedimento from './FormularioProcedimento';
 
 // URLs de navegação
 const logoGrunner = "https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SiteAssets/Logos/logo-grunner.png";
@@ -1005,7 +1006,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
             PASSO 2: ROTEAMENTO DOS FORMULÁRIOS
         ========================================================= */}
 
-        {/* Renderiza o formulário de MAPEAMENTO */}
+        {/* 1. Formulário de MAPEAMENTO */}
         {!this.state.isCreateModalOpen && this.state.selectedNewDocType === 'MAPEAMENTO DE PROCESSO' && (
           <FormularioMapeamento
             tipoDocumento={this.state.selectedNewDocType}
@@ -1019,8 +1020,22 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           />
         )}
 
-        {/* Renderiza o formulário PADRÃO para os demais (POP, IT, etc) */}
-        {!this.state.isCreateModalOpen && this.state.selectedNewDocType && this.state.selectedNewDocType !== 'MAPEAMENTO DE PROCESSO' && (
+        {/* 2. Formulário de PROCEDIMENTO e POP */}
+        {!this.state.isCreateModalOpen && (this.state.selectedNewDocType === 'PROCEDIMENTO' || this.state.selectedNewDocType === 'PROCEDIMENTO OPERACIONAL PADRÃO' || this.state.selectedNewDocType === 'POLÍTICA') && (
+          <FormularioProcedimento
+            tipoDocumento={this.state.selectedNewDocType}
+            usuarioEmail={this.props.context.pageContext.user.email}
+            spContext={this.props.context}
+            onFechar={() => this.setState({ selectedNewDocType: '' })}
+            onSucesso={() => {
+              this.setState({ selectedNewDocType: '' });
+              this.buscarTodosDocumentos();
+            }}
+          />
+        )}
+
+        {/* 3. Formulário PADRÃO SGQ (Instrução de Trabalho, Manual, Formulário) */}
+        {!this.state.isCreateModalOpen && this.state.selectedNewDocType && !['MAPEAMENTO DE PROCESSO', 'PROCEDIMENTO', 'PROCEDIMENTO OPERACIONAL PADRÃO', 'POLÍTICA'].includes(this.state.selectedNewDocType) && (
           <FormularioSGQ
             tipoDocumento={this.state.selectedNewDocType}
             usuarioEmail={this.props.context.pageContext.user.email}
