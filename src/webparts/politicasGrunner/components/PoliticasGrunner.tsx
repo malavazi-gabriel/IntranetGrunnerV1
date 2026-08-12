@@ -1002,7 +1002,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           </div>
         )}
 
-        {/* =========================================================
+{/* =========================================================
             PASSO 2: ROTEAMENTO DOS FORMULÁRIOS
         ========================================================= */}
 
@@ -1020,8 +1020,8 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           />
         )}
 
-        {/* 2. Formulário de PROCEDIMENTO e POP */}
-        {!this.state.isCreateModalOpen && (this.state.selectedNewDocType === 'PROCEDIMENTO' || this.state.selectedNewDocType === 'PROCEDIMENTO OPERACIONAL PADRÃO' || this.state.selectedNewDocType === 'POLÍTICA') && (
+        {/* 2. Formulário de PROCEDIMENTO (Apenas Ele) */}
+        {!this.state.isCreateModalOpen && this.state.selectedNewDocType === 'PROCEDIMENTO' && (
           <FormularioProcedimento
             tipoDocumento={this.state.selectedNewDocType}
             usuarioEmail={this.props.context.pageContext.user.email}
@@ -1034,8 +1034,8 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           />
         )}
 
-        {/* 3. Formulário PADRÃO SGQ (Instrução de Trabalho, Manual, Formulário) */}
-        {!this.state.isCreateModalOpen && this.state.selectedNewDocType && !['MAPEAMENTO DE PROCESSO', 'PROCEDIMENTO', 'PROCEDIMENTO OPERACIONAL PADRÃO', 'POLÍTICA'].includes(this.state.selectedNewDocType) && (
+        {/* 3. Formulário PADRÃO SGQ (Apenas Instrução de Trabalho) */}
+        {!this.state.isCreateModalOpen && this.state.selectedNewDocType === 'INSTRUÇÃO DE TRABALHO' && (
           <FormularioSGQ
             tipoDocumento={this.state.selectedNewDocType}
             usuarioEmail={this.props.context.pageContext.user.email}
@@ -1046,6 +1046,43 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
               this.buscarTodosDocumentos();
             }}
           />
+        )}
+
+        {/* 4. AVISO DE DESENVOLVIMENTO (Bloqueia POP, Política, Formulário e Manual) */}
+        {!this.state.isCreateModalOpen && this.state.selectedNewDocType && !['MAPEAMENTO DE PROCESSO', 'PROCEDIMENTO', 'INSTRUÇÃO DE TRABALHO'].includes(this.state.selectedNewDocType) && (
+          <div className={styles.editModalBackdrop}>
+            <div className={styles.editModal} style={{ width: '90%', maxWidth: '450px', textAlign: 'center', padding: '40px 30px', borderTop: '6px solid #A6CE39' }}>
+              
+              <div style={{ fontSize: '50px', marginBottom: '15px' }}>🚀</div>
+              
+              <h2 style={{ color: '#1C2510', margin: '0 0 15px 0', fontSize: '22px', fontWeight: '800' }}>
+                Módulo em Desenvolvimento
+              </h2>
+              
+              <p style={{ color: '#6B7280', fontSize: '15px', lineHeight: '1.6', marginBottom: '30px' }}>
+                O gerador automatizado para <strong>{this.state.selectedNewDocType}</strong> está sendo construído pela nossa equipe de Tecnologia para garantir a melhor experiência possível.
+                <br/><br/>
+                No momento, os modelos já liberados para uso são: <strong>Instrução de Trabalho, Mapeamento de Processo e Procedimento</strong>.
+              </p>
+              
+              <button
+                onClick={() => this.setState({ selectedNewDocType: '', isCreateModalOpen: true })}
+                style={{ backgroundColor: '#A6CE39', color: '#1C2510', border: 'none', padding: '12px 25px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(166, 206, 57, 0.2)' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                ⬅️ Voltar e escolher outro modelo
+              </button>
+              
+              <button 
+                onClick={() => this.setState({ selectedNewDocType: '' })}
+                style={{ background: 'none', border: 'none', color: '#9CA3AF', marginTop: '15px', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline' }}
+              >
+                Cancelar e fechar
+              </button>
+              
+            </div>
+          </div>
         )}
       </div>
     );
