@@ -498,15 +498,21 @@ $text-gray: #6B7280;
    GOVERNANÇA: MÉTRICAS E DASHBOARD
 ======================================= */
 .metricsPanel {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* Divide em 6 colunas iguais */
   gap: 15px;
   width: 100%;
   max-width: 1200px;
   margin-bottom: 25px;
-  flex-wrap: wrap;
 
-  @media (max-width: 768px) { gap: 10px; }
+  @media (max-width: 1024px) { 
+    grid-template-columns: repeat(3, 1fr); /* Em telas médias, 3 por linha */
+  }
+
+  @media (max-width: 768px) { 
+    grid-template-columns: repeat(2, 1fr); /* Em celulares, 2 por linha */
+    gap: 10px; 
+  }
 }
 
 .metricCard {
@@ -626,17 +632,13 @@ $text-gray: #6B7280;
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 10000; display: flex; align-items: center; justify-content: center;
 }
 .editModal {
-  background: white; width: 90%; max-width: 600px; border-radius: 12px; display: flex; flex-direction: column; max-height: 90vh;
+  background: white; width: 90%; max-width: 800px; border-radius: 12px; display: flex; flex-direction: column; max-height: 90vh; overflow-x: hidden;
   .editModalHeader { padding: 20px; border-bottom: 1px solid #E5E7EB; display: flex; justify-content: space-between; align-items: center; h2 { margin: 0; font-size: 18px; } .closeModal { background: none; border: none; font-size: 20px; cursor: pointer; } }
-  .editModalBody { padding: 20px; overflow-y: auto; }
+  .editModalBody { padding: 20px; overflow-y: auto; overflow-x: hidden; }
   .formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; @media (max-width: 600px) { grid-template-columns: 1fr; } }
-  .formGroup { display: flex; flex-direction: column; gap: 5px; label { font-size: 12px; font-weight: 600; color: $text-gray; } input, select { padding: 10px; border: 1px solid #D1D5DB; border-radius: 6px; font-family: inherit; } }
-  .editModalFooter { padding: 20px; border-top: 1px solid #E5E7EB; display: flex; justify-content: flex-end; gap: 10px; .cancelBtn { padding: 10px 15px; border: 1px solid #D1D5DB; background: white; border-radius: 6px; cursor: pointer; } .saveBtn { padding: 10px 15px; border: none; background: $grunner-green; color: $grunner-dark; font-weight: 700; border-radius: 6px; cursor: pointer; } }
+  .formGroup { display: flex; flex-direction: column; gap: 5px; label { font-size: 12px; font-weight: 600; color: #4B5563; } input, select, textarea { padding: 10px; border: 1px solid #D1D5DB; border-radius: 6px; font-family: inherit; } }
+  .editModalFooter { padding: 20px; border-top: 1px solid #E5E7EB; display: flex; justify-content: flex-end; gap: 10px; .cancelBtn { padding: 10px 15px; border: 1px solid #D1D5DB; background: white; border-radius: 6px; cursor: pointer; } .saveBtn { padding: 10px 15px; border: none; background: #A6CE39; color: #1C2510; font-weight: 700; border-radius: 6px; cursor: pointer; } }
 }
-
-/* =======================================
-   CLASSES FALTANTES (TSX)
-======================================= */
 
 .editButton {
   background: transparent;
