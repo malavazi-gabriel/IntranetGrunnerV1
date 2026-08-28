@@ -22,6 +22,11 @@ interface ILinkUtil {
   Ativo?: boolean | number | string;
 }
 
+interface IIconeResolvido {
+  tipo: 'imagem' | 'texto';
+  valor: string;
+}
+
 interface ICentralAtalhosGrunnerState {
   todosLinks: ILinkUtil[];
   loading: boolean;
@@ -32,6 +37,7 @@ interface ICentralAtalhosGrunnerState {
   iframeUrl: string;
   iframeTitle: string;
   isMenuTIOpen: boolean;
+  iconesComFalha: Set<number>;
 }
 
 export default class CentralAtalhosGrunner extends React.Component<ICentralAtalhosGrunnerProps, ICentralAtalhosGrunnerState> {
@@ -49,7 +55,8 @@ this.state = {
       isIframeModalOpen: false,
       iframeUrl: '',
       iframeTitle: '',
-      isMenuTIOpen: false
+      isMenuTIOpen: false,
+      iconesComFalha: new Set<number>()
     };
   }
 
@@ -270,10 +277,46 @@ this.state = {
     return '#';
   }
 
-  private resolveIcon = (link: ILinkUtil): string => {
-    if (link.Icone && link.Icone.trim()) return link.Icone.trim();
+  /**
+   * Interpreta o campo "Icone" da lista LinksUteisGrunner.
+   * Aceita imagem propria (URL completa, server-relative, caminho relativo ao site ou data URI)
+   * e mantem emoji/texto funcionando para tudo que ja esta cadastrado.
+   */
+  private resolveIcon = (link: ILinkUtil): IIconeResolvido => {
+    const bruto = (link.Icone || '').trim();
 
-    const categoria = this.normalizeCategory(link.Categoria).toLowerCase();
+    if (!bruto) {
+      return { tipo: 'texto', valor: this.iconePorCategoria(link.Categoria) };
+    }
+
+    if (this.isReferenciaImagem(bruto)) {
+      // Se o arquivo nao carregar, cai no icone da categoria em vez de quebrar o card
+      return this.state.iconesComFalha.has(link.ID)
+        ? { tipo: 'texto', valor: this.iconePorCategoria(link.Categoria) }
+        : { tipo: 'imagem', valor: this.montarUrlImagem(bruto) };
+    }
+
+    return { tipo: 'texto', valor: bruto };
+  }
+
+  private isReferenciaImagem = (valor: string): boolean => {
+    if (/\.(svg|png|jpe?g|webp|gif|ico)$/i.test(valor)) return true;
+
+    return /^(https?:)?\/\//i.test(valor) || /^data:image\//i.test(valor) || valor.indexOf('/') === 0;
+  }
+
+  private montarUrlImagem = (valor: string): string => {
+    // URL completa ou server-relative: usa exatamente como foi cadastrado
+    if (/^(https?:)?\/\//i.test(valor) || /^data:image\//i.test(valor) || valor.indexOf('/') === 0) return valor;
+
+    // Caminho relativo ao site atual, ex: "SiteAssets/Icones/sap.svg"
+    const base = this.props.context.pageContext.web.absoluteUrl.replace(/\/+$/, '');
+
+    return `${base}/${valor.replace(/^\.?\//, '')}`;
+  }
+
+  private iconePorCategoria = (categoriaBruta?: string): string => {
+    const categoria = this.normalizeCategory(categoriaBruta).toLowerCase();
 
     if (categoria.includes('ti')) return '💻';
     if (categoria.includes('marketing')) return '📣';
@@ -286,6 +329,38 @@ this.state = {
     if (categoria.includes('finance')) return '💰';
 
     return '🔗';
+  }
+
+  /** Marca o atalho para usar o fallback quando a imagem cadastrada nao carrega. */
+  private registrarFalhaIcone = (id: number): void => {
+    this.setState((prev) => {
+      if (prev.iconesComFalha.has(id)) return null;
+
+      const atualizado = new Set(prev.iconesComFalha);
+      atualizado.add(id);
+
+      return { iconesComFalha: atualizado };
+    });
+  }
+
+  private renderIcone = (link: ILinkUtil): React.ReactNode => {
+    const icone = this.resolveIcon(link);
+
+    if (icone.tipo === 'imagem') {
+      return (
+        <div className={styles.shortcutIcon}>
+          <img
+            src={icone.valor}
+            alt=""
+            aria-hidden="true"
+            className={styles.shortcutIconImg}
+            onError={() => this.registrarFalhaIcone(link.ID)}
+          />
+        </div>
+      );
+    }
+
+    return <div className={styles.shortcutIcon}>{icone.valor}</div>;
   }
 
   private sortByOrder = (a: ILinkUtil, b: ILinkUtil): number => {
@@ -550,7 +625,7 @@ this.state = {
                         className={styles.shortcutCard}
                         title={link.Descricao || link.Title}
                       >
-                        <div className={styles.shortcutIcon}>{this.resolveIcon(link)}</div>
+                        {this.renderIcone(link)}
                         <div className={styles.shortcutLabel}>{link.Title}</div>
                         <div className={styles.shortcutMeta}>{this.normalizeCategory(link.Categoria)}</div>
                         {link.Descricao && (
