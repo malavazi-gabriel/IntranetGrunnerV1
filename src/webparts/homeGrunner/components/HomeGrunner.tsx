@@ -58,6 +58,8 @@ interface IHomeGrunnerState {
   isQualidadeUser: boolean;
   isMenuProcedimentosOpen: boolean;
 
+  isSidebarCollapsed: boolean;
+
 }
 
 export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHomeGrunnerState> {
@@ -113,6 +115,8 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
       isQualidadeUser: false,
       isMenuProcedimentosOpen: false,
+
+      isSidebarCollapsed: false,
     };
   }
 
@@ -205,12 +209,12 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   }
 
   private abrirModalImagem = (url: string, e?: React.MouseEvent) => {
-  if (e) e.stopPropagation(); // Evita que clique na imagem dispare o botão do card
-  this.setState({
-    isImageModalOpen: true,
-    currentImageUrl: url
-  });
-}
+    if (e) e.stopPropagation(); // Evita que clique na imagem dispare o botão do card
+    this.setState({
+      isImageModalOpen: true,
+      currentImageUrl: url
+    });
+  }
 
   private fecharModalImagem = () => {
     this.setState({
@@ -221,6 +225,8 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
   public componentDidMount(): void {
     this.carregarDadosIniciais();
+
+    window.addEventListener('abrirMeusChamadosGrunner', this.abrirModalMeusChamados as EventListener);
 
     const urlParams = new URLSearchParams(window.location.search);
     const noticiaIdParam = urlParams.get('noticiaId');
@@ -255,7 +261,7 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
     }
   }
 
-private carregarDadosIniciais = async () => {
+  private carregarDadosIniciais = async () => {
     // 1º OBRIGATÓRIO: Descobre se é o Marketing antes de buscar as notícias
     await this.verificarSeMarketing();
 
@@ -271,30 +277,30 @@ private carregarDadosIniciais = async () => {
     this.setState({ loading: false });
   }
 
-/*   // TRAVA DE TESTE: Bloqueia para a empresa, libera só para a sua máquina
+  /*   // TRAVA DE TESTE: Bloqueia para a empresa, libera só para a sua máquina
+    private verificarSeMarketing = async () => {
+      try {
+        // Pega o e-mail de quem está acessando a página agora
+        const emailLogado = this.props.context.pageContext.user.email.toLowerCase().trim();
+  
+        // O seu e-mail exato para liberar o teste na produção
+        const meuEmailDeTeste = "malavazi.gabriel@grunnertec.com.br"; 
+  
+        // TRAVA DE SEGURANÇA: Só libera se o e-mail for exatamente o seu
+        const isMarketing = (emailLogado === meuEmailDeTeste);
+  
+        this.setState({ isMarketingUser: isMarketing });
+      } catch (error) {
+        console.error("Erro ao verificar o e-mail do usuário:", error);
+      }
+    } */
+
+  // TRAVA INTELIGENTE: Libera para você e para qualquer pessoa do Marketing
   private verificarSeMarketing = async () => {
     try {
       // Pega o e-mail de quem está acessando a página agora
       const emailLogado = this.props.context.pageContext.user.email.toLowerCase().trim();
-
-      // O seu e-mail exato para liberar o teste na produção
-      const meuEmailDeTeste = "malavazi.gabriel@grunnertec.com.br"; 
-
-      // TRAVA DE SEGURANÇA: Só libera se o e-mail for exatamente o seu
-      const isMarketing = (emailLogado === meuEmailDeTeste);
-
-      this.setState({ isMarketingUser: isMarketing });
-    } catch (error) {
-      console.error("Erro ao verificar o e-mail do usuário:", error);
-    }
-  } */
-
-    // TRAVA INTELIGENTE: Libera para você e para qualquer pessoa do Marketing
-  private verificarSeMarketing = async () => {
-    try {
-      // Pega o e-mail de quem está acessando a página agora
-      const emailLogado = this.props.context.pageContext.user.email.toLowerCase().trim();
-      const meuEmailDeTeste = "malavazi.gabriel@grunnertec.com.br"; 
+      const meuEmailDeTeste = "malavazi.gabriel@grunnertec.com.br";
 
       // 1. Você sempre tem acesso garantido
       let isMarketing = (emailLogado === meuEmailDeTeste);
@@ -302,7 +308,7 @@ private carregarDadosIniciais = async () => {
       // 2. Se não for você, vamos perguntar pro Entra ID (Azure AD) o departamento da pessoa
       if (!isMarketing) {
         const client = await this.props.context.msGraphClientFactory.getClient("3");
-        
+
         // Busca os dados do usuário atual (me)
         const userProfile = await client.api('/me').select('department,jobTitle').get();
 
@@ -321,7 +327,7 @@ private carregarDadosIniciais = async () => {
     }
   }
 
-// =======================================================================
+  // =======================================================================
   // FUNÇÃO DE IMPRESSÃO - BANNER FULL WIDTH COM MOLDURA (SEM CORTES)
   // =======================================================================
   private imprimirCartaz = (noticia: any): void => {
@@ -523,7 +529,7 @@ private carregarDadosIniciais = async () => {
 
     printWindow.document.close();
   }
- 
+
   // ==== NOVO MOTOR DE BUSCA: ENTRA ID ====
   private buscarCelebracoesDoGraph = async () => {
     try {
@@ -782,20 +788,20 @@ private carregarDadosIniciais = async () => {
     }
   }
 
-private buscarNoticias = async () => {
+  private buscarNoticias = async () => {
     try {
       // MÁGICA DE PROTEÇÃO: 
       // Se for marketing: traz TUDO (rascunhos e publicados).
       // Se não for marketing: traz apenas os 'Publicado' OU os antigos que estão em branco (null).
-      const filtroStatus = this.state.isMarketingUser 
-        ? "" 
+      const filtroStatus = this.state.isMarketingUser
+        ? ""
         : "&$filter=(StatusNoticia eq 'Publicado' or StatusNoticia eq null)";
 
       const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items?$select=ID,Title,Resumo,ImagemURL,VideoURL,LinkNoticia,ConteudoNoticia,StatusNoticia,Attachments,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$top=${this.state.limiteNoticias}&$orderby=Created desc${filtroStatus}`;
-      
+
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
-      
+
       if (data?.value) this.setState({ noticiasReais: data.value });
     } catch (e) {
       console.error("Erro ao buscar notícias:", e);
@@ -807,28 +813,28 @@ private buscarNoticias = async () => {
     }), this.buscarNoticias);
   }
 
-private buscarEngajamento = async () => {
-  try {
-    const urlCurtidas = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items?$select=ID,NoticiaID,UsuarioEmail,UsuarioNome&$top=5000`;
-    
-    const urlComentarios = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items?$select=ID,NoticiaID,Autor,Comentario,Created&$top=5000`;
-    
-    const [respCurtidas, respComentarios] = await Promise.all([
-      this.props.context.spHttpClient.get(urlCurtidas, SPHttpClient.configurations.v1),
-      this.props.context.spHttpClient.get(urlComentarios, SPHttpClient.configurations.v1)
-    ]);
-    
-    const dataCurtidas = await respCurtidas.json();
-    const dataComentarios = await respComentarios.json();
+  private buscarEngajamento = async () => {
+    try {
+      const urlCurtidas = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items?$select=ID,NoticiaID,UsuarioEmail,UsuarioNome&$top=5000`;
 
-    this.setState({
-      todasCurtidas: dataCurtidas?.value || [],
-      todosComentarios: dataComentarios?.value || []
-    });
-  } catch (e) {
-    console.error("Erro ao buscar engajamento:", e);
+      const urlComentarios = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items?$select=ID,NoticiaID,Autor,Comentario,Created&$top=5000`;
+
+      const [respCurtidas, respComentarios] = await Promise.all([
+        this.props.context.spHttpClient.get(urlCurtidas, SPHttpClient.configurations.v1),
+        this.props.context.spHttpClient.get(urlComentarios, SPHttpClient.configurations.v1)
+      ]);
+
+      const dataCurtidas = await respCurtidas.json();
+      const dataComentarios = await respComentarios.json();
+
+      this.setState({
+        todasCurtidas: dataCurtidas?.value || [],
+        todosComentarios: dataComentarios?.value || []
+      });
+    } catch (e) {
+      console.error("Erro ao buscar engajamento:", e);
+    }
   }
-}
 
   private buscarAniversariantes = async () => {
     try {
@@ -842,19 +848,19 @@ private buscarEngajamento = async () => {
   }
 
   private buscarEventos = async () => {
-      try {
-        const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local,ImagemTema&$top=20`;
-        const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
-        const data = await response.json();
-        
-        if (data?.value) {
-          const eventosOrdenados = data.value.sort((a: any, b: any) => Number(a.Dia) - Number(b.Dia));
-          this.setState({ eventosReais: eventosOrdenados });
-        }
-      } catch (e) {
-        console.error("Erro ao buscar eventos:", e);
+    try {
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('EventosGrunner')/items?$select=Title,Dia,Mes,Local,ImagemTema&$top=20`;
+      const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
+      const data = await response.json();
+
+      if (data?.value) {
+        const eventosOrdenados = data.value.sort((a: any, b: any) => Number(a.Dia) - Number(b.Dia));
+        this.setState({ eventosReais: eventosOrdenados });
       }
+    } catch (e) {
+      console.error("Erro ao buscar eventos:", e);
     }
+  }
 
   private isAniversarianteDaSemana = (diaStr: string): boolean => {
     const dia = parseInt(diaStr, 10);
@@ -875,54 +881,54 @@ private buscarEngajamento = async () => {
     return diasDaSemana.indexOf(dia) !== -1;
   }
 
-private handleLike = async (noticiaId: number) => {
-  const userEmail = this.props.context.pageContext.user.email.toLowerCase();
-  const userName = this.props.userDisplayName;
+  private handleLike = async (noticiaId: number) => {
+    const userEmail = this.props.context.pageContext.user.email.toLowerCase();
+    const userName = this.props.userDisplayName;
 
-  const likeExistente = this.state.todasCurtidas.find(
-    c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail.toLowerCase() === userEmail
-  );
+    const likeExistente = this.state.todasCurtidas.find(
+      c => c.NoticiaID === noticiaId.toString() && c.UsuarioEmail.toLowerCase() === userEmail
+    );
 
-  const totalAtualNaTela = this.getLikesCount(noticiaId);
-  const novoTotalCurtidas = likeExistente ? (totalAtualNaTela - 1) : (totalAtualNaTela + 1);
+    const totalAtualNaTela = this.getLikesCount(noticiaId);
+    const novoTotalCurtidas = likeExistente ? (totalAtualNaTela - 1) : (totalAtualNaTela + 1);
 
-  try {
-    // 1. Grava no Histórico
-    if (likeExistente) {
-      const urlDelete = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items(${likeExistente.ID})`;
-      await this.props.context.spHttpClient.post(urlDelete, SPHttpClient.configurations.v1, {
-        headers: { 'X-HTTP-Method': 'DELETE', 'IF-MATCH': '*' }
+    try {
+      // 1. Grava no Histórico
+      if (likeExistente) {
+        const urlDelete = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items(${likeExistente.ID})`;
+        await this.props.context.spHttpClient.post(urlDelete, SPHttpClient.configurations.v1, {
+          headers: { 'X-HTTP-Method': 'DELETE', 'IF-MATCH': '*' }
+        });
+      } else {
+        const urlPost = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
+        const body = JSON.stringify({
+          Title: `Like-${noticiaId}`,
+          NoticiaID: noticiaId.toString(),
+          UsuarioEmail: userEmail,
+          UsuarioNome: userName
+        });
+        await this.props.context.spHttpClient.post(urlPost, SPHttpClient.configurations.v1, { body: body });
+      }
+
+      // 2. Atualiza a Notícia (MERGE)
+      const urlUpdateNoticia = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items(${noticiaId})`;
+      await this.props.context.spHttpClient.post(urlUpdateNoticia, SPHttpClient.configurations.v1, {
+        headers: {
+          'X-HTTP-Method': 'MERGE',
+          'IF-MATCH': '*'
+        },
+        body: JSON.stringify({
+          TotalCurtidas: novoTotalCurtidas > 0 ? novoTotalCurtidas : 0
+        })
       });
-    } else {
-      const urlPost = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('CurtidasGrunner')/items`;
-      const body = JSON.stringify({
-        Title: `Like-${noticiaId}`,
-        NoticiaID: noticiaId.toString(),
-        UsuarioEmail: userEmail,
-        UsuarioNome: userName
-      });
-      await this.props.context.spHttpClient.post(urlPost, SPHttpClient.configurations.v1, { body: body });
+
+      // 3. Recarrega os dados na tela
+      this.buscarEngajamento();
+
+    } catch (e) {
+      console.error("Erro ao processar curtida:", e);
     }
-
-    // 2. Atualiza a Notícia (MERGE)
-    const urlUpdateNoticia = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items(${noticiaId})`;
-    await this.props.context.spHttpClient.post(urlUpdateNoticia, SPHttpClient.configurations.v1, {
-      headers: {
-        'X-HTTP-Method': 'MERGE',
-        'IF-MATCH': '*'
-      },
-      body: JSON.stringify({
-        TotalCurtidas: novoTotalCurtidas > 0 ? novoTotalCurtidas : 0
-      })
-    });
-
-    // 3. Recarrega os dados na tela
-    this.buscarEngajamento();
-
-  } catch (e) {
-    console.error("Erro ao processar curtida:", e);
   }
-}
 
   private getTextQuemCurtiu = (noticiaId: number) => {
     const curtidas = this.state.todasCurtidas.filter(c => c.NoticiaID === noticiaId.toString());
@@ -954,45 +960,45 @@ private handleLike = async (noticiaId: number) => {
     }
   }
 
-private enviarComentario = async () => {
-  if (!this.state.novoComentario || !this.state.currentNoticiaId) return;
+  private enviarComentario = async () => {
+    if (!this.state.novoComentario || !this.state.currentNoticiaId) return;
 
-  const noticiaId = this.state.currentNoticiaId;
-  const totalAtualNaTela = this.getCommentsCount(noticiaId);
-  const novoTotalComentarios = totalAtualNaTela + 1;
+    const noticiaId = this.state.currentNoticiaId;
+    const totalAtualNaTela = this.getCommentsCount(noticiaId);
+    const novoTotalComentarios = totalAtualNaTela + 1;
 
-  try {
-    // 1. Grava no Histórico
-    const urlPost = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items`;
-    const body = JSON.stringify({
-      Title: `Comentário-${noticiaId}`,
-      NoticiaID: noticiaId.toString(),
-      Comentario: this.state.novoComentario,
-      Autor: this.props.userDisplayName
-    });
-    await this.props.context.spHttpClient.post(urlPost, SPHttpClient.configurations.v1, { body: body });
+    try {
+      // 1. Grava no Histórico
+      const urlPost = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('ComentariosGrunner')/items`;
+      const body = JSON.stringify({
+        Title: `Comentário-${noticiaId}`,
+        NoticiaID: noticiaId.toString(),
+        Comentario: this.state.novoComentario,
+        Autor: this.props.userDisplayName
+      });
+      await this.props.context.spHttpClient.post(urlPost, SPHttpClient.configurations.v1, { body: body });
 
-    // 2. Atualiza a Notícia (MERGE)
-    const urlUpdateNoticia = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items(${noticiaId})`;
-    await this.props.context.spHttpClient.post(urlUpdateNoticia, SPHttpClient.configurations.v1, {
-      headers: {
-        'X-HTTP-Method': 'MERGE',
-        'IF-MATCH': '*'
-      },
-      body: JSON.stringify({
-        TotalComentarios: novoTotalComentarios
-      })
-    });
+      // 2. Atualiza a Notícia (MERGE)
+      const urlUpdateNoticia = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('NoticiasGrunner')/items(${noticiaId})`;
+      await this.props.context.spHttpClient.post(urlUpdateNoticia, SPHttpClient.configurations.v1, {
+        headers: {
+          'X-HTTP-Method': 'MERGE',
+          'IF-MATCH': '*'
+        },
+        body: JSON.stringify({
+          TotalComentarios: novoTotalComentarios
+        })
+      });
 
-    // 3. Atualiza a tela e limpa o modal
-    this.setState({ novoComentario: "" });
-    this.buscarComentarios(noticiaId);
-    this.buscarEngajamento();
+      // 3. Atualiza a tela e limpa o modal
+      this.setState({ novoComentario: "" });
+      this.buscarComentarios(noticiaId);
+      this.buscarEngajamento();
 
-  } catch (e) {
-    console.error("Erro ao enviar comentário:", e);
+    } catch (e) {
+      console.error("Erro ao enviar comentário:", e);
+    }
   }
-}
 
   private getLikesCount = (noticiaId: number) => {
     return this.state.todasCurtidas.filter(c => c.NoticiaID === noticiaId.toString()).length;
@@ -1035,59 +1041,59 @@ private enviarComentario = async () => {
     return noticia.ImagemURL || '';
   }
 
-private renderExpandedMainNews = (noticia: any): React.ReactNode => {
-  if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
-    return null;
-  }
+  private renderExpandedMainNews = (noticia: any): React.ReactNode => {
+    if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
+      return null;
+    }
 
-  return (
-    <div className={styles.expandedArticleWrapper}>
-      
-{/* 🚀 BLOCO INTELIGENTE: Verifica se é YouTube ou Vídeo Direto (MP4) */}
-      {noticia.VideoURL && (
-        <div style={{ marginBottom: '30px' }}>
-          {noticia.VideoURL.includes('youtube.com') || noticia.VideoURL.includes('youtu.be') ? (
-            /* Renderiza iFrame se for YouTube */
-            <iframe 
-              width="100%" 
-              height="450" 
-              src={noticia.VideoURL} 
-              title="Vídeo da Matéria" 
-              frameBorder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-              allowFullScreen
-              style={{ borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-            />
-          ) : (
-            /* Renderiza Player Nativo se for vídeo interno (SharePoint/MP4) */
-            <video 
-              width="100%" 
-              controls 
-              style={{ borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', backgroundColor: '#000' }}
+    return (
+      <div className={styles.expandedArticleWrapper}>
+
+        {/* 🚀 BLOCO INTELIGENTE: Verifica se é YouTube ou Vídeo Direto (MP4) */}
+        {noticia.VideoURL && (
+          <div style={{ marginBottom: '30px' }}>
+            {noticia.VideoURL.includes('youtube.com') || noticia.VideoURL.includes('youtu.be') ? (
+              /* Renderiza iFrame se for YouTube */
+              <iframe
+                width="100%"
+                height="450"
+                src={noticia.VideoURL}
+                title="Vídeo da Matéria"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{ borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+              />
+            ) : (
+              /* Renderiza Player Nativo se for vídeo interno (SharePoint/MP4) */
+              <video
+                width="100%"
+                controls
+                style={{ borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', backgroundColor: '#000' }}
+              >
+                <source src={noticia.VideoURL} type="video/mp4" />
+                Seu navegador não suporta a exibição deste vídeo.
+              </video>
+            )}
+          </div>
+        )}
+
+        {/* Texto original da matéria */}
+        <div dangerouslySetInnerHTML={{ __html: noticia.ConteudoNoticia }} />
+
+        {noticia.LinkNoticia && (
+          <div style={{ marginTop: '35px', display: 'flex', justifyContent: 'flex-start' }}>
+            <button
+              className={styles.btnPrimary}
+              onClick={() => window.open(noticia.LinkNoticia, '_blank')}
             >
-              <source src={noticia.VideoURL} type="video/mp4" />
-              Seu navegador não suporta a exibição deste vídeo.
-            </video>
-          )}
-        </div>
-      )}
-
-      {/* Texto original da matéria */}
-      <div dangerouslySetInnerHTML={{ __html: noticia.ConteudoNoticia }} />
-
-      {noticia.LinkNoticia && (
-        <div style={{ marginTop: '35px', display: 'flex', justifyContent: 'flex-start' }}>
-          <button
-            className={styles.btnPrimary}
-            onClick={() => window.open(noticia.LinkNoticia, '_blank')}
-          >
-            Abrir Link Original ➔
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+              Abrir Link Original ➔
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   private renderExpandedSubNewsCard = (noticia: any): React.ReactNode => {
     if (!noticia || this.state.expandedNoticiaId !== noticia.ID || !this.noticiaTemConteudo(noticia)) {
@@ -1098,17 +1104,17 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
 
     return (
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
-          <div className={styles.heroBanner} style={{ marginBottom: 0, borderRadius: '20px 20px 0 0' }}>
-            <div 
-              className={styles.heroImage} 
-              style={{ backgroundImage: `url('${imagemExibicao}')`, cursor: 'pointer' }} 
-              onClick={(e) => this.abrirModalImagem(imagemExibicao, e)}
-            />
-            <div className={styles.heroOverlay}>
-            
+        <div className={styles.heroBanner} style={{ marginBottom: 0, borderRadius: '20px 20px 0 0' }}>
+          <div
+            className={styles.heroImage}
+            style={{ backgroundImage: `url('${imagemExibicao}')`, cursor: 'pointer' }}
+            onClick={(e) => this.abrirModalImagem(imagemExibicao, e)}
+          />
+          <div className={styles.heroOverlay}>
+
             {/* AVISO DE RASCUNHO EXCLUSIVO DO MARKETING */}
             {noticia.StatusNoticia === 'Rascunho' && (
-              <span 
+              <span
                 className={styles.draftBadge}
                 title="Rascunho (Invisível para a empresa)"
               >
@@ -1119,14 +1125,14 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
             <h2 className={styles.heroTitle}>{noticia.Title}</h2>
 
             <div className={styles.interactions}>
-              
+
               {/* BOTÃO CURTIDA SOLTO (GHOST BUTTON) */}
               <button
                 className={styles.actionIconBtn}
                 onClick={(e) => { e.stopPropagation(); this.handleLike(noticia.ID); }}
                 title={this.getTextQuemCurtiu(noticia.ID)}
               >
-                {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'} 
+                {this.userAlreadyLiked(noticia.ID) ? '❤️' : '🤍'}
                 <span>{this.getLikesCount(noticia.ID)}</span>
               </button>
 
@@ -1142,9 +1148,9 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
               {this.state.isMarketingUser && (
                 <button
                   className={styles.actionBtnLight}
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    this.imprimirCartaz(noticia); 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    this.imprimirCartaz(noticia);
                   }}
                 >
                   🖨️ Print
@@ -1183,8 +1189,18 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
         {this.shouldHideSharePointChrome() && (
           <style>{`
             [data-automation-id="page-bottom-actions"], [data-automation-id="page-bottom-bar"], #sp-page-footer, [data-automation-id="socialBar"], .CommentsWrapper, [id*="Page_CommentsWrapper"], [id^="Page_CommentsWrapper"], [data-sp-feature-tag="Comments"], #sp-appBar, [data-automation-id="sp-appBar"], div[class^="appBar_"], div[class*="sp-appBar"] { display: none !important; visibility: hidden !important; height: 0 !important; min-height: 0 !important; max-height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-            #workbenchPageContent, #spPageCanvasContent, .SPCanvas-canvas, .CanvasZone, .CanvasSection, .ControlZone, div[data-automation-id="CanvasZone"] > div { margin-left: 0 !important; padding-left: 0 !important; max-width: 100% !important; width: 100% !important; }
-            body { overflow-x: hidden !important; }
+            
+            /* HACK DE APP LAYOUT: MATA A ROLAGEM DUPLA DA PÁGINA NATIVA */
+            body, html, div[data-automation-id="contentScrollRegion"] { 
+                overflow: hidden !important; 
+            }
+            
+            #workbenchPageContent, #spPageCanvasContent, .SPCanvas-canvas, .CanvasZone, .CanvasSection, .ControlZone, div[data-automation-id="CanvasZone"] > div { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                max-width: 100% !important; 
+                width: 100% !important; 
+            }
           `}</style>
         )}
 
@@ -1196,17 +1212,28 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
           <div className={styles.mobileOverlayBackdrop} onClick={() => this.setState({ isMobileMenuOpen: false })} />
         )}
 
-        <aside className={`${styles.sidebar} ${this.state.isMobileMenuOpen ? styles.open : ''}`}>
+        <aside className={`${styles.sidebar} ${this.state.isMobileMenuOpen ? styles.open : ''} ${this.state.isSidebarCollapsed ? styles.collapsed : ''}`}>
           <button className={styles.closeMenuBtn} onClick={() => this.setState({ isMobileMenuOpen: false })}>✕</button>
           <div className={styles.logoArea}>
             <img src={logoGrunner} alt="Logo Semente" className={styles.logoSemente} />
             <h2>Intranet Grunner</h2>
+
+            {/* NOVO: Botão de encolher a sidebar */}
+            <button
+              className={styles.collapseToggleBtn}
+              onClick={() => this.setState({ isSidebarCollapsed: !this.state.isSidebarCollapsed })}
+              title={this.state.isSidebarCollapsed ? "Expandir menu" : "Recolher menu"}
+            >
+              {this.state.isSidebarCollapsed ? '»' : '«'}
+            </button>
           </div>
+
           <div className={styles.navGroup}>
             <h3>Navegação</h3>
-            <a href="#" className={styles.active}>🏠 Painel Inicial</a>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/centraldeatalhos.aspx?env=Embedded">🖥️ Central de Atalhos</a>
+            <a href="#" className={styles.active}>🏠 <span>Painel Inicial</span></a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/centraldeatalhos.aspx?env=Embedded">🖥️ <span>Central de Atalhos</span></a>
           </div>
+
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
 
@@ -1215,51 +1242,49 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                 className={`${styles.accordionToggle} ${this.state.isTiMenuOpen ? styles.open : ''}`}
                 onClick={() => this.setState({ isTiMenuOpen: !this.state.isTiMenuOpen })}
               >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>💻 Tecnologia (TI)</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>💻 <span className={styles.textToHide}>Tecnologia (TI)</span></div>
                 <span className={styles.chevron}>▼</span>
               </button>
 
               {this.state.isTiMenuOpen && (
                 <div className={styles.accordionContent}>
-                  <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🖥️ Gestão de Ativos</a>
-                  <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5", "➕ Abrir Novo Chamado", e)}>➕ Abrir Novo Chamado</a>
-                  <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 Meus Chamados</a>
+                  <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🖥️ <span>Gestão de Ativos</span></a>
+                  <a href="#" onClick={(e) => this.abrirModalFormulario("https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5", "➕ Abrir Novo Chamado", e)}>➕ <span>Abrir Novo Chamado</span></a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 <span>Meus Chamados</span></a>
                 </div>
               )}
             </div>
 
-            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3&env=Embedded", "📢 Solicitação - Marketing", e)}>📢 Marketing</a>
-            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi&env=Embedded", "🚗 Solicitação - Frotas", e)}>🚗 Frotas</a>
-            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/:l:/s/Facilities/JADJeN1a-IAVRIrzsns79wBEAS_s9zB21POwKXunqjUuK5Y?nav=MDk0ODE1N2QtZWE0Ny00ZDhjLWFhYjItMGVlNmIwMWIzNTY4", "🛠️ Solicitação - Facilities", e)}>🛠️ Facilities</a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3&env=Embedded", "📢 Solicitação - Marketing", e)}>📢 <span>Marketing</span></a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi&env=Embedded", "🚗 Solicitação - Frotas", e)}>🚗 <span>Frotas</span></a>
+            <a href="#" onClick={(e) => this.abrirModalFormulario("https://grunnerteccombr.sharepoint.com/:l:/s/Facilities/JADJeN1a-IAVRIrzsns79wBEAS_s9zB21POwKXunqjUuK5Y?nav=MDk0ODE1N2QtZWE0Ny00ZDhjLWFhYjItMGVlNmIwMWIzNTY4", "🛠️ Solicitação - Facilities", e)}>🛠️ <span>Facilities</span></a>
           </div>
+
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Historia.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
-            <a href="https://grunnertec.com.br/assets/PDFs/codigoconduta.pdf" target="_blank" rel="noopener noreferrer">⚖️ Código de Conduta</a>
-            <a href="https://grunner.canaldeouvidoria.com.br/" target="_blank" rel="noopener noreferrer">🗣️ Canal de Ética</a>
-            
-            {/* =========================================================
-                LÓGICA DO MENU PROCEDIMENTOS (QUALIDADE VS NORMAL)
-            ========================================================= */}
+            <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Historia.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🏛️ <span>Nossa História</span></a>
+            <a href="https://grunnertec.com.br/assets/PDFs/codigoconduta.pdf" target="_blank" rel="noopener noreferrer">⚖️ <span>Código de Conduta</span></a>
+            <a href="https://grunner.canaldeouvidoria.com.br/" target="_blank" rel="noopener noreferrer">🗣️ <span>Canal de Ética</span></a>
+
             {this.state.isQualidadeUser ? (
               <div className={styles.accordionGroup}>
                 <button
                   className={`${styles.accordionToggle} ${this.state.isMenuProcedimentosOpen ? styles.open : ''}`}
                   onClick={() => this.setState({ isMenuProcedimentosOpen: !this.state.isMenuProcedimentosOpen })}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>📖 Procedimentos</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>📖 <span className={styles.textToHide}>Procedimentos</span></div>
                   <span className={styles.chevron}>▼</span>
                 </button>
 
                 {this.state.isMenuProcedimentosOpen && (
                   <div className={styles.accordionContent}>
-                    <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded">📖 Todos os Documentos</a>
-                    <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded">⚙️ Gestão da Qualidade</a>
+                    <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded">📖 <span>Todos os Documentos</span></a>
+                    <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded">⚙️ <span>Gestão da Qualidade</span></a>
                   </div>
                 )}
               </div>
             ) : (
-              <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">📖 Procedimentos</a>
+              <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/Pol%C3%ADticas-da-Empresa.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">📖 <span>Procedimentos</span></a>
             )}
           </div>
         </aside>
@@ -1279,12 +1304,54 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                 <span className={styles.dateBadge}>📅 {dataAtual.charAt(0).toUpperCase() + dataAtual.slice(1)}</span>
               </div>
             </div>
-            <MenuChamados
-              departamento="TI"
-              emailUsuario={userEmail}
-            />
+
             <div className={styles.headerRight}>
               <img src={logoCompleta} className={styles.logoCentral} alt="Grunner" />
+            </div>
+
+            {/* === SISTEMA DE NOTIFICAÇÃO NO CANTO SUPERIOR DIREITO === */}
+            <div style={{ position: 'absolute', top: '25px', right: '45px', zIndex: 50 }}>
+              <div
+                style={{ cursor: 'pointer', position: 'relative', display: 'flex', alignItems: 'center', opacity: 0.7, transition: '0.2s', color: 'white' }}
+                onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseOut={(e) => e.currentTarget.style.opacity = '0.7'}
+                onClick={() => this.setState({ isNotificacaoOpen: !this.state.isNotificacaoOpen })}
+                title="Mensagens de TI"
+              >
+                {/* ÍCONE SVG (IDÊNTICO AO SEU PRINT) */}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 7.00005L10.2 11.65C11.2667 12.45 12.7333 12.45 13.8 11.65L20 7" />
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                </svg>
+
+                {/* BOLINHA VERMELHA DE NOTIFICAÇÃO (SÓ APARECE SE TIVER MENSAGEM) */}
+                {this.state.unreadTicketsCount > 0 && (
+                  <span className={styles.unreadBadge} style={{ position: 'absolute', top: '-6px', right: '-8px' }}>
+                    {this.state.unreadTicketsCount}
+                  </span>
+                )}
+              </div>
+
+              {this.state.isNotificacaoOpen && (
+                <div style={{ position: 'absolute', top: '35px', right: '0', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', width: '280px', padding: '15px', zIndex: 100, border: '1px solid #E5E7EB', color: '#171E0D' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '15px', borderBottom: '1px solid #E5E7EB', paddingBottom: '10px' }}>Mensagens de TI</h4>
+
+                  {this.state.unreadTicketsCount > 0 ? (
+                    <p style={{ fontSize: '13px', color: '#DC2626', margin: '0 0 15px 0', fontWeight: 'bold' }}>Você tem {this.state.unreadTicketsCount} nova(s) resposta(s)!</p>
+                  ) : (
+                    <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 15px 0' }}>Tudo limpo! Nenhuma mensagem nova por aqui.</p>
+                  )}
+
+                  <button
+                    onClick={() => this.abrirModalMeusChamados()}
+                    style={{ width: '100%', background: '#F8FAFC', border: '1px solid #D1D5DB', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#2E5C31', transition: '0.2s' }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#E5E7EB'}
+                    onMouseOut={(e) => e.currentTarget.style.background = '#F8FAFC'}
+                  >
+                    🎫 Abrir Meus Chamados
+                  </button>
+                </div>
+              )}
             </div>
           </header>
 
@@ -1295,16 +1362,16 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                   className={styles.heroBanner}
                   style={this.state.expandedNoticiaId === noticiaDestaque.ID ? { marginBottom: 0, borderRadius: '20px 20px 0 0' } : {}}
                 >
-                  <div 
-                    className={styles.heroImage} 
-                    style={{ backgroundImage: `url('${this.getImagemNoticia(noticiaDestaque)}')`, cursor: 'pointer' }} 
+                  <div
+                    className={styles.heroImage}
+                    style={{ backgroundImage: `url('${this.getImagemNoticia(noticiaDestaque)}')`, cursor: 'pointer' }}
                     onClick={(e) => this.abrirModalImagem(this.getImagemNoticia(noticiaDestaque), e)}
                   />
                   <div className={styles.heroOverlay}>
-                    
+
                     {/* AVISO DE RASCUNHO */}
                     {noticiaDestaque.StatusNoticia === 'Rascunho' && (
-                      <span 
+                      <span
                         className={styles.draftBadge}
                         title="Rascunho (Apenas o Marketing consegue ver. Mude o status para 'Publicado' no SharePoint para liberar para a empresa)."
                       >
@@ -1315,14 +1382,14 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                     <h2 className={styles.heroTitle}>{noticiaDestaque.Title}</h2>
 
                     <div className={styles.interactions}>
-                      
+
                       {/* BOTÃO CURTIDA (GHOST BUTTON) NO BANNER PRINCIPAL */}
                       <button
                         className={styles.actionIconBtn}
                         onClick={(e) => { e.stopPropagation(); this.handleLike(noticiaDestaque.ID); }}
                         title={this.getTextQuemCurtiu(noticiaDestaque.ID)}
                       >
-                        {this.userAlreadyLiked(noticiaDestaque.ID) ? '❤️' : '🤍'} 
+                        {this.userAlreadyLiked(noticiaDestaque.ID) ? '❤️' : '🤍'}
                         <span>{this.getLikesCount(noticiaDestaque.ID)}</span>
                       </button>
 
@@ -1338,9 +1405,9 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                       {this.state.isMarketingUser && this.state.expandedNoticiaId === noticiaDestaque.ID && (
                         <button
                           className={styles.actionBtnLight}
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            this.imprimirCartaz(noticiaDestaque); 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            this.imprimirCartaz(noticiaDestaque);
                           }}
                         >
                           🖨️ Print
@@ -1380,9 +1447,9 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
                             onClick={(e) => this.abrirModalImagem(this.getImagemNoticia(noticia), e)}
                           />
                           <div className={styles.smallNewsContent} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, padding: '24px' }}>
-                            
+
                             {noticia.StatusNoticia === 'Rascunho' && (
-                              <span 
+                              <span
                                 className={styles.draftBadge}
                                 title="Rascunho (Invisível para a empresa)"
                                 style={{ alignSelf: 'flex-start', marginBottom: '10px' }}
@@ -1632,7 +1699,7 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
             </div>
           </div>
         )}
-        
+
         {/* MODAL UNIVERSAL DE FORMULÁRIOS EXTERNOS */}
         {this.state.isIframeModalOpen && (
           <div className={styles.modalOverlay}>
@@ -1651,14 +1718,132 @@ private renderExpandedMainNews = (noticia: any): React.ReactNode => {
         )}
 
         {/* MODAL DE IMAGEM (LIGHTBOX) */}
-          {this.state.isImageModalOpen && (
-            <div className={styles.modalOverlay} onClick={this.fecharModalImagem}>
-              <div className={styles.imageModalContent} onClick={(e) => e.stopPropagation()}>
-                <button className={styles.closeImageBtn} onClick={this.fecharModalImagem}>✕</button>
-                <img src={this.state.currentImageUrl} alt="Imagem Ampliada" className={styles.expandedImage} />
+        {this.state.isImageModalOpen && (
+          <div className={styles.modalOverlay} onClick={this.fecharModalImagem}>
+            <div className={styles.imageModalContent} onClick={(e) => e.stopPropagation()}>
+              <button className={styles.closeImageBtn} onClick={this.fecharModalImagem}>✕</button>
+              <img src={this.state.currentImageUrl} alt="Imagem Ampliada" className={styles.expandedImage} />
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DE MEUS CHAMADOS (TI) */}
+        {this.state.isMeusChamadosModalOpen && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent} style={{ width: '800px', backgroundColor: '#F8FAFC' }}>
+              <header className={styles.modalHeader} style={{ backgroundColor: 'white' }}>
+                <div>
+                  <h3 style={{ marginBottom: '5px' }}>🎫 Meus Chamados de TI</h3>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#6B7280' }}>Acompanhe o status e interaja com a equipe de suporte.</p>
+                </div>
+                <button className={styles.closeBtn} onClick={() => this.setState({ isMeusChamadosModalOpen: false })}>✕</button>
+              </header>
+
+              <div className={styles.commentsList} style={{ padding: '20px' }}>
+                {this.state.loadingChamados ? (
+                  <div className={styles.loadingState}><div className={styles.spinner}></div><p>Buscando seus chamados...</p></div>
+                ) : this.state.meusChamados.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    {this.state.meusChamados.map((ticket, index) => {
+                      const isExpanded = this.state.expandedTicketIndex === index;
+                      const isEncerrado = ticket.status.toLowerCase().includes('encerrado') || ticket.status.toLowerCase().includes('conclu');
+                      const isEscondido = localStorage.getItem(`grunner_escondido_${ticket.id}`) === "true";
+
+                      if (isEscondido && isEncerrado) return null;
+
+                      return (
+                        <div key={ticket.id} className={styles.ticketCard}>
+                          <div className={styles.ticketHeader}>
+                            <h4>{ticket.nome}</h4>
+                            <span className={styles.ticketStatus} style={{ backgroundColor: ticket.statusColor || '#6B7280' }}>
+                              {ticket.status}
+                            </span>
+                          </div>
+
+                          <div className={styles.ticketBody}>
+                            <p><strong>ID do Chamado:</strong> <a href={ticket.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2E5C31', textDecoration: 'none', fontWeight: 'bold' }}>{ticket.id} ➔</a></p>
+                            <p><strong>Abertura:</strong> {new Date(parseInt(ticket.dataCriacao)).toLocaleDateString('pt-BR')} às {new Date(parseInt(ticket.dataCriacao)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
+                            <button className={styles.btnToggleDetails} onClick={() => this.toggleDetalhesChamado(index, ticket.id)}>
+                              {isExpanded ? 'Ocultar Detalhes ▲' : 'Ver Detalhes e Conversa ▼'}
+                            </button>
+
+                            {isEncerrado && (
+                              <button className={styles.btnDismiss} onClick={() => this.dispensarChamado(ticket.id)}>
+                                🗑️ Ocultar
+                              </button>
+                            )}
+                          </div>
+
+                          {isExpanded && (
+                            <div style={{ marginTop: '20px', animation: 'fadeInDown 0.3s ease-out' }}>
+                              <div className={styles.ticketDetailsBox}>
+                                <h5>Descrição do Problema:</h5>
+                                <p>{ticket.descricao || 'Nenhuma descrição fornecida.'}</p>
+                              </div>
+
+                              {this.state.loadingHistorico ? (
+                                <p style={{ textAlign: 'center', color: '#6B7280', fontSize: '13px', margin: '20px 0' }}>Carregando histórico...</p>
+                              ) : (
+                                <div className={styles.ticketReplyArea}>
+                                  <h5>Histórico de Conversa</h5>
+
+                                  <div style={{ maxHeight: '250px', overflowY: 'auto', marginBottom: '15px', paddingRight: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {this.state.comentariosDoChamado.length > 0 ? (
+                                      this.state.comentariosDoChamado.map((comentario: any, idx: number) => {
+                                        const isMe = comentario.emailAutor?.toLowerCase() === this.props.context.pageContext.user.email.toLowerCase();
+                                        return (
+                                          <div key={idx} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', backgroundColor: isMe ? '#E8F5E9' : '#F1F5F9', padding: '10px 15px', borderRadius: '12px', maxWidth: '85%', borderBottomRightRadius: isMe ? '2px' : '12px', borderBottomLeftRadius: !isMe ? '2px' : '12px' }}>
+                                            <strong style={{ display: 'block', fontSize: '12px', color: isMe ? '#2E5C31' : '#475569', marginBottom: '4px' }}>
+                                              {isMe ? 'Você' : comentario.nomeAutor} <span style={{ fontWeight: 'normal', opacity: 0.7, fontSize: '10px', marginLeft: '5px' }}>{new Date(parseInt(comentario.data)).toLocaleString('pt-BR')}</span>
+                                            </strong>
+                                            <span style={{ fontSize: '13px', color: '#334155', whiteSpace: 'pre-wrap' }}>{comentario.texto}</span>
+                                          </div>
+                                        );
+                                      })
+                                    ) : (
+                                      <p style={{ fontSize: '13px', color: '#9CA3AF', textAlign: 'center', fontStyle: 'italic' }}>Nenhuma mensagem trocada ainda.</p>
+                                    )}
+                                  </div>
+
+                                  {!isEncerrado && (
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                      <textarea
+                                        className={styles.ticketTextarea}
+                                        placeholder="Escreva uma nova mensagem para a equipe de TI..."
+                                        value={this.state.novoComentarioChamado}
+                                        onChange={(e) => this.setState({ novoComentarioChamado: e.target.value })}
+                                      />
+                                      <button
+                                        className={styles.btnReply}
+                                        onClick={() => this.enviarComentarioChamado(ticket.id)}
+                                        disabled={this.state.enviandoComentarioChamado || !this.state.novoComentarioChamado.trim()}
+                                        style={{ alignSelf: 'flex-end' }}
+                                      >
+                                        {this.state.enviandoComentarioChamado ? 'Enviando...' : 'Enviar'}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={styles.emptyState}>
+                    <div style={{ fontSize: '40px', marginBottom: '10px' }}>🎉</div>
+                    <p>Você não tem nenhum chamado aberto no momento.</p>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
       </div>
     );

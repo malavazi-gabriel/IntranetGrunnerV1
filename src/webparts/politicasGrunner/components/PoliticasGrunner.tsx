@@ -68,6 +68,9 @@ interface IPoliticasGrunnerState {
   selectedNewDocType: string;
   visaoAtual: 'oficiais' | 'rascunhos' | 'obsoletos';
   documentosRascunho: any[];
+  visaoPublica: 'documentos' | 'formularios';
+  filtroAreaAdmin: string;
+  isSidebarCollapsed: boolean;
 }
 export interface IDocumentVersion {
   VersionLabel: string;
@@ -77,14 +80,28 @@ export interface IDocumentVersion {
 }
 
 export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerProps, IPoliticasGrunnerState> {
-  private areas = ['Institucional', 'TI', 'Sistemas', 'Marketing', 'RH', 'Compras'];
+  private getAreasDinamicas = (): string[] => {
+    const { todosDocumentos } = this.state;
+    const areasSet = new Set<string>();
+
+    // Adiciona algumas padrão para garantir que sempre apareçam mesmo se a lista estiver vazia
+    ['Institucional', 'Sistemas', 'Marketing', 'RH', 'Compras'].forEach(a => areasSet.add(a));
+
+    todosDocumentos.forEach(doc => {
+      if (doc.Area) {
+        areasSet.add(doc.Area);
+      }
+    });
+
+    return Array.from(areasSet);
+  }
   private footerObserver?: MutationObserver;
 
   constructor(props: IPoliticasGrunnerProps) {
     super(props);
 
     this.state = {
-      areaAtiva: 'Institucional',
+      areaAtiva: 'Todos',
       todosDocumentos: [],
       loading: true,
       isMenuProcedimentosOpen: true,
@@ -104,8 +121,11 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       isLoadingHistory: false,
       isCreateModalOpen: false,
       selectedNewDocType: '',
-      visaoAtual: 'oficiais', // Inicia na visão oficial
-      documentosRascunho: []
+      visaoAtual: 'oficiais',
+      documentosRascunho: [],
+      visaoPublica: 'documentos',
+      filtroAreaAdmin: '',
+      isSidebarCollapsed: false
     };
   }
 
@@ -230,8 +250,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
     try {
       const select = 'Id,UniqueId,FileLeafRef,FileRef,Area,CodigoDocumento,TipoDocumento,NumeroRevisao,DataUltimaRevisao,DataProximaRevisao,StatusDocumento,ObservacaoRevisao,PeriodicidadeRevisaoMeses,UltimoAvisoRevisao,DiasAvisoRevisao,PermiteImpressaoControlada,ExibirNaIntranet,ResponsavelRevisao/Title,ResponsavelRevisao/EMail,AprovadorQualidade/Title,AprovadorQualidade/EMail,TipoProcessoDocumento,DocumentoControlado,AprovadoresdoDocumento/Title,AprovadoresdoDocumento/EMail,ProcessoExtinto';
       const expand = 'ResponsavelRevisao,AprovadorQualidade,AprovadoresdoDocumento';
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('PoliticasGrunner')/items?$select=${select}&$expand=${expand}&$top=5000`;
-
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('PoliticasGrunner')/items?$select=${select}&$expand=${expand}&$orderby=FileLeafRef asc&$top=5000`;
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
 
@@ -258,7 +277,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       // Adicionada a coluna Avaliador no Select
       const select = 'Id,FileLeafRef,StatusdaRevisao,AprovadoresdoDocumento/EMail,MotivoRejeicao,Avaliador';
       const expand = 'AprovadoresdoDocumento';
-      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('RascunhosSGQ')/items?$select=${select}&$expand=${expand}`;
+      const url = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists/getbytitle('RascunhosSGQ')/items?$select=${select}&$expand=${expand}&$orderby=FileLeafRef asc`;
 
       const response = await this.props.context.spHttpClient.get(url, SPHttpClient.configurations.v1);
       const data = await response.json();
@@ -321,6 +340,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
     if (doc.StatusDocumento === 'Obsoleto') return 'Obsoleto';
     if (doc.StatusDocumento === 'Arquivado') return 'Arquivado';
     if (doc.StatusDocumento === 'Em revisão') return 'Em revisão';
+    if (doc.StatusDocumento === 'Aguardando Aprovação') return 'Aguardando Aprovação';
 
     if (doc.DataProximaRevisao) {
       const dataVencimento = new Date(doc.DataProximaRevisao);
@@ -384,7 +404,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       'SUPRIMENTOS - COMPRAS / MATERIAIS': 'SUP', 'TECNOLOGIA DA INFORMACAO': 'TI',
       'USINAGEM': 'USI', 'VENDA DE PECAS': 'VPE',
       // Variações comuns para garantir a identificação
-      'RH': 'RH', 'TI': 'TI', 'SISTEMAS': 'TI', 'COMPRAS': 'SUP', 'INSTITUCIONAL': 'INST'
+      'RH': 'RH', 'TI': 'TI', 'SISTEMAS': 'SIS', 'COMPRAS': 'SUP', 'INSTITUCIONAL': 'INST'
     };
 
     // Função interna para remover acentos para não dar falha no Match
@@ -473,6 +493,21 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           ProcessoExtinto: editFormData.ProcessoExtinto !== undefined ? editFormData.ProcessoExtinto : false
         };
 
+        // Se estiver enviando para aprovação, atualizamos a coluna de aprovadores para o Power Automate rodar
+        if (editFormData.StatusDocumento === 'Aguardando Aprovação') {
+          if (editFormData.AprovadoresEmailsText && editFormData.AprovadoresEmailsText.trim().length > 0) {
+            const emails = editFormData.AprovadoresEmailsText.split(/[,;]/).map(e => e.trim()).filter(e => e.length > 0);
+            const arrayDeIdsDosAprovadores = await Promise.all(
+              emails.map(async (email: string) => {
+                return await this.getUserIdByEmail(email);
+              })
+            );
+            payload.AprovadoresdoDocumentoId = arrayDeIdsDosAprovadores.filter(id => id !== null);
+          } else {
+            payload.AprovadoresdoDocumentoId = [];
+          }
+        }
+
         if (editFormData.ResponsavelRevisao?.EMail) {
           payload.ResponsavelRevisaoId = await this.getUserIdByEmail(editFormData.ResponsavelRevisao.EMail);
         } else if (editFormData.ResponsavelRevisao?.EMail === '') {
@@ -537,6 +572,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       case 'Vence em breve': return styles.statusAtencao;
       case 'Vencido': return styles.statusVencido;
       case 'Em revisão': return styles.statusRevisao;
+      case 'Aguardando Aprovação': return styles.statusAtencao; // ADICIONE ESTA LINHA (Ficará Amarelo)
       case 'Arquivado': return styles.statusArquivado;
       default: return styles.statusBadge;
     }
@@ -620,12 +656,19 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
         (d.ExibirNaIntranet !== false)
       );
 
+      // --- NOVO: SEPARA FORMULÁRIOS DE PROCEDIMENTOS (Com normalização) ---
+      if (this.state.visaoPublica === 'formularios') {
+        documentosExibidos = documentosExibidos.filter(doc => doc.TipoProcessoDocumento && doc.TipoProcessoDocumento.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === 'FORMULARIO');
+      } else {
+        documentosExibidos = documentosExibidos.filter(doc => !(doc.TipoProcessoDocumento && doc.TipoProcessoDocumento.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === 'FORMULARIO'));
+      }
+
       if (termoBusca.trim().length > 0) {
         documentosExibidos = documentosExibidos.filter(doc =>
           doc.FileLeafRef?.toLowerCase().includes(termoBusca.toLowerCase()) ||
           doc.CodigoDocumento?.toLowerCase().includes(termoBusca.toLowerCase())
         );
-      } else {
+      } else if (this.state.areaAtiva !== 'Todos') { // <--- A MUDANÇA ESTÁ AQUI
         documentosExibidos = documentosExibidos.filter(doc => doc.Area === areaAtiva);
       }
     } else {
@@ -633,6 +676,12 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
       if (this.state.filtroStatusAdmin !== 'Todos' && visaoAtual === 'oficiais') {
         documentosExibidos = documentosExibidos.filter(d => d.StatusCalculado === this.state.filtroStatusAdmin);
       }
+
+      // ---FILTRO DE ÁREA PARA ADMIN ---
+      if (this.state.filtroAreaAdmin) {
+        documentosExibidos = documentosExibidos.filter(doc => doc.Area === this.state.filtroAreaAdmin);
+      }
+
       if (termoBusca.trim().length > 0) {
         documentosExibidos = documentosExibidos.filter(doc =>
           doc.FileLeafRef?.toLowerCase().includes(termoBusca.toLowerCase()) ||
@@ -640,15 +689,30 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
         );
       }
     }
-
     if (this.state.filtroTipoProcesso) {
-      documentosExibidos = documentosExibidos.filter(doc => doc.TipoProcessoDocumento === this.state.filtroTipoProcesso);
+      // 1. Pega o valor do dropdown e limpa (tira acentos e deixa tudo maiúsculo)
+      const filtroLimpo = this.state.filtroTipoProcesso.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+      documentosExibidos = documentosExibidos.filter(doc => {
+        // 2. Limpa o texto das colunas do SharePoint para garantir a leitura correta
+        const tipoProcesso = doc.TipoProcessoDocumento ? doc.TipoProcessoDocumento.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+        const tipoAntigo = doc.TipoDocumento ? doc.TipoDocumento.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+
+        // 3. Compara se o filtro bate com alguma das duas colunas
+        return tipoProcesso === filtroLimpo || tipoAntigo === filtroLimpo;
+      });
     }
 
     return (
       <div className={styles.container}>
         {this.shouldHideSharePointChrome() && (
-          <style dangerouslySetInnerHTML={{ __html: `... ocultações do sharepoint originais mantidas no seu código ...` }} />
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            #SuiteNavWrapper, #spSiteHeader, #spCommandBar, div[data-automation-id="pageHeader"], div[class^="commandBarWrapper_"],
+            #sp-appBar, div[data-automation-id="sp-appBar"], div[class*="sp-appBar"], div[class^="appBar_"] { display: none !important; visibility: hidden !important; height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+            body { overflow-x: hidden !important; }
+            #workbenchPageContent, #spPageCanvasContent, .SPCanvas-canvas, .CanvasZone, .CanvasSection, .ControlZone, div[data-automation-id="CanvasZone"] > div, div[data-automation-id="contentScrollRegion"] { left: 0 !important; margin: 0 !important; padding: 0 !important; max-width: 100% !important; width: 100% !important; }
+          ` }} />
         )}
 
         <div className={styles.mobileHeaderBar}>
@@ -657,88 +721,76 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
 
         {this.state.isMobileMenuOpen && <div className={styles.mobileOverlayBackdrop} onClick={() => this.setState({ isMobileMenuOpen: false })} />}
 
-        <aside className={`${styles.sidebar} ${this.state.isMobileMenuOpen ? styles.open : ''}`}>
-          <button
-            className={styles.closeMenuBtn}
-            onClick={() => this.setState({ isMobileMenuOpen: false })}
-          >
-            ✕
-          </button>
+        <aside className={`${styles.sidebar} ${this.state.isMobileMenuOpen ? styles.open : ''} ${this.state.isSidebarCollapsed ? styles.collapsed : ''}`}>
+          <button className={styles.closeMenuBtn} onClick={() => this.setState({ isMobileMenuOpen: false })}>✕</button>
 
           <div className={styles.logoArea}>
             <img src={logoGrunner} alt="Logo Semente" className={styles.logoSemente} />
             <h2>Intranet Grunner</h2>
+
+            {/* BOTÃO DE ENCOLHER O MENU */}
+            <button
+              className={styles.collapseToggleBtn}
+              onClick={() => this.setState({ isSidebarCollapsed: !this.state.isSidebarCollapsed })}
+              title={this.state.isSidebarCollapsed ? "Expandir menu" : "Recolher menu"}
+            >
+              {this.state.isSidebarCollapsed ? '»' : '«'}
+            </button>
           </div>
 
           <div className={styles.navGroup}>
             <h3>Navegação</h3>
-            <a href={homeUrl}>🏠 Painel Inicial</a>
-            <a href={atalhosUrl}>🖥️ Central de Atalhos</a>
+            <a href={homeUrl}>🏠 <span>Painel Inicial</span></a>
+            <a href={atalhosUrl}>🖥️ <span>Central de Atalhos</span></a>
           </div>
 
           <div className={styles.navGroup}>
             <h3>Serviços e Chamados</h3>
 
-            <a
-              className={`${styles.menuToggle} ${this.state.isMenuTIOpen ? styles.active : ''}`}
-              onClick={(e) => { e.preventDefault(); this.setState({ isMenuTIOpen: !this.state.isMenuTIOpen }); }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>💻 Tecnologia (TI)</span>
+            <a className={`${styles.menuToggle} ${this.state.isMenuTIOpen ? styles.active : ''}`} onClick={(e) => { e.preventDefault(); this.setState({ isMenuTIOpen: !this.state.isMenuTIOpen }); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>💻 <span>Tecnologia (TI)</span></div>
               <span style={{ fontSize: '10px', opacity: 0.8 }}>{this.state.isMenuTIOpen ? '▲' : '▼'}</span>
             </a>
 
             {this.state.isMenuTIOpen && (
               <div className={styles.navSubGroup}>
-                <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🖥️ Gestão de Ativos</a>
-                <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">➕ Abrir Novo Chamado</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 Meus Chamados</a>
+                <a href="https://grunnerteccombr.sharepoint.com/sites/IntranetGrunner/SitePages/GerenciamentoDeAtivos.aspx?env=Embedded" target="_blank" rel="noopener noreferrer">🖥️ <span>Gestão de Ativos</span></a>
+                <a href="https://forms.clickup.com/9007063382/f/8cdtrap-43393/OCRETZOXI4CU88XQA5" target="_blank" rel="noopener noreferrer">➕ <span>Abrir Novo Chamado</span></a>
+                <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('abrirMeusChamadosGrunner', { detail: 'TI' })); }}>🎫 <span>Meus Chamados</span></a>
               </div>
             )}
 
-            <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 Marketing</a>
-            <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 Frotas</a>
-            <a href="https://grunnerteccombr.sharepoint.com/:l:/s/Facilities/JADJeN1a-IAVRIrzsns79wBEAS_s9zB21POwKXunqjUuK5Y?nav=MDk0ODE1N2QtZWE0Ny00ZDhjLWFhYjItMGVlNmIwMWIzNTY4" target="_blank" rel="noopener noreferrer">🛠️ Facilities</a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/Marketing/_layouts/15/listforms.aspx?cid=MTQ1MjlmMzEtNjk2Ni00MTI2LWJhNzItMzE1MTc0NDU2YTE4&nav=MGIwZDdiNzMtODQwNi00MDhiLTk5ZDEtNGE5NWNlYzljNDg3" target="_blank" rel="noopener noreferrer" data-interception="off">📢 <span>Marketing</span></a>
+            <a href="https://grunnerteccombr.sharepoint.com/sites/GPS/_layouts/15/listforms.aspx?cid=ZWFlMDE1MWUtOTFlMS00MmJiLWFiNzEtOWM0NGVkZTVkMTdh&nav=ZGJmNmMxZGMtNjU5Zi00ZTUxLThjMTctZmFhODY5YTQ3NjBi" target="_blank" rel="noopener noreferrer" data-interception="off">🚗 <span>Frotas</span></a>
+            <a href="https://grunnerteccombr.sharepoint.com/:l:/s/Facilities/JADJeN1a-IAVRIrzsns79wBEAS_s9zB21POwKXunqjUuK5Y?nav=MDk0ODE1N2QtZWE0Ny00ZDhjLWFhYjItMGVlNmIwMWIzNTY4" target="_blank" rel="noopener noreferrer">🛠️ <span>Facilities</span></a>
           </div>
 
           <div className={styles.navGroup}>
             <h3>Institucional</h3>
-            <a href={historiaUrl} target="_blank" rel="noopener noreferrer">🏛️ Nossa História</a>
-            <a href="https://grunnertec.com.br/assets/PDFs/codigoconduta.pdf" target="_blank" rel="noopener noreferrer">⚖️ Código de Conduta</a>
-            <a href="https://grunner.canaldeouvidoria.com.br/" target="_blank" rel="noopener noreferrer">🗣️ Canal de Ética</a>
+            <a href={historiaUrl} target="_blank" rel="noopener noreferrer">🏛️ <span>Nossa História</span></a>
+            <a href="https://grunnertec.com.br/assets/PDFs/codigoconduta.pdf" target="_blank" rel="noopener noreferrer">⚖️ <span>Código de Conduta</span></a>
+            <a href="https://grunner.canaldeouvidoria.com.br/" target="_blank" rel="noopener noreferrer">🗣️ <span>Canal de Ética</span></a>
 
             {this.state.isQualidadeUser ? (
               <>
-                <a
-                  className={`${styles.menuToggle} ${this.state.isMenuProcedimentosOpen ? styles.active : ''}`}
-                  onClick={(e) => { e.preventDefault(); this.setState({ isMenuProcedimentosOpen: !this.state.isMenuProcedimentosOpen }); }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>📖 Procedimentos</span>
+                <a className={`${styles.menuToggle} ${this.state.isMenuProcedimentosOpen ? styles.active : ''}`} onClick={(e) => { e.preventDefault(); this.setState({ isMenuProcedimentosOpen: !this.state.isMenuProcedimentosOpen }); }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>📖 <span>Procedimentos</span></div>
                   <span style={{ fontSize: '10px', opacity: 0.8 }}>{this.state.isMenuProcedimentosOpen ? '▲' : '▼'}</span>
                 </a>
 
                 {this.state.isMenuProcedimentosOpen && (
                   <div className={styles.navSubGroup}>
-                    <a href={politicasUrl} className={!this.state.modoGestaoQualidade ? styles.active : ''}>
-                      📖 Todos os Documentos
-                    </a>
-                    <a
-                      href="#"
-                      className={this.state.modoGestaoQualidade ? styles.active : ''}
-                      onClick={(e) => { e.preventDefault(); this.setState({ modoGestaoQualidade: true, visaoAtual: 'oficiais' }); }}
-                    >
-                      ⚙️ Gestão da Qualidade
-                    </a>
+                    <a href={politicasUrl} className={!this.state.modoGestaoQualidade ? styles.active : ''}>📖 <span>Todos os Documentos</span></a>
+                    <a href="#" className={this.state.modoGestaoQualidade ? styles.active : ''} onClick={(e) => { e.preventDefault(); this.setState({ modoGestaoQualidade: true, visaoAtual: 'oficiais' }); }}>⚙️ <span>Gestão da Qualidade</span></a>
                   </div>
                 )}
               </>
             ) : (
-              <a href={politicasUrl} className={!this.state.modoGestaoQualidade ? styles.active : ''}>
-                📖 Procedimentos
-              </a>
+              <a href={politicasUrl} className={!this.state.modoGestaoQualidade ? styles.active : ''}>📖 <span>Procedimentos</span></a>
             )}
           </div>
-
         </aside>
+
         <div className={styles.contentArea}>
           <header className={styles.pageHeader}>
             <MenuChamados departamento="TI" emailUsuario={this.props.context.pageContext.user.email} />
@@ -751,132 +803,121 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           {/* PAINEL DE MÉTRICAS */}
           {modoGestaoQualidade && visaoAtual === 'oficiais' && (
             <div className={styles.metricsPanel}>
-              <div
-                className={`${styles.metricCard} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Todos' ? styles.metricActive : ''}`}
-                onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Todos' })}
-              >
+              <div className={`${styles.metricCard} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Todos' ? styles.metricActive : ''}`} onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Todos' })}>
                 <div className={styles.metricLabel}>Total</div>
                 <div className={styles.metricValue}>{total}</div>
               </div>
-
-              <div
-                className={`${styles.metricCard} ${styles.metricVigente} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Vigente' ? styles.metricActive : ''}`}
-                onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Vigente' })}
-              >
+              <div className={`${styles.metricCard} ${styles.metricVigente} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Vigente' ? styles.metricActive : ''}`} onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Vigente' })}>
                 <div className={styles.metricLabel}>Vigentes</div>
                 <div className={styles.metricValue}>{vigentes}</div>
               </div>
-
-              <div
-                className={`${styles.metricCard} ${styles.metricAtencao} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Vence em breve' ? styles.metricActive : ''}`}
-                onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Vence em breve' })}
-              >
+              <div className={`${styles.metricCard} ${styles.metricAtencao} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Vence em breve' ? styles.metricActive : ''}`} onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Vence em breve' })}>
                 <div className={styles.metricLabel}>Vence em breve</div>
                 <div className={styles.metricValue}>{atencao}</div>
               </div>
-
-              <div
-                className={`${styles.metricCard} ${styles.metricVencido} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Vencido' ? styles.metricActive : ''}`}
-                onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Vencido' })}
-              >
+              <div className={`${styles.metricCard} ${styles.metricVencido} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Vencido' ? styles.metricActive : ''}`} onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Vencido' })}>
                 <div className={styles.metricLabel}>Vencidos</div>
                 <div className={styles.metricValue}>{vencidos}</div>
               </div>
-
-              <div
-                className={`${styles.metricCard} ${styles.metricRevisao} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Em revisão' ? styles.metricActive : ''}`}
-                onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Em revisão' })}
-              >
+              <div className={`${styles.metricCard} ${styles.metricRevisao} ${modoGestaoQualidade ? styles.clickableCard : ''} ${modoGestaoQualidade && this.state.filtroStatusAdmin === 'Em revisão' ? styles.metricActive : ''}`} onClick={() => modoGestaoQualidade && this.setState({ filtroStatusAdmin: 'Em revisão' })}>
                 <div className={styles.metricLabel}>Em Revisão</div>
                 <div className={styles.metricValue}>{revisao}</div>
               </div>
-
-              {/* NOVO CARTÃO DE RASCUNHOS */}
-              <div
-                className={`${styles.metricCard} ${modoGestaoQualidade ? styles.clickableCard : ''}`}
-                style={{ borderTop: '4px solid #8B5CF6' }}
-                onClick={() => {
-                  this.setState({ visaoAtual: 'rascunhos' });
-                  if (this.state.documentosRascunho.length === 0) this.buscarRascunhos();
-                }}
-              >
+              <div className={`${styles.metricCard} ${modoGestaoQualidade ? styles.clickableCard : ''}`} style={{ borderTop: '4px solid #8B5CF6' }} onClick={() => { this.setState({ visaoAtual: 'rascunhos' }); if (this.state.documentosRascunho.length === 0) this.buscarRascunhos(); }}>
                 <div className={styles.metricLabel}>Rascunhos</div>
                 <div className={styles.metricValue}>{this.state.documentosRascunho ? this.state.documentosRascunho.length : 0}</div>
               </div>
-
             </div>
           )}
 
           {/* NAVEGAÇÃO ENTRE OFICIAIS, RASCUNHOS E OBSOLETOS (Apenas Qualidade) */}
           {modoGestaoQualidade && (
             <div className={styles.tabsContainer} style={{ marginBottom: '20px' }}>
-              <button
-                className={visaoAtual === 'oficiais' ? styles.tabActive : styles.tab}
-                onClick={() => this.setState({ visaoAtual: 'oficiais' })}>
-                📂 Documentos Oficiais
-              </button>
-              <button
-                className={visaoAtual === 'rascunhos' ? styles.tabActive : styles.tab}
-                onClick={() => {
-                  this.setState({ visaoAtual: 'rascunhos' });
-                  if (documentosRascunho.length === 0) this.buscarRascunhos();
-                }}>
-                📥 Caixa de Entrada (Rascunhos)
-              </button>
-              <button
-                className={visaoAtual === 'obsoletos' ? styles.tabActive : styles.tab}
-                onClick={() => this.setState({ visaoAtual: 'obsoletos' })}>
-                🗄️ Arquivo Morto (Obsoletos)
-              </button>
+              <button className={visaoAtual === 'oficiais' ? styles.tabActive : styles.tab} onClick={() => this.setState({ visaoAtual: 'oficiais' })}>📂 Documentos Oficiais</button>
+              <button className={visaoAtual === 'rascunhos' ? styles.tabActive : styles.tab} onClick={() => { this.setState({ visaoAtual: 'rascunhos' }); if (documentosRascunho.length === 0) this.buscarRascunhos(); }}>📥 Caixa de Entrada (Rascunhos)</button>
+              <button className={visaoAtual === 'obsoletos' ? styles.tabActive : styles.tab} onClick={() => this.setState({ visaoAtual: 'obsoletos' })}>🗄️ Arquivo Morto (Obsoletos)</button>
             </div>
           )}
 
           {(visaoAtual === 'oficiais' || visaoAtual === 'obsoletos') && (
             <>
-              <div className={styles.searchContainer}>
-                <input type="text" placeholder="🔍 Buscar por nome ou código..." value={termoBusca} onChange={(e) => this.setState({ termoBusca: e.target.value })} className={styles.searchInput} />
-              </div>
-
-              <div className={styles.filtersRow}>
-                <select
-                  value={this.state.filtroTipoProcesso}
-                  onChange={(e) => this.setState({ filtroTipoProcesso: e.target.value })}
-                >
-                  <option value="">Todos os Tipos de Documento</option>
-                  <option value="MAPEAMENTO DE PROCESSO">Mapeamento de Processo</option>
-                  <option value="PROCEDIMENTO">Procedimento</option>
-                  <option value="PROCEDIMENTO OPERACIONAL PADRÃO">Procedimento Operacional Padrão (POP)</option>
-                  <option value="INSTRUÇÃO DE TRABALHO">Instrução de Trabalho</option>
-                  <option value="FORMULÁRIO">Formulário</option>
-                  <option value="MANUAL">Manual</option>
-                  <option value="POLÍTICA">Política</option>
-                </select>
-
-                {modoGestaoQualidade && (
-                  <button className={styles.exportButton} onClick={() => this.exportarParaCSV(documentosExibidos)}>
-                    📊 Exportar Excel/CSV
-                  </button>
-                )}
-
-                {!modoGestaoQualidade && (
+              {/* --- ABAS PÚBLICAS PARA OS COLABORADORES --- */}
+              {!modoGestaoQualidade && visaoAtual === 'oficiais' && (
+                <div className={styles.tabsContainer}>
                   <button
-                    className={styles.createButton}
-                    onClick={() => this.setState({ isCreateModalOpen: true })}
-                  >
-                    ➕ Solicitar Novo Documento
+                    className={this.state.visaoPublica === 'documentos' ? styles.tabActive : styles.tab}
+                    onClick={() => this.setState({ visaoPublica: 'documentos', termoBusca: '', areaAtiva: 'Todos' })}>
+                    📖 Procedimentos e Manuais
                   </button>
-                )}
-              </div>
+                  <button
+                    className={this.state.visaoPublica === 'formularios' ? styles.tabActive : styles.tab}
+                    onClick={() => this.setState({ visaoPublica: 'formularios', termoBusca: '', areaAtiva: 'Todos' })}>
+                    📝 Formulários para Download
+                  </button>
+                </div>
+              )}
 
+              {/* 1. ABAS DE ÁREAS (Movidas para o topo para agir como Pastas Principais) */}
               {!modoGestaoQualidade && (
                 <nav className={`${styles.tabsContainer} ${termoBusca.length > 0 ? styles.tabsDisabled : ''}`}>
-                  {this.areas.map((area) => (
-                    <button key={area} className={areaAtiva === area && termoBusca.length === 0 ? styles.tabActive : styles.tab} onClick={() => this.setState({ areaAtiva: area, termoBusca: '' })}>
-                      {area}
-                    </button>
+                  <button
+                    className={areaAtiva === 'Todos' && termoBusca.length === 0 ? styles.tabActive : styles.tab}
+                    onClick={() => this.setState({ areaAtiva: 'Todos', termoBusca: '' })}>
+                    Todos
+                  </button>
+
+                  {this.getAreasDinamicas().map((area) => (
+                    <button key={area} className={areaAtiva === area && termoBusca.length === 0 ? styles.tabActive : styles.tab} onClick={() => this.setState({ areaAtiva: area, termoBusca: '' })}>{area}</button>
                   ))}
                 </nav>
               )}
+
+              {/* 2. BARRA DE FERRAMENTAS (Busca, Filtro e Botão na mesma linha) */}
+              <div className={styles.actionToolbar}>
+                <div className={styles.searchContainer}>
+                  <input type="text" placeholder="🔍 Buscar por nome ou código..." value={termoBusca} onChange={(e) => this.setState({ termoBusca: e.target.value })} className={styles.searchInput} />
+                </div>
+
+                <div className={styles.filtersRow}>
+                  {/* ---BOTÃO LIMPAR FILTROS --- */}
+                  {(termoBusca.trim().length > 0 || this.state.filtroTipoProcesso !== '' || this.state.filtroAreaAdmin !== '' || this.state.areaAtiva !== 'Todos' || this.state.filtroStatusAdmin !== 'Todos') && (
+                    <button
+                      onClick={() => this.setState({ termoBusca: '', filtroTipoProcesso: '', filtroAreaAdmin: '', areaAtiva: 'Todos', filtroStatusAdmin: 'Todos' })}
+                      style={{ background: 'transparent', border: 'none', color: '#EF4444', fontWeight: '700', cursor: 'pointer', fontSize: '13px', padding: '10px 5px' }}>
+                      ✕ Limpar
+                    </button>
+                  )}
+
+                  <select value={this.state.filtroTipoProcesso} onChange={(e) => this.setState({ filtroTipoProcesso: e.target.value })}>
+                    <option value="">Todos os Tipos de Documento</option>
+                    <option value="MAPEAMENTO DE PROCESSO">Mapeamento de Processo</option>
+                    <option value="PROCEDIMENTO">Procedimento</option>
+                    <option value="PROCEDIMENTO OPERACIONAL PADRAO">Procedimento Operacional Padrão (POP)</option>
+                    <option value="INSTRUCAO DE TRABALHO">Instrução de Trabalho</option>
+                    <option value="FORMULARIO">Formulário</option>
+                    <option value="MANUAL">Manual</option>
+                    <option value="POLITICA">Política</option>
+                  </select>
+
+                  {/* ---DROPDOWN DE ÁREA (Apenas Gestão) --- */}
+                  {modoGestaoQualidade && (
+                    <select value={this.state.filtroAreaAdmin} onChange={(e) => this.setState({ filtroAreaAdmin: e.target.value })}>
+                      <option value="">Todas as Áreas</option>
+                      {this.getAreasDinamicas().map(area => (
+                        <option key={area} value={area}>{area}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {modoGestaoQualidade && (
+                    <button className={styles.exportButton} onClick={() => this.exportarParaCSV(documentosExibidos)}>📊 Exportar Excel/CSV</button>
+                  )}
+
+                  {!modoGestaoQualidade && (
+                    <button className={styles.createButton} onClick={() => this.setState({ isCreateModalOpen: true })}>➕ Solicitar Novo Documento</button>
+                  )}
+                </div>
+              </div>
             </>
           )}
 
@@ -884,20 +925,10 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
             <div className={styles.adminHeaderControls}>
               <div className={styles.filterStatusContainer}>
                 {['Todos', 'Vigente', 'Vence em breve', 'Vencido', 'Em revisão', 'Arquivado'].map(status => (
-                  <button key={status} className={this.state.filtroStatusAdmin === status ? styles.filterStatusActive : styles.filterStatusButton} onClick={() => this.setState({ filtroStatusAdmin: status })}>
-                    {status}
-                  </button>
+                  <button key={status} className={this.state.filtroStatusAdmin === status ? styles.filterStatusActive : styles.filterStatusButton} onClick={() => this.setState({ filtroStatusAdmin: status })}>{status}</button>
                 ))}
               </div>
-
-              <a
-                href={`${this.props.context.pageContext.web.absoluteUrl}/PoliticasGrunner/Forms/AllItems.aspx`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.uploadButton}
-              >
-                ➕ Carregar Novos Documentos
-              </a>
+              <a href={`${this.props.context.pageContext.web.absoluteUrl}/PoliticasGrunner/Forms/AllItems.aspx`} target="_blank" rel="noopener noreferrer" className={styles.uploadButton}>➕ Carregar Novos Documentos</a>
             </div>
           )}
 
@@ -905,87 +936,42 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
             {loading ? (
               <div className={styles.loadingState}><div className={styles.spinner}></div><p>Carregando documentos...</p></div>
             ) : visaoAtual === 'rascunhos' ? (
-
-              // ================= VISÃO DE RASCUNHOS (CAIXA DE ENTRADA) =================
               <div className={styles.adminTableWrapper}>
                 <table className={styles.adminTable}>
                   <thead>
-                    <tr>
-                      <th>Nome do Rascunho</th>
-                      <th>Status da Revisão</th>
-                      <th>Feedback da Avaliação</th> {/* Título mais claro */}
-                      <th>Gestores Atribuídos</th>
-                      <th>Ações</th>
-                    </tr>
+                    <tr><th>Nome do Rascunho</th><th>Status da Revisão</th><th>Feedback da Avaliação</th><th>Gestores Atribuídos</th><th>Ações</th></tr>
                   </thead>
                   <tbody>
                     {documentosRascunho.length === 0 ? (
                       <tr><td colSpan={5} style={{ textAlign: 'center' }}>Nenhum rascunho pendente no momento.</td></tr>
                     ) : (
                       documentosRascunho.map((rasc, idx) => {
-                        const emailsStr = rasc.AprovadoresdoDocumento
-                          ? rasc.AprovadoresdoDocumento.map((ap: any) => ap.EMail).join('; ')
-                          : '';
-
-                        // Lógica de cores para o Status
-                        let badgeColor = '#E5E7EB';
-                        let textColor = '#374151';
-
-                        if (rasc.StatusdaRevisao === 'Aguardando Gestores') {
-                          badgeColor = '#FEF08A';
-                          textColor = '#854D0E';
-                        } else if (rasc.StatusdaRevisao === 'Rejeitado') {
-                          badgeColor = '#FECACA';
-                          textColor = '#991B1B';
-                        } else if (rasc.StatusdaRevisao === 'Aprovado') {
-                          badgeColor = '#DEF7EC';
-                          textColor = '#03543F';
-                        }
+                        const emailsStr = rasc.AprovadoresdoDocumento ? rasc.AprovadoresdoDocumento.map((ap: any) => ap.EMail).join('; ') : '';
+                        let badgeColor = '#E5E7EB'; let textColor = '#374151';
+                        if (rasc.StatusdaRevisao === 'Aguardando Gestores') { badgeColor = '#FEF08A'; textColor = '#854D0E'; }
+                        else if (rasc.StatusdaRevisao === 'Rejeitado') { badgeColor = '#FECACA'; textColor = '#991B1B'; }
+                        else if (rasc.StatusdaRevisao === 'Aprovado') { badgeColor = '#DEF7EC'; textColor = '#03543F'; }
 
                         return (
                           <tr key={idx}>
                             <td style={{ fontWeight: '500' }}>{rasc.FileLeafRef}</td>
-
-                            <td>
-                              <span className={styles.statusBadge} style={{ backgroundColor: badgeColor, color: textColor, fontWeight: 'bold' }}>
-                                {rasc.StatusdaRevisao || 'Rascunho'}
-                              </span>
-                            </td>
-
-                            {/* Coluna Centralizada de Feedback com o Nome de quem avaliou */}
+                            <td><span className={styles.statusBadge} style={{ backgroundColor: badgeColor, color: textColor, fontWeight: 'bold' }}>{rasc.StatusdaRevisao || 'Rascunho'}</span></td>
                             <td style={{ maxWidth: '280px', whiteSpace: 'normal', lineHeight: '1.4' }}>
                               {rasc.StatusdaRevisao === 'Rejeitado' && rasc.MotivoRejeicao ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                  <span style={{ color: '#991B1B', fontSize: '13px', fontWeight: '600' }}>
-                                    ⚠️ {rasc.MotivoRejeicao}
-                                  </span>
-                                  {rasc.Avaliador && (
-                                    <span style={{ fontSize: '11px', color: '#6B7280' }}>👤 Rejeitado por: <strong>{rasc.Avaliador}</strong></span>
-                                  )}
+                                  <span style={{ color: '#991B1B', fontSize: '13px', fontWeight: '600' }}>⚠️ {rasc.MotivoRejeicao}</span>
+                                  {rasc.Avaliador && <span style={{ fontSize: '11px', color: '#6B7280' }}>👤 Rejeitado por: <strong>{rasc.Avaliador}</strong></span>}
                                 </div>
                               ) : rasc.StatusdaRevisao === 'Aprovado' && rasc.Avaliador ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                  <span style={{ color: '#03543F', fontSize: '13px', fontWeight: '600' }}>
-                                    ✅ Documento aceito
-                                  </span>
+                                  <span style={{ color: '#03543F', fontSize: '13px', fontWeight: '600' }}>✅ Documento aceito</span>
                                   <span style={{ fontSize: '11px', color: '#6B7280' }}>👤 Aprovado por: <strong>{rasc.Avaliador}</strong></span>
                                 </div>
-                              ) : (
-                                <span style={{ color: '#9CA3AF' }}>-</span>
-                              )}
+                              ) : (<span style={{ color: '#9CA3AF' }}>-</span>)}
                             </td>
-
-                            {/* Coluna de Gestores mantida para saber quem mais está envolvido */}
                             <td style={{ fontSize: '12px', color: '#4B5563' }}>{emailsStr || '-'}</td>
-
                             <td className={styles.adminActions}>
-                              <button onClick={() => this.setState({
-                                documentoSelecionado: rasc,
-                                editFormData: {
-                                  StatusDaRevisao: rasc.StatusdaRevisao || 'Rascunho',
-                                  AprovadoresEmailsText: emailsStr
-                                }
-                              })} className={styles.editButton}>✏️ Gerenciar Aprovação</button>
+                              <button onClick={() => this.setState({ documentoSelecionado: rasc, editFormData: { StatusDaRevisao: rasc.StatusdaRevisao || 'Rascunho', AprovadoresEmailsText: emailsStr } })} className={styles.editButton}>✏️ Gerenciar Aprovação</button>
                             </td>
                           </tr>
                         );
@@ -994,21 +980,11 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                   </tbody>
                 </table>
               </div>
-
             ) : visaoAtual === 'obsoletos' ? (
-
-              // ================= VISÃO DE ARQUIVO MORTO / OBSOLETOS =================
               <div className={styles.adminTableWrapper}>
                 <table className={styles.adminTable}>
                   <thead>
-                    <tr>
-                      <th>Código</th>
-                      <th>Nome do Documento</th>
-                      <th>Área</th>
-                      <th>Tipo</th>
-                      <th>Observação / Destino</th>
-                      <th>Ações</th>
-                    </tr>
+                    <tr><th>Código</th><th>Nome do Documento</th><th>Área</th><th>Tipo</th><th>Observação / Destino</th><th>Ações</th></tr>
                   </thead>
                   <tbody>
                     {documentosExibidos.filter(d => d.StatusCalculado === 'Obsoleto' || d.StatusCalculado === 'Arquivado').length === 0 ? (
@@ -1032,10 +1008,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                   </tbody>
                 </table>
               </div>
-
             ) : !modoGestaoQualidade ? (
-
-              // ================= VISÃO PÚBLICA (Cards) =================
               <div className={styles.documentGrid}>
                 {documentosExibidos.map((doc, index) => {
                   const extensao = doc.FileLeafRef ? doc.FileLeafRef.split('.').pop()?.toLowerCase() : '';
@@ -1045,87 +1018,55 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                       <div className={styles.cardHeader}>
                         <div className={styles.headerTop}>
                           <div className={isPdf ? styles.iconPdf : styles.iconDoc}>{isPdf ? 'PDF' : 'DOC'}</div>
-                          <span className={`${styles.statusBadge} ${this.getStatusClass(doc.StatusCalculado)}`}>
-                            {doc.StatusCalculado}
-                          </span>
+                          <span className={`${styles.statusBadge} ${this.getStatusClass(doc.StatusCalculado)}`}>{doc.StatusCalculado}</span>
                         </div>
-                        <h3 className={styles.docTitle} title={doc.FileLeafRef.replace(`.${extensao}`, '')}>
-                          {doc.FileLeafRef.replace(`.${extensao}`, '')}
-                        </h3>
+                        <h3 className={styles.docTitle} title={doc.FileLeafRef.replace(`.${extensao}`, '')}>{doc.FileLeafRef.replace(`.${extensao}`, '')}</h3>
                       </div>
-
                       <div className={styles.cardBody}>
-                        <span className={`${styles.badgeControlado} ${doc.DocumentoControlado ? styles.isControlado : styles.isNaoControlado}`}>
-                          {doc.DocumentoControlado ? '🛡️ Controlado' : '📄 Não Controlado'}
-                        </span>
-
-                        <span className={styles.areaBadge}>
-                          {doc.Area || 'Geral'} {doc.TipoProcessoDocumento ? `• ${doc.TipoProcessoDocumento}` : (doc.TipoDocumento ? `• ${doc.TipoDocumento}` : '')}
-                        </span>
-                        <span className={styles.docCode}>
-                          {doc.CodigoDocumento ? `Código: ${doc.CodigoDocumento}` : <span className={styles.emptyCode}>Sem código</span>}
-                        </span>
+                        <span className={`${styles.badgeControlado} ${doc.DocumentoControlado ? styles.isControlado : styles.isNaoControlado}`}>{doc.DocumentoControlado ? '🛡️ Controlado' : '📄 Não Controlado'}</span>
+                        <span className={styles.areaBadge}>{doc.Area || 'Geral'} {doc.TipoProcessoDocumento ? `• ${doc.TipoProcessoDocumento}` : (doc.TipoDocumento ? `• ${doc.TipoDocumento}` : '')}</span>
+                        <span className={styles.docCode}>{doc.CodigoDocumento ? `Código: ${doc.CodigoDocumento}` : <span className={styles.emptyCode}>Sem código</span>}</span>
                       </div>
-
                       <div className={styles.cardFooter}>
                         <div className={styles.revisionInfo}>
                           <span className={styles.revText}>Rev. {doc.NumeroRevisao || '00'}</span>
                           <span className={styles.venceText}>Vence: {this.formatDate(doc.DataProximaRevisao)}</span>
                         </div>
-                        <a
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const siteUrl = this.props.context.pageContext.web.absoluteUrl;
-                            const urlIframe = `${siteUrl}/_layouts/15/embed.aspx?UniqueId=${doc.UniqueId}&wdHideRibbon=True&wdHideHeaders=True`;
-                            this.setState({ iframeDocumentoUrl: urlIframe });
-                          }}
-                          className={styles.openButton}
-                        >
-                          Abrir documento
-                        </a>
+                        {doc.TipoProcessoDocumento === 'FORMULARIO' ? (
+                          <a href={`${doc.FileRef}?download=1`} className={styles.openButton} style={{ backgroundColor: '#10B981', color: 'white', borderColor: '#10B981' }} download>📥 Baixar Formulário</a>
+                        ) : (
+                          <a onClick={(e) => { e.preventDefault(); const siteUrl = this.props.context.pageContext.web.absoluteUrl; const urlIframe = `${siteUrl}/_layouts/15/embed.aspx?UniqueId=${doc.UniqueId}&wdHideRibbon=True&wdHideHeaders=True`; this.setState({ iframeDocumentoUrl: urlIframe }); }} className={styles.openButton}>Abrir documento</a>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-
             ) : (
-              // ================= VISÃO ADMINISTRATIVA OFICIAL (Tabela) =================
               <div className={styles.adminTableWrapper}>
                 <table className={styles.adminTable}>
                   <thead>
-                    <tr>
-                      <th>Código</th>
-                      <th>Nome</th>
-                      <th>Área</th>
-                      <th>Rev</th>
-                      <th>Última Revisão</th> {/* Logo após a Rev */}
-                      <th>Status</th>
-                      <th>Vencimento</th>      {/* Movido para perto do status */}
-                      <th>Responsável</th>
-                      <th>Aprovadores</th>
-                      <th>Ações</th>
-                    </tr>
+                    <tr><th>Código</th><th>Nome</th><th>Área</th><th>Rev</th><th>Última Revisão</th><th>Status</th><th>Vencimento</th><th>Responsável</th><th>Aprovadores</th><th>Ações</th></tr>
                   </thead>
                   <tbody>
                     {documentosExibidos.map((doc, idx) => {
-                      const aprovadoresOficiaisStr = doc.AprovadoresdoDocumento && doc.AprovadoresdoDocumento.length > 0
-                        ? doc.AprovadoresdoDocumento.map((ap: any) => ap.Title || ap.EMail).join('; ')
-                        : '-';
-
+                      const aprovadoresOficiaisStr = doc.AprovadoresdoDocumento && doc.AprovadoresdoDocumento.length > 0 ? doc.AprovadoresdoDocumento.map((ap: any) => ap.Title || ap.EMail).join('; ') : '-';
                       return (
                         <tr key={idx}>
                           <td>{doc.CodigoDocumento || '-'}</td>
                           <td>{doc.FileLeafRef}</td>
                           <td>{doc.Area}</td>
                           <td>{doc.NumeroRevisao || '-'}</td>
-                          <td>{this.formatDate(doc.DataUltimaRevisao)}</td> {/* Última Revisão */}
+                          <td>{this.formatDate(doc.DataUltimaRevisao)}</td>
                           <td><span className={`${styles.statusBadge} ${this.getStatusClass(doc.StatusCalculado)}`}>{doc.StatusCalculado}</span></td>
-                          <td>{this.formatDate(doc.DataProximaRevisao)}</td>     {/* Vencimento */}
+                          <td>{this.formatDate(doc.DataProximaRevisao)}</td>
                           <td>{doc.ResponsavelRevisao?.Title || '-'}</td>
                           <td style={{ fontSize: '12px', color: '#4B5563' }}>{aprovadoresOficiaisStr}</td>
                           <td className={styles.adminActions}>
-                            <button onClick={() => this.setState({ documentoSelecionado: doc, editFormData: { ...doc, ResponsavelRevisao: { EMail: doc.ResponsavelRevisao?.EMail }, AprovadorQualidade: { EMail: doc.AprovadorQualidade?.EMail } } })} className={styles.editButton}>✏️ Editar</button>
+                            <button onClick={() => {
+                              const aprovadoresEmailsApenasStr = doc.AprovadoresdoDocumento && doc.AprovadoresdoDocumento.length > 0 ? doc.AprovadoresdoDocumento.map((ap: any) => ap.EMail).join('; ') : '';
+                              this.setState({ documentoSelecionado: doc, editFormData: { ...doc, ResponsavelRevisao: { EMail: doc.ResponsavelRevisao?.EMail }, AprovadorQualidade: { EMail: doc.AprovadorQualidade?.EMail }, AprovadoresEmailsText: aprovadoresEmailsApenasStr } });
+                            }} className={styles.editButton}>✏️ Editar</button>
                           </td>
                         </tr>
                       );
@@ -1137,75 +1078,43 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           </main>
         </div>
 
-        {/* ================= MODAL DE EDIÇÃO (DINÂMICO PARA OFICIAL OU RASCUNHO) ================= */}
         {this.state.documentoSelecionado && (
           <div className={styles.editModalBackdrop}>
             <div className={styles.editModal}>
-
               <div className={styles.editModalHeader}>
                 <h2>{this.state.documentoSelecionado.FileLeafRef}</h2>
                 <button onClick={() => this.setState({ documentoSelecionado: null, activeModalTab: 'metadados', documentHistory: [] })} className={styles.closeModal}>✕</button>
               </div>
 
-              {/* SÓ MOSTRA ABAS SE FOR DOCUMENTO OFICIAL OU OBSOLETO */}
               {(visaoAtual === 'oficiais' || visaoAtual === 'obsoletos') && (
                 <div className={styles.modalTabs}>
-                  <button
-                    className={`${styles.modalTab} ${this.state.activeModalTab === 'metadados' ? styles.modalTabActive : ''}`}
-                    onClick={() => this.setState({ activeModalTab: 'metadados' })}
-                  >
-                    {visaoAtual === 'obsoletos' ? '🔍 Consultar Metadados' : '📝 Editar Metadados'}
-                  </button>
-                  <button
-                    className={`${styles.modalTab} ${this.state.activeModalTab === 'historico' ? styles.modalTabActive : ''}`}
-                    onClick={() => {
-                      this.setState({ activeModalTab: 'historico' });
-                      if (this.state.documentoSelecionado && (!this.state.documentHistory || this.state.documentHistory.length === 0)) {
-                        this.buscarHistoricoDocumento(this.state.documentoSelecionado.Id);
-                      }
-                    }}
-                  >
-                    🕒 Histórico de Revisões
-                  </button>
+                  <button className={`${styles.modalTab} ${this.state.activeModalTab === 'metadados' ? styles.modalTabActive : ''}`} onClick={() => this.setState({ activeModalTab: 'metadados' })}>{visaoAtual === 'obsoletos' ? '🔍 Consultar Metadados' : '📝 Editar Metadados'}</button>
+                  <button className={`${styles.modalTab} ${this.state.activeModalTab === 'historico' ? styles.modalTabActive : ''}`} onClick={() => { this.setState({ activeModalTab: 'historico' }); if (this.state.documentoSelecionado && (!this.state.documentHistory || this.state.documentHistory.length === 0)) { this.buscarHistoricoDocumento(this.state.documentoSelecionado.Id); } }}>🕒 Histórico de Revisões</button>
                 </div>
               )}
 
               <div className={styles.editModalBody}>
-
-                {/* CONTEÚDO PARA RASCUNHOS */}
                 {visaoAtual === 'rascunhos' && (
                   <div className={styles.formGrid}>
                     <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                       <label>Status da Revisão</label>
-                      <select
-                        value={this.state.editFormData.StatusDaRevisao || 'Rascunho'}
-                        onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, StatusDaRevisao: e.target.value } })}
-                      >
+                      <select value={this.state.editFormData.StatusDaRevisao || 'Rascunho'} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, StatusDaRevisao: e.target.value } })}>
                         <option value="Rascunho">Rascunho</option>
                         <option value="Aguardando Gestores">Aguardando Gestores</option>
                         <option value="Aprovado">Aprovado</option>
                         <option value="Rejeitado">Rejeitado</option>
                       </select>
                     </div>
-
                     <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                       <label>E-mails dos Aprovadores (separe por vírgula)</label>
-                      <textarea
-                        rows={3}
-                        placeholder="gestor1@grunner.com.br, gestor2@grunner.com.br"
-                        value={this.state.editFormData.AprovadoresEmailsText || ''}
-                        onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, AprovadoresEmailsText: e.target.value } })}
-                        style={{ padding: '10px', border: '1px solid #D1D5DB', borderRadius: '6px', fontFamily: 'inherit', resize: 'vertical' }}
-                      />
+                      <textarea rows={3} placeholder="gestor1@grunner.com.br, gestor2@grunner.com.br" value={this.state.editFormData.AprovadoresEmailsText || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, AprovadoresEmailsText: e.target.value } })} style={{ padding: '10px', border: '1px solid #D1D5DB', borderRadius: '6px', fontFamily: 'inherit', resize: 'vertical' }} />
                     </div>
                   </div>
                 )}
 
-                {/* CONTEÚDO PARA METADADOS OFICIAIS E OBSOLETOS */}
                 {(visaoAtual === 'oficiais' || visaoAtual === 'obsoletos') && this.state.activeModalTab === 'metadados' && (
                   <>
                     {visaoAtual === 'oficiais' ? (
-                      // ================== TELA DE EDIÇÃO PADRÃO (DOCUMENTOS VIGENTES) ==================
                       <div className={styles.formGrid}>
                         <div className={styles.formGroup}>
                           <label>Área Responsável</label>
@@ -1215,33 +1124,37 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                             <option value="Atendimento">Atendimento</option>
                             <option value="Comercial">Comercial</option>
                             <option value="Compliance">Compliance</option>
+                            <option value="Compras">Compras</option>
                             <option value="Controladoria">Controladoria</option>
                             <option value="Departamento pessoal">Departamento pessoal</option>
-                            <option value="Escritório de gerenciamento de projetos">Escritório de gerenciamento de projetos</option>
                             <option value="Engenharia de processo">Engenharia de processo</option>
+                            <option value="Escritório de gerenciamento de projetos">Escritório de gerenciamento de projetos</option>
                             <option value="Facilities">Facilities</option>
                             <option value="Financeiro">Financeiro</option>
                             <option value="Fiscal">Fiscal</option>
                             <option value="Frota leve">Frota leve</option>
+                            <option value="Institucional">Institucional</option>
                             <option value="Jurídico">Jurídico</option>
                             <option value="Logística">Logística</option>
-                            <option value="Meio Ambiente">Meio Ambiente</option>
                             <option value="Marketing">Marketing</option>
-                            <option value="Planejamento, programação e controle da produção">Planejamento, programação e controle da produção</option>
-                            <option value="Pesquisa e Desenvolvimento">Pesquisa e Desenvolvimento</option>
+                            <option value="Meio Ambiente">Meio Ambiente</option>
                             <option value="Performance">Performance</option>
+                            <option value="Pesquisa e Desenvolvimento">Pesquisa e Desenvolvimento</option>
+                            <option value="Planejamento, programação e controle da produção">Planejamento, programação e controle da produção</option>
                             <option value="Produção">Produção</option>
                             <option value="Qualidade">Qualidade</option>
                             <option value="Recursos humanos">Recursos humanos</option>
-                            <option value="Sucesso do cliente">Sucesso do cliente</option>
+                            <option value="RH">RH</option>
                             <option value="Segurança do trabalho">Segurança do trabalho</option>
+                            <option value="Sistemas">Sistemas</option>
+                            <option value="Sucesso do cliente">Sucesso do cliente</option>
                             <option value="Suprimentos - compras / materiais">Suprimentos - compras / materiais</option>
                             <option value="Tecnologia da Informação">Tecnologia da Informação</option>
+                            <option value="TI">TI</option>
                             <option value="Usinagem">Usinagem</option>
                             <option value="Venda de peças">Venda de peças</option>
                           </select>
                         </div>
-
                         <div className={styles.formGroup}>
                           <label>Tipo de Processo/Documento</label>
                           <select value={this.state.editFormData.TipoProcessoDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, TipoProcessoDocumento: e.target.value } })}>
@@ -1257,40 +1170,25 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                             <option value="PROCEDIMENTO">Procedimento</option>
                           </select>
                         </div>
-
                         <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                           <label>Código do Documento</label>
                           <div style={{ display: 'flex', gap: '10px' }}>
-                            <input
-                              type="text"
-                              style={{ flex: 1, padding: '10px', border: '1px solid #D1D5DB', borderRadius: '6px' }}
-                              value={this.state.editFormData.CodigoDocumento || ''}
-                              onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, CodigoDocumento: e.target.value } })}
-                            />
-                            <button
-                              type="button"
-                              onClick={this.gerarCodigoAutomatico}
-                              style={{ backgroundColor: '#A6CE39', color: '#1C2510', border: 'none', padding: '0 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-                              🪄 Gerar Código
-                            </button>
+                            <input type="text" style={{ flex: 1, padding: '10px', border: '1px solid #D1D5DB', borderRadius: '6px' }} value={this.state.editFormData.CodigoDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, CodigoDocumento: e.target.value } })} />
+                            <button type="button" onClick={this.gerarCodigoAutomatico} style={{ backgroundColor: '#A6CE39', color: '#1C2510', border: 'none', padding: '0 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>🪄 Gerar Código</button>
                           </div>
                         </div>
-
                         <div className={styles.formGroup}>
                           <label>Número da Revisão</label>
                           <input type="text" value={this.state.editFormData.NumeroRevisao || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, NumeroRevisao: e.target.value } })} />
                         </div>
-
                         <div className={styles.formGroup}>
                           <label>Data Última Revisão</label>
                           <input type="date" value={this.state.editFormData.DataUltimaRevisao ? this.state.editFormData.DataUltimaRevisao.split('T')[0] : ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DataUltimaRevisao: e.target.value } })} />
                         </div>
-
                         <div className={styles.formGroup}>
                           <label>Data Próxima Revisão</label>
                           <input type="date" value={this.state.editFormData.DataProximaRevisao ? this.state.editFormData.DataProximaRevisao.split('T')[0] : ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DataProximaRevisao: e.target.value } })} />
                         </div>
-
                         <div className={styles.formGroup}>
                           <label>Documento Controlado?</label>
                           <select value={this.state.editFormData.DocumentoControlado ? 'sim' : 'nao'} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, DocumentoControlado: e.target.value === 'sim' } })}>
@@ -1298,38 +1196,36 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                             <option value="sim">Sim - Controlado</option>
                           </select>
                         </div>
-
                         <div className={styles.formGroup}>
                           <label>Status</label>
                           <select value={this.state.editFormData.StatusDocumento || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, StatusDocumento: e.target.value } })}>
                             <option value="">Automático (Pela Data)</option>
-                            <option value="Em revisão">Em revisão</option>
+                            <option value="Em revisão">Em revisão (Oculta da Intranet)</option>
+                            <option value="Aguardando Aprovação">Aguardando Aprovação (Envia p/ Gestores)</option>
                             <option value="Arquivado">Arquivado</option>
                             <option value="Obsoleto">Obsoleto</option>
                           </select>
                         </div>
-
                         <div className={styles.formGroup}>
                           <label>E-mail do Responsável</label>
                           <input type="email" placeholder="email@grunner.com.br" value={this.state.editFormData.ResponsavelRevisao?.EMail || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, ResponsavelRevisao: { EMail: e.target.value } } })} />
                         </div>
-
+                        {this.state.editFormData.StatusDocumento === 'Aguardando Aprovação' && (
+                          <div className={styles.formGroup} style={{ gridColumn: '1 / -1', backgroundColor: '#EFF6FF', padding: '10px', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
+                            <label style={{ color: '#1E3A8A', fontWeight: 'bold' }}>E-mails dos Supervisores / Aprovadores (separe por vírgula)</label>
+                            <textarea rows={2} placeholder="gestor1@grunner.com.br, gestor2@grunner.com.br" value={this.state.editFormData.AprovadoresEmailsText || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, AprovadoresEmailsText: e.target.value } })} style={{ padding: '10px', border: '1px solid #93C5FD', borderRadius: '6px', fontFamily: 'inherit', resize: 'vertical', width: '100%', boxSizing: 'border-box' }} />
+                            <span style={{ fontSize: '11px', color: '#3B82F6', marginTop: '4px' }}>⚠️ O fluxo enviará o documento modificado para aprovação destes e-mails.</span>
+                          </div>
+                        )}
                         <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                          <label>Observações internas (Uso da Qualidade)</label>
-                          <textarea
-                            rows={3}
-                            placeholder="Digite lembretes, motivos de alteração ou notas para a próxima revisão..."
-                            value={this.state.editFormData.ObservacaoRevisao || ''}
-                            onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, ObservacaoRevisao: e.target.value } })}
-                            style={{ padding: '10px', border: '1px solid #D1D5DB', borderRadius: '6px', fontFamily: 'inherit', resize: 'vertical', width: '100%', boxSizing: 'border-box' }}
-                          />
+                          <label style={{ color: this.state.editFormData.StatusDocumento === 'Aguardando Aprovação' ? '#991B1B' : '#4B5563', fontWeight: this.state.editFormData.StatusDocumento === 'Aguardando Aprovação' ? 'bold' : '600' }}>
+                            {this.state.editFormData.StatusDocumento === 'Aguardando Aprovação' ? 'O que foi alterado nesta revisão? (Será enviado aos gestores)' : 'Observações internas (Uso da Qualidade)'}
+                          </label>
+                          <textarea rows={3} placeholder={this.state.editFormData.StatusDocumento === 'Aguardando Aprovação' ? "Descreva as mudanças feitas no documento..." : "Digite lembretes, motivos de alteração ou notas para a próxima revisão..."} value={this.state.editFormData.ObservacaoRevisao || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, ObservacaoRevisao: e.target.value } })} style={{ padding: '10px', border: this.state.editFormData.StatusDocumento === 'Aguardando Aprovação' ? '1px solid #FCA5A5' : '1px solid #D1D5DB', borderRadius: '6px', fontFamily: 'inherit', resize: 'vertical', width: '100%', boxSizing: 'border-box', backgroundColor: this.state.editFormData.StatusDocumento === 'Aguardando Aprovação' ? '#FEF2F2' : 'white' }} />
                         </div>
                       </div>
-
                     ) : (
-                      // ================== TELA ESPECÍFICA PARA DOCUMENTOS OBSOLETOS ==================
                       <div className={styles.formGrid}>
-
                         <div style={{ gridColumn: '1 / -1', backgroundColor: '#F3F4F6', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #4B5563', marginBottom: '5px' }}>
                           <h3 style={{ margin: '0 0 10px 0', color: '#374151', fontSize: '16px' }}>🗄️ Painel de Documento Obsoleto</h3>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px', color: '#4B5563' }}>
@@ -1339,50 +1235,30 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                             <p style={{ margin: 0 }}><strong>Tipo:</strong> {this.state.editFormData.TipoProcessoDocumento || '-'}</p>
                           </div>
                         </div>
-
                         <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                           <label style={{ fontWeight: 'bold' }}>Status Atual do Arquivo</label>
-                          <select
-                            value={this.state.editFormData.StatusDocumento || 'Obsoleto'}
-                            onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, StatusDocumento: e.target.value } })}
-                            style={{ padding: '10px', border: '1px solid #D1D5DB', borderRadius: '6px' }}
-                          >
+                          <select value={this.state.editFormData.StatusDocumento || 'Obsoleto'} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, StatusDocumento: e.target.value } })} style={{ padding: '10px', border: '1px solid #D1D5DB', borderRadius: '6px' }}>
                             <option value="Obsoleto">Obsoleto</option>
                             <option value="Arquivado">Arquivado</option>
                             <option value="Em revisão">🔄 Restaurar para Revisão (Voltar à vida)</option>
                           </select>
                         </div>
-
-                        {/* --- NOVA FLAG DE EXTINÇÃO (Fundo Amarelo) --- */}
                         <div className={styles.formGroup} style={{ gridColumn: '1 / -1', backgroundColor: '#FFFBEB', padding: '10px', borderRadius: '6px', border: '1px solid #FDE68A' }}>
                           <label style={{ fontWeight: 'bold', color: '#92400E' }}>O processo atrelado a este documento foi extinto da empresa?</label>
-                          <select
-                            value={this.state.editFormData.ProcessoExtinto ? 'sim' : 'nao'}
-                            onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, ProcessoExtinto: e.target.value === 'sim' } })}
-                            style={{ padding: '8px', border: '1px solid #D1D5DB', borderRadius: '4px', width: '100%', marginTop: '5px' }}
-                          >
+                          <select value={this.state.editFormData.ProcessoExtinto ? 'sim' : 'nao'} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, ProcessoExtinto: e.target.value === 'sim' } })} style={{ padding: '8px', border: '1px solid #D1D5DB', borderRadius: '4px', width: '100%', marginTop: '5px' }}>
                             <option value="nao">Não - O processo continua (Foi substituído por outro documento)</option>
                             <option value="sim">Sim - O processo foi 100% extinto / descontinuado</option>
                           </select>
                         </div>
-
                         <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                           <label style={{ fontWeight: 'bold', color: '#991B1B' }}>Destino / Motivo da Obsolescência</label>
-                          <textarea
-                            rows={5}
-                            placeholder="Ex: Documento descontinuado. O processo foi agrupado e substituído pelo documento POP.ATD.005..."
-                            value={this.state.editFormData.ObservacaoRevisao || ''}
-                            onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, ObservacaoRevisao: e.target.value } })}
-                            style={{ padding: '12px', border: '1px solid #FCA5A5', borderRadius: '6px', fontFamily: 'inherit', resize: 'vertical', width: '100%', boxSizing: 'border-box', backgroundColor: '#FEF2F2' }}
-                          />
+                          <textarea rows={5} placeholder="Ex: Documento descontinuado. O processo foi agrupado e substituído pelo documento POP.ATD.005..." value={this.state.editFormData.ObservacaoRevisao || ''} onChange={(e) => this.setState({ editFormData: { ...this.state.editFormData, ObservacaoRevisao: e.target.value } })} style={{ padding: '12px', border: '1px solid #FCA5A5', borderRadius: '6px', fontFamily: 'inherit', resize: 'vertical', width: '100%', boxSizing: 'border-box', backgroundColor: '#FEF2F2' }} />
                         </div>
-
                       </div>
                     )}
                   </>
                 )}
-                
-                {/* CONTEÚDO PARA HISTÓRICO OFICIAL E OBSOLETOS */}
+
                 {(visaoAtual === 'oficiais' || visaoAtual === 'obsoletos') && this.state.activeModalTab === 'historico' && (
                   <div className={styles.timelineContainer}>
                     {this.state.isLoadingHistory ? (
@@ -1407,56 +1283,31 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                     )}
                   </div>
                 )}
-
               </div>
 
-              {/* FOOTER DO MODAL (BOTÕES) CORRIGIDO */}
               <div className={styles.editModalFooter}>
                 <button className={styles.cancelBtn} onClick={() => this.setState({ documentoSelecionado: null, activeModalTab: 'metadados', documentHistory: [] })}>Fechar</button>
-
-                {/* O Botão de Salvar aparece para tudo, mas com textos dinâmicos! */}
-                {(visaoAtual === 'rascunhos' || this.state.activeModalTab === 'metadados') && (
-                  <button className={styles.saveBtn} onClick={this.salvarEdicaoDocumento} disabled={this.state.salvandoDocumento}>
-                    {this.state.salvandoDocumento ? 'Salvando...' :
-                      (visaoAtual === 'rascunhos' ? 'Atualizar Rascunho' :
-                        (visaoAtual === 'obsoletos' ? 'Salvar Destino' : 'Salvar Alterações'))}
-                  </button>
-                )}
-              </div>
-
-              {/* FOOTER DO MODAL (BOTÕES) CORRIGIDO */}
-              <div className={styles.editModalFooter}>
-                <button className={styles.cancelBtn} onClick={() => this.setState({ documentoSelecionado: null, activeModalTab: 'metadados', documentHistory: [] })}>Fechar</button>
-
-                {/* O Botão de Salvar agora só aparece para Rascunhos ou Oficiais, NUNCA para Obsoletos */}
                 {(visaoAtual === 'rascunhos' || (visaoAtual === 'oficiais' && this.state.activeModalTab === 'metadados')) && (
                   <button className={styles.saveBtn} onClick={this.salvarEdicaoDocumento} disabled={this.state.salvandoDocumento}>
                     {this.state.salvandoDocumento ? 'Salvando...' : (visaoAtual === 'rascunhos' ? 'Atualizar Rascunho' : 'Salvar Alterações')}
                   </button>
                 )}
               </div>
-
             </div>
           </div>
         )}
 
-        {/* MODAL DO IFRAME E RESTO DO CÓDIGO (CRIAR DOCUMENTO) MANTIDO... */}
         {this.state.iframeDocumentoUrl && (
           <div className={(styles as any).iframeModalBackdrop} onClick={() => this.setState({ iframeDocumentoUrl: null })}>
             <div className={(styles as any).iframeModalHeader}>
               <button className={(styles as any).closeIframeBtn} onClick={() => this.setState({ iframeDocumentoUrl: null })}>✕ Fechar Documento</button>
             </div>
-            <div
-              className={(styles as any).iframeContainer}
-              onClick={(e) => e.stopPropagation()}
-              onContextMenu={(e) => e.preventDefault()}
-            >
+            <div className={(styles as any).iframeContainer} onClick={(e) => e.stopPropagation()} onContextMenu={(e) => e.preventDefault()}>
               <iframe src={this.state.iframeDocumentoUrl} title="Document Viewer" />
             </div>
           </div>
         )}
 
-        {/* MODAL DE CRIAÇÃO MANTIDO */}
         {this.state.isCreateModalOpen && (
           <div className={styles.editModalBackdrop}>
             <div className={styles.editModal}>
@@ -1465,15 +1316,10 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
                 <button onClick={() => this.setState({ isCreateModalOpen: false, selectedNewDocType: '' })} className={styles.closeModal}>✕</button>
               </div>
               <div className={styles.editModalBody}>
-                <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '20px' }}>
-                  Selecione o tipo de documento que deseja criar.
-                </p>
+                <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '20px' }}>Selecione o tipo de documento que deseja criar.</p>
                 <div className={styles.formGroup}>
                   <label>Tipo de Processo/Documento</label>
-                  <select
-                    value={this.state.selectedNewDocType}
-                    onChange={(e) => this.setState({ selectedNewDocType: e.target.value })}
-                  >
+                  <select value={this.state.selectedNewDocType} onChange={(e) => this.setState({ selectedNewDocType: e.target.value })}>
                     <option value="">Selecione...</option>
                     <option value="MAPEAMENTO DE PROCESSO">Mapeamento de Processo</option>
                     <option value="PROCEDIMENTO">Procedimento</option>
@@ -1487,12 +1333,7 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
               </div>
               <div className={styles.editModalFooter}>
                 <button className={styles.cancelBtn} onClick={() => this.setState({ isCreateModalOpen: false, selectedNewDocType: '' })}>Cancelar</button>
-                <button
-                  className={styles.saveBtn}
-                  disabled={!this.state.selectedNewDocType}
-                  onClick={() => this.setState({ isCreateModalOpen: false })}
-                  style={{ opacity: !this.state.selectedNewDocType ? 0.5 : 1, cursor: !this.state.selectedNewDocType ? 'not-allowed' : 'pointer' }}
-                >
+                <button className={styles.saveBtn} disabled={!this.state.selectedNewDocType} onClick={() => this.setState({ isCreateModalOpen: false })} style={{ opacity: !this.state.selectedNewDocType ? 0.5 : 1, cursor: !this.state.selectedNewDocType ? 'not-allowed' : 'pointer' }}>
                   Continuar para o Formulário ➔
                 </button>
               </div>
@@ -1500,7 +1341,6 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           </div>
         )}
 
-        {/* FORMULÁRIOS MANTIDOS */}
         {!this.state.isCreateModalOpen && this.state.selectedNewDocType === 'MAPEAMENTO DE PROCESSO' && (
           <FormularioMapeamento tipoDocumento={this.state.selectedNewDocType} usuarioEmail={this.props.context.pageContext.user.email} spContext={this.props.context} onFechar={() => this.setState({ selectedNewDocType: '' })} onSucesso={() => { this.setState({ selectedNewDocType: '' }); this.buscarTodosDocumentos(); }} />
         )}
@@ -1517,26 +1357,15 @@ export default class PoliticasGrunner extends React.Component<IPoliticasGrunnerP
           <div className={styles.editModalBackdrop}>
             <div className={styles.editModal} style={{ width: '90%', maxWidth: '450px', textAlign: 'center', padding: '40px 30px', borderTop: '6px solid #A6CE39' }}>
               <div style={{ fontSize: '50px', marginBottom: '15px' }}>🚀</div>
-              <h2 style={{ color: '#1C2510', margin: '0 0 15px 0', fontSize: '22px', fontWeight: '800' }}>
-                Módulo em Desenvolvimento
-              </h2>
+              <h2 style={{ color: '#1C2510', margin: '0 0 15px 0', fontSize: '22px', fontWeight: '800' }}>Módulo em Desenvolvimento</h2>
               <p style={{ color: '#6B7280', fontSize: '15px', lineHeight: '1.6', marginBottom: '30px' }}>
-                O gerador automatizado para <strong>{this.state.selectedNewDocType}</strong> está sendo construído pela nossa equipe de Tecnologia para garantir a melhor experiência possível.
-                <br /><br />
+                O gerador automatizado para <strong>{this.state.selectedNewDocType}</strong> está sendo construído pela nossa equipe de Tecnologia para garantir a melhor experiência possível.<br /><br />
                 No momento, os modelos já liberados para uso são: <strong>Instrução de Trabalho, Mapeamento de Processo e Procedimento</strong>.
               </p>
-              <button
-                onClick={() => this.setState({ selectedNewDocType: '', isCreateModalOpen: true })}
-                style={{ backgroundColor: '#A6CE39', color: '#1C2510', border: 'none', padding: '12px 25px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(166, 206, 57, 0.2)' }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-              >
+              <button onClick={() => this.setState({ selectedNewDocType: '', isCreateModalOpen: true })} style={{ backgroundColor: '#A6CE39', color: '#1C2510', border: 'none', padding: '12px 25px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(166, 206, 57, 0.2)' }}>
                 ⬅️ Voltar e escolher outro modelo
               </button>
-              <button
-                onClick={() => this.setState({ selectedNewDocType: '' })}
-                style={{ background: 'none', border: 'none', color: '#9CA3AF', marginTop: '15px', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline' }}
-              >
+              <button onClick={() => this.setState({ selectedNewDocType: '' })} style={{ background: 'none', border: 'none', color: '#9CA3AF', marginTop: '15px', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline' }}>
                 Cancelar e fechar
               </button>
             </div>
