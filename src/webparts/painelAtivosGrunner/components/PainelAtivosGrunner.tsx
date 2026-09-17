@@ -346,7 +346,7 @@ export default class PainelAtivosGrunner extends React.Component<IPainelAtivosGr
     const dadosAtualizados = {
       nome: this.state.editNome, departamento: this.state.editDepartamento, tipo: this.state.editTipo,
       fabricante: this.state.editFabricante, modelo: this.state.editModelo, serie: this.state.editSerie,
-      imei: this.state.editImei, patrimonioFin: this.state.editPatrimonioFin, especificacao: this.state.editEspecificacao, observacao: this.state.editObservacao
+      imei: this.state.editImei, patrimonioFin: this.state.editPatrimonioFin, especificacoes: this.state.editEspecificacao, observacoes: this.state.editObservacao
     };
 
     try {

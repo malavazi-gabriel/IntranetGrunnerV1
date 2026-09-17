@@ -6,14 +6,14 @@ import "@pnp/sp/lists";
 import "@pnp/sp/items";
 import "@pnp/sp/files";
 import "@pnp/sp/folders";
-import "@pnp/sp/site-users/web"; 
-import "@pnp/sp/profiles"; 
+import "@pnp/sp/site-users/web";
+import "@pnp/sp/profiles";
 
-const COLUNA_ID_PATRIMONIO = "field_4"; 
-const COLUNA_PATRIMONIO_FINANCEIRO = "field_5"; 
+const COLUNA_ID_PATRIMONIO = "field_4";
+const COLUNA_PATRIMONIO_FINANCEIRO = "field_5";
 const COLUNA_IMEI = "field_9";
 const COLUNA_ESPECIFICACOES = "field_10";
-const COLUNA_RESPONSAVEL_AD = "Responsavel_AD"; 
+const COLUNA_RESPONSAVEL_AD = "Responsavel_AD";
 
 export class SharePointService {
   private _sp: SPFI;
@@ -24,7 +24,7 @@ export class SharePointService {
     this.context = context;
   }
 
-public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
+  public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
     try {
       // 1. Define a letra base dinamicamente para TODOS os tipos de equipamentos
       let letraBase = "O"; // Outros
@@ -69,16 +69,16 @@ public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
     try {
       const novoCodigo = await this.getProximoIdSequencial(itemDoCarrinho.tipo);
       const primeiraLetra = novoCodigo.charAt(0).toUpperCase();
-      
+
       const payload: any = {
-        Title: nomeResponsavel,         
+        Title: nomeResponsavel,
         field_1: departamento,
-        field_2: itemDoCarrinho.tipo,        
-        field_3: primeiraLetra,         
-        field_6: itemDoCarrinho.fabricante,  
-        field_7: itemDoCarrinho.modelo,      
-        field_8: itemDoCarrinho.serie,       
-        field_11: itemDoCarrinho.observacoes || "Sem observações adicionais" 
+        field_2: itemDoCarrinho.tipo,
+        field_3: primeiraLetra,
+        field_6: itemDoCarrinho.fabricante,
+        field_7: itemDoCarrinho.modelo,
+        field_8: itemDoCarrinho.serie,
+        field_11: itemDoCarrinho.observacoes || "Sem observações adicionais"
       };
 
       payload[COLUNA_ID_PATRIMONIO] = novoCodigo;
@@ -89,7 +89,7 @@ public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
       if (emailResponsavel) {
         try {
           const user = await this._sp.web.ensureUser(emailResponsavel);
-          payload[`${COLUNA_RESPONSAVEL_AD}Id`] = user.Id; 
+          payload[`${COLUNA_RESPONSAVEL_AD}Id`] = user.Id;
         } catch (err) {
           console.warn("Não foi possível validar o usuário no AD:", err);
         }
@@ -107,13 +107,13 @@ public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
   public async atualizarAtivo(id: number, dados: any, emailResponsavel: string): Promise<void> {
     try {
       const payload: any = {
-        Title: dados.nome,         
+        Title: dados.nome,
         field_1: dados.departamento,
-        field_2: dados.tipo,             
-        field_6: dados.fabricante,  
-        field_7: dados.modelo,      
-        field_8: dados.serie,       
-        field_11: dados.observacao || "Sem observações"
+        field_2: dados.tipo,
+        field_6: dados.fabricante,
+        field_7: dados.modelo,
+        field_8: dados.serie,
+        field_11: dados.observacoes || "Sem observações"
       };
 
       payload[COLUNA_PATRIMONIO_FINANCEIRO] = dados.patrimonioFin;
@@ -123,12 +123,12 @@ public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
       if (emailResponsavel) {
         try {
           const user = await this._sp.web.ensureUser(emailResponsavel);
-          payload[`${COLUNA_RESPONSAVEL_AD}Id`] = user.Id; 
+          payload[`${COLUNA_RESPONSAVEL_AD}Id`] = user.Id;
         } catch (err) {
           console.warn("Não foi possível validar o usuário no AD na edição:", err);
         }
       } else {
-        payload[`${COLUNA_RESPONSAVEL_AD}Id`] = null; 
+        payload[`${COLUNA_RESPONSAVEL_AD}Id`] = null;
       }
 
       await this._sp.web.lists.getByTitle("Ativos de TI").items.getById(id).update(payload);
@@ -149,12 +149,12 @@ public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
       if (emailResponsavel) {
         try {
           const user = await this._sp.web.ensureUser(emailResponsavel);
-          payload[`${COLUNA_RESPONSAVEL_AD}Id`] = user.Id; 
+          payload[`${COLUNA_RESPONSAVEL_AD}Id`] = user.Id;
         } catch (err) {
           console.warn("Não foi possível validar o usuário no AD:", err);
         }
       } else {
-        payload[`${COLUNA_RESPONSAVEL_AD}Id`] = null; 
+        payload[`${COLUNA_RESPONSAVEL_AD}Id`] = null;
       }
 
       await this._sp.web.lists.getByTitle("Ativos de TI").items.getById(id).update(payload);
@@ -181,8 +181,8 @@ public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
         .items
         .select("Id", "Title", "field_1", "field_2", "field_6", "field_7", "field_8", "field_11", "Created", `${COLUNA_RESPONSAVEL_AD}/Title`, `${COLUNA_RESPONSAVEL_AD}/EMail`, COLUNA_ID_PATRIMONIO, COLUNA_PATRIMONIO_FINANCEIRO, COLUNA_IMEI, COLUNA_ESPECIFICACOES)
         .expand(COLUNA_RESPONSAVEL_AD)
-        .orderBy("Created", false) 
-        .top(1000)(); 
+        .orderBy("Created", false)
+        .top(1000)();
 
       return itens.map((item: any) => ({
         id: item.Id,
@@ -194,7 +194,7 @@ public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
         patrimonioFin: item[COLUNA_PATRIMONIO_FINANCEIRO] || "-",
         fabricante: item.field_6 || "",
         modelo: item.field_7 || "",
-        serie: item.field_8 || item[COLUNA_IMEI] || "-", 
+        serie: item.field_8 || item[COLUNA_IMEI] || "-",
         especificacoes: item[COLUNA_ESPECIFICACOES] || "",
         observacoes: item.field_11 || "",
         dataCriacao: new Date(item.Created).toLocaleDateString('pt-BR')
@@ -205,9 +205,9 @@ public async getProximoIdSequencial(tipoAtivo: string): Promise<string> {
     }
   }
 
-public async buscarUsuariosAD(termo: string): Promise<any[]> {
+  public async buscarUsuariosAD(termo: string): Promise<any[]> {
     if (!termo || termo.length < 3) return [];
-    
+
     try {
       // TENTA BUSCAR EM TEMPO REAL NO ENTRA ID (AZURE AD)
       const graphClient: MSGraphClientV3 = await this.context.msGraphClientFactory.getClient('3');
@@ -230,13 +230,13 @@ public async buscarUsuariosAD(termo: string): Promise<any[]> {
 
     } catch (error) {
       console.warn("Permissão do Graph não aprovada ou erro. Usando fallback do SharePoint local:", error);
-      
+
       // FALLBACK (PLANO B): Usa a busca antiga caso o Graph falhe
       try {
         const usuarios = await this._sp.web.siteUsers
           .filter(`substringof('${termo}', Title) or substringof('${termo}', Email)`)
           .top(5)();
-        
+
         return usuarios.map((u: any) => ({
           id: u.Id,
           nome: u.Title,
@@ -259,7 +259,7 @@ public async buscarUsuariosAD(termo: string): Promise<any[]> {
         const dep = propriedades.find((p: any) => p.Key === "Department");
         return dep && dep.Value ? dep.Value : "";
       }
-      return ""; 
+      return "";
     } catch (error) {
       console.warn("Não foi possível buscar o departamento no AD:", error);
       return "";
@@ -269,13 +269,19 @@ public async buscarUsuariosAD(termo: string): Promise<any[]> {
   public async getHistoricoAtivo(id: number): Promise<any[]> {
     try {
       const versoes = await this._sp.web.lists.getByTitle("Ativos de TI").items.getById(id).versions();
-      return versoes.map((v: any) => ({
-        versao: v.VersionLabel,
-        data: new Date(v.Created).toLocaleString('pt-BR'),
-        modificadoPor: v.Editor ? (v.Editor.LookupValue || v.Editor.Email) : "Sistema",
-        responsavel: v.Title || "Sem Responsável",
-        observacao: v.field_11 || ""
-      }));
+      
+      return versoes.map((v: any) => {
+        // Agora com o nome exato que o SharePoint usa no histórico!
+        const observacaoEncontrada = v.field_11 || v.field_x005f_11 || v.Observacoes || "";
+
+        return {
+          versao: v.VersionLabel,
+          data: new Date(v.Created).toLocaleString('pt-BR'),
+          modificadoPor: v.Editor ? (v.Editor.LookupValue || v.Editor.Email) : "Sistema",
+          responsavel: v.Title || "Sem Responsável",
+          observacao: observacaoEncontrada
+        };
+      });
     } catch (error) {
       console.warn("Não foi possível buscar o histórico de versões. Verifique se o Versionamento está ativo na lista.", error);
       return [];
@@ -287,7 +293,7 @@ public async buscarUsuariosAD(termo: string): Promise<any[]> {
     try {
       // Puxa todos os itens da nossa nova lista de acessos
       const itens = await this._sp.web.lists.getByTitle("Acessos_Painel_Ativos").items.select("Email", "NivelAcesso")();
-      
+
       let isTI = false;
       let isVisualizador = false;
 
@@ -301,7 +307,7 @@ public async buscarUsuariosAD(termo: string): Promise<any[]> {
           }
         }
       }
-      
+
       return { isTI, isVisualizador };
     } catch (error) {
       console.warn("Erro ao buscar acessos na lista 'Acessos_Painel_Ativos'. O usuário será tratado como Colaborador comum por segurança.", error);
