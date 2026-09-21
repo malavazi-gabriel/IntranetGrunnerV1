@@ -643,6 +643,14 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
   // ==== FUNÇÃO: RECALCULAR A MATEMÁTICA DO SININHO ====
   private recalcularNotificacoes = () => {
     let unreadCount = 0;
+
+    // Função auxiliar para converter datas de forma segura para milissegundos
+    const parseDateSafe = (d: any) => {
+      if (!d || d === '0') return 0;
+      // Se for apenas números (timestamp), converte direto. Se for string ISO (ex: 2024-09...), usa o getTime()
+      return /^\d+$/.test(String(d)) ? Number(d) : new Date(d).getTime();
+    };
+
     this.state.meusChamados.forEach((ticket: any) => {
       const lastSeen = localStorage.getItem(`grunner_visto_${ticket.id}`);
       const isEscondido = localStorage.getItem(`grunner_escondido_${ticket.id}`) === "true";
@@ -650,9 +658,11 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
 
       if (isEscondido && isEncerrado) return; // Se escondeu e tá fechado, ignora
 
-      const dataClickUp = parseInt(ticket.dataAtualizacao || '0');
-      const dataLida = parseInt(lastSeen || '0');
+      // Substituímos o parseInt pela nova função segura
+      const dataClickUp = parseDateSafe(ticket.dataAtualizacao);
+      const dataLida = parseDateSafe(lastSeen);
 
+      // Agora a comparação será feita com timestamps perfeitos (ex: 1726927200000 > 1726920000000)
       if (dataClickUp > dataLida) {
         unreadCount++;
       }
@@ -1761,8 +1771,27 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                           </div>
 
                           <div className={styles.ticketBody}>
-                            <p><strong>ID do Chamado:</strong> <a href={ticket.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2E5C31', textDecoration: 'none', fontWeight: 'bold' }}>{ticket.id} ➔</a></p>
-                            <p><strong>Abertura:</strong> {new Date(parseInt(ticket.dataCriacao)).toLocaleDateString('pt-BR')} às {new Date(parseInt(ticket.dataCriacao)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                            <p>
+                              <strong>ID do Chamado:</strong>{' '}
+                              <a href={ticket.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2E5C31', textDecoration: 'none', fontWeight: 'bold' }}>
+                                {ticket.id} ➔
+                              </a>
+                            </p>
+                            <p>
+                              <strong>Abertura:</strong>{' '}
+                              {(() => {
+                                const d = ticket.dataCriacao;
+                                if (!d || d === '0') return 'Data indisponível';
+
+                                // Verifica se a data é composta apenas de números (milissegundos) ou se é uma string ISO (ex: "2024-09-21T...")
+                                const objData = /^\d+$/.test(String(d)) ? new Date(Number(d)) : new Date(d);
+
+                                // Valida se a data gerada é real antes de tentar formatá-la
+                                return isNaN(objData.getTime())
+                                  ? 'Data inválida'
+                                  : `${objData.toLocaleDateString('pt-BR')} às ${objData.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+                              })()}
+                            </p>
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
