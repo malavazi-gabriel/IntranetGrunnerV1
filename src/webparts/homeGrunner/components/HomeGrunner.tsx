@@ -1783,10 +1783,32 @@ export default class HomeGrunner extends React.Component<IHomeGrunnerProps, IHom
                                 const d = ticket.dataCriacao;
                                 if (!d || d === '0') return 'Data indisponível';
 
-                                // Verifica se a data é composta apenas de números (milissegundos) ou se é uma string ISO (ex: "2024-09-21T...")
-                                const objData = /^\d+$/.test(String(d)) ? new Date(Number(d)) : new Date(d);
+                                const dStr = String(d).trim();
+                                let objData;
 
-                                // Valida se a data gerada é real antes de tentar formatá-la
+                                // 1. Verifica se é apenas um número (timestamp em milissegundos)
+                                if (/^\d+$/.test(dStr)) {
+                                  objData = new Date(Number(dStr));
+                                }
+                                // 2. Verifica se a API mandou no formato brasileiro com barras (ex: "25/01/2025" ou "25/01/2025 14:30")
+                                else if (/^\d{2}\/\d{2}\/\d{4}/.test(dStr)) {
+                                  const [dataPart, horaPart] = dStr.split(' ');
+                                  const [dia, mes, ano] = dataPart.split('/');
+
+                                  if (horaPart) {
+                                    const [hora, minuto] = horaPart.split(':');
+                                    objData = new Date(Number(ano), Number(mes) - 1, Number(dia), Number(hora), Number(minuto));
+                                  } else {
+                                    objData = new Date(Number(ano), Number(mes) - 1, Number(dia));
+                                  }
+                                }
+                                // 3. Caso seja formato ISO padrão de banco de dados (ex: "2024-09-21 12:00:00")
+                                else {
+                                  // O .replace garante que alguns navegadores chatos (como o Safari) consigam ler
+                                  objData = new Date(dStr.replace(' ', 'T'));
+                                }
+
+                                // Valida se a conversão deu certo
                                 return isNaN(objData.getTime())
                                   ? 'Data inválida'
                                   : `${objData.toLocaleDateString('pt-BR')} às ${objData.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
