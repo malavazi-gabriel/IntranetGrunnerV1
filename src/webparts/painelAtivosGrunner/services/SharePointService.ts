@@ -118,7 +118,9 @@ export class SharePointService {
 
       payload[COLUNA_PATRIMONIO_FINANCEIRO] = dados.patrimonioFin;
       payload[COLUNA_IMEI] = dados.imei;
-      payload[COLUNA_ESPECIFICACOES] = dados.especificacao;
+      
+      // AQUI ESTAVA O ERRO! Faltava o "s" em dados.especificacao
+      payload[COLUNA_ESPECIFICACOES] = dados.especificacoes;
 
       if (emailResponsavel) {
         try {
